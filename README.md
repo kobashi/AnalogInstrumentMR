@@ -45,6 +45,9 @@ cd AnalogInstrumentMR
 git lfs pull
 ```
 
+Tagged releases also provide a separately named `full-source` archive with the
+LFS objects included. No APK is included in that archive.
+
 ## Requirements
 
 - Unity `6000.3.19f1`
