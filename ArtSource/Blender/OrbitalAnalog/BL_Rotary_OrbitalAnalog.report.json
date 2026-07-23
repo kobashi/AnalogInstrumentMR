@@ -1,0 +1,32 @@
+{
+  "triangles": 356,
+  "mesh_objects": 2,
+  "materials": 2,
+  "material_slots": 3,
+  "unity_bounds_m": [
+    0.15,
+    0.15,
+    0.0935
+  ],
+  "blender_bounds_min_m": [
+    -0.075,
+    -0.0935,
+    -0.075
+  ],
+  "blender_bounds_max_m": [
+    0.075,
+    0.0,
+    0.075
+  ],
+  "asset": "Rotary_OrbitalAnalog",
+  "instrument_type_id": "control.rotary",
+  "theme_id": "orbital-analog",
+  "unity_mount_axis": "+Z",
+  "greybox_triangle_budget": 1500,
+  "renderer_budget": 3,
+  "material_budget": 2,
+  "colliders": 0,
+  "realtime_lights": 0,
+  "pivot": "knob_pivot",
+  "movable": "knob"
+}

@@ -1,0 +1,128 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1337395091048855741
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1856803642701586951}
+  - component: {fileID: 4020722405309512215}
+  m_Layer: 0
+  m_Name: PF_Visual_Rotary_OrbitalAnalog
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1856803642701586951
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1337395091048855741}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 2183692138839819757}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4020722405309512215
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1337395091048855741}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f6aa3bcbfd914cffb9d17d9e0350055, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MatsuMotoMeterAR.Runtime::MatsuMotoMeterAR.Instruments.ThemeVisualManifest
+  motionTarget: {fileID: 6488757559757482766}
+  indicatorRenderer: {fileID: 0}
+--- !u!1001 &2183692138839819756
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1856803642701586951}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 0829b75810e3e45eba52d6fb62e17d88, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0829b75810e3e45eba52d6fb62e17d88, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0829b75810e3e45eba52d6fb62e17d88, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0829b75810e3e45eba52d6fb62e17d88, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0829b75810e3e45eba52d6fb62e17d88, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0829b75810e3e45eba52d6fb62e17d88, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0829b75810e3e45eba52d6fb62e17d88, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0829b75810e3e45eba52d6fb62e17d88, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0829b75810e3e45eba52d6fb62e17d88, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 0829b75810e3e45eba52d6fb62e17d88, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -6168151883627807136, guid: 0829b75810e3e45eba52d6fb62e17d88, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: f18c165e4cf1f49bfa4012258b872bc0, type: 2}
+    - target: {fileID: -6168151883627807136, guid: 0829b75810e3e45eba52d6fb62e17d88, type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value: 
+      objectReference: {fileID: 2100000, guid: fbd48d6f4f66049898ffd8397131d0e1, type: 2}
+    - target: {fileID: 919132149155446097, guid: 0829b75810e3e45eba52d6fb62e17d88, type: 3}
+      propertyPath: m_Name
+      value: SM_Rotary_OrbitalAnalog
+      objectReference: {fileID: 0}
+    - target: {fileID: 6890929050525240742, guid: 0829b75810e3e45eba52d6fb62e17d88, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: f18c165e4cf1f49bfa4012258b872bc0, type: 2}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 0829b75810e3e45eba52d6fb62e17d88, type: 3}
+--- !u!4 &2183692138839819757 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 0829b75810e3e45eba52d6fb62e17d88, type: 3}
+  m_PrefabInstance: {fileID: 2183692138839819756}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &6488757559757482766 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -4304672749082251550, guid: 0829b75810e3e45eba52d6fb62e17d88, type: 3}
+  m_PrefabInstance: {fileID: 2183692138839819756}
+  m_PrefabAsset: {fileID: 0}

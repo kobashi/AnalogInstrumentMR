@@ -1,0 +1,112 @@
+{
+  "release": "v0.1.0-concept.5-perfgate",
+  "device": "Meta Quest 3",
+  "test_date": "2026-07-23",
+  "apk": {
+    "file": "MatsuMotoMeterAR-v0.1.0-concept.5-perfgate-quest3.apk",
+    "size_bytes": 66944913,
+    "sha256": "03aae5d6ca35b15a6aedb1e0919d1fbb883434b3fd11f5c6b2e7c4d455a6c2ab",
+    "package": "com.DefaultCompany.MatsuMotoMeterAR",
+    "version_name": "0.1.0",
+    "version_code": 1,
+    "minimum_api": 32,
+    "target_api": 34,
+    "signing": "Android Debug",
+    "distribution": "private measurement only"
+  },
+  "editmode": {
+    "passed": 62,
+    "failed": 0,
+    "evidence_file": "editmode-results.xml",
+    "evidence_sha256": "7075f7527b8f29f2922dc79db7ebae994616261a0afcd931347a1fe486770de9"
+  },
+  "user_acceptance": {
+    "date": "2026-07-23",
+    "device": "Meta Quest 3",
+    "mode": "normal runtime, free use",
+    "reported_issues": "none",
+    "verdict": "PASS"
+  },
+  "runs": [
+    {
+      "name": "synthetic-24-orbital-600s",
+      "objects": 24,
+      "theme": "OrbitalAnalog",
+      "duration_seconds": 600,
+      "mean_fps": 72.637,
+      "app_gpu_p95_ms": 2.310,
+      "cpu_utilization_p95_percent": 34,
+      "stale_frames": 1,
+      "skipped_frames": 0,
+      "shader_hitches": 0,
+      "temperature_max_c": 47,
+      "host_log_sha256": "84b3b681dcf44262bb43caf126313ab25f1b18277a0c801dc3f4df67f6b0095a",
+      "ovr_csv_sha256": "5b0f69347fb19f421ad0e78e7cd919153e1659c92b750835270351a83cfe183d"
+    },
+    {
+      "name": "synthetic-40-orbital-600s",
+      "objects": 40,
+      "theme": "OrbitalAnalog",
+      "duration_seconds": 600,
+      "mean_fps": 72.665,
+      "app_gpu_p95_ms": 2.314,
+      "cpu_utilization_p95_percent": 33,
+      "stale_frames": 0,
+      "skipped_frames": 0,
+      "shader_hitches": 0,
+      "temperature_max_c": 47,
+      "host_log_sha256": "5d582c6f6d49c830ba1d2b77fd8414167d61bb338e055e16f40cba5ea3534b22",
+      "ovr_csv_sha256": "1cddc97e65a28ed48dbcade94f93c24781d2cc33d2a8c3eb094e2519f1349412"
+    },
+    {
+      "name": "synthetic-24-forge-60s",
+      "objects": 24,
+      "theme": "ForgeBrass",
+      "duration_seconds": 60,
+      "mean_fps": 72.717,
+      "app_gpu_p95_ms": 2.317,
+      "cpu_utilization_p95_percent": 35,
+      "stale_frames": 0,
+      "skipped_frames": 0,
+      "shader_hitches": 0,
+      "temperature_max_c": 47,
+      "host_log_sha256": "88ddee10b93d57ee2259c6496bf5bc1314646776004b6e645ed465f1e2eb74a2",
+      "ovr_csv_sha256": "2ecd1f5cb3090580f7d13a7aac19a461d3c89ae6f148a930db272a17f1ffb90e"
+    },
+    {
+      "name": "synthetic-24-kinetic-60s",
+      "objects": 24,
+      "theme": "KineticSafety",
+      "duration_seconds": 60,
+      "mean_fps": 72.650,
+      "app_gpu_p95_ms": 2.302,
+      "cpu_utilization_p95_percent": 39,
+      "stale_frames": 0,
+      "skipped_frames": 0,
+      "shader_hitches": 0,
+      "temperature_max_c": 46,
+      "host_log_sha256": "c2d89b82a37911a15e2639b4e1fcb62daa5099eeea788248f9d53ed2c2a657e5",
+      "ovr_csv_sha256": "d285818caed393e06ea9f7cfc2924e71cce93ef70dd41cce2c3b3604fdb2a2ea"
+    },
+    {
+      "name": "normal-runtime-3-anchor-60s",
+      "anchors": 3,
+      "duration_seconds": 60,
+      "mean_fps": 72.583,
+      "app_gpu_p95_ms": 2.539,
+      "cpu_utilization_p95_percent": 36,
+      "stale_frames": 0,
+      "skipped_frames": 0,
+      "shader_hitches": 0,
+      "visible_tear": false,
+      "ovr_csv_sha256": "fc2ee8c03aaddce2ba0d8bdadb4fff324c47ca6ddacd5561bfe421a9bfa858f9"
+    }
+  ],
+  "notes": [
+    "Raw host logs and OVR CSV files are gitignored.",
+    "CPU time is not exposed by the captured OVR CSV; CPU utilization and delivered frames are reported.",
+    "Quest 3S physical verification is deferred by project decision.",
+    "Strict real 24-Anchor matrix verification is optional and is not a release blocker.",
+    "Final Quest 3 user acceptance in normal runtime passed with no reported issues."
+  ]
+}

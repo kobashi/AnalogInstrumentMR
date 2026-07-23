@@ -1,0 +1,15 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1045 &1
+EditorBuildSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Scenes:
+  - enabled: 1
+    path: Assets/MatsuMotoMeterAR/Scenes/MinimalMR.unity
+    guid: fbfcbe938ecea48d18ec7602cb5382fb
+  m_configObjects:
+    com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: 6dba428af7e1d451d9c041f42843e5dc, type: 2}
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 44de3cc8caf4441ecb099587dbec9ef5, type: 2}
+    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: 0a3e4a0f79aab475ea446992abebd65c, type: 2}
+  m_UseUCBPForAssetBundles: 0

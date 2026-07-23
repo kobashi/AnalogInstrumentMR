@@ -1,0 +1,38 @@
+{
+  "triangles": 1476,
+  "mesh_objects": 3,
+  "materials": 2,
+  "material_slots": 3,
+  "unity_bounds_m": [
+    0.14,
+    0.14,
+    0.0432
+  ],
+  "blender_bounds_min_m": [
+    -0.07,
+    -0.0432,
+    -0.07
+  ],
+  "blender_bounds_max_m": [
+    0.07,
+    0.0,
+    0.07
+  ],
+  "asset": "MeterRound_KineticSafety",
+  "instrument_type_id": "meter.round",
+  "theme_id": "kinetic-safety",
+  "unity_mount_axis": "+Z",
+  "pivot": "needle_pivot",
+  "movable": "needle",
+  "greybox_triangle_budget": 1500,
+  "renderer_budget": 4,
+  "material_budget": 2,
+  "colliders": 0,
+  "realtime_lights": 0,
+  "textures": {
+    "base_color": "Assets/MatsuMotoMeterAR/Content/Themes/KineticSafety/Textures/T_KineticSafety_Atlas_BaseColor.png",
+    "normal": "Assets/MatsuMotoMeterAR/Content/Themes/KineticSafety/Textures/T_KineticSafety_Atlas_Normal.png",
+    "metallic_smoothness": "Assets/MatsuMotoMeterAR/Content/Themes/KineticSafety/Textures/T_KineticSafety_Atlas_MetallicSmoothness.png",
+    "emission": "Assets/MatsuMotoMeterAR/Content/Themes/KineticSafety/Textures/T_KineticSafety_Atlas_Emission.png"
+  }
+}

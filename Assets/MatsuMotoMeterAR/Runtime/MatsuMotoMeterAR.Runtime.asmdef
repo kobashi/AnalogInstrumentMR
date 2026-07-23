@@ -1,0 +1,11 @@
+{
+  "name": "MatsuMotoMeterAR.Runtime",
+  "rootNamespace": "MatsuMotoMeterAR",
+  "references": [
+    "Unity.InputSystem",
+    "Unity.RenderPipelines.Universal.Runtime",
+    "Oculus.VR",
+    "meta.xr.mrutilitykit"
+  ],
+  "autoReferenced": true
+}

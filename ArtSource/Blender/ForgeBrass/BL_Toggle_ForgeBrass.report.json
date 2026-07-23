@@ -1,0 +1,32 @@
+{
+  "triangles": 276,
+  "mesh_objects": 2,
+  "materials": 2,
+  "material_slots": 3,
+  "unity_bounds_m": [
+    0.12,
+    0.151,
+    0.063511
+  ],
+  "blender_bounds_min_m": [
+    -0.06,
+    -0.063511,
+    -0.07
+  ],
+  "blender_bounds_max_m": [
+    0.06,
+    0.0,
+    0.081
+  ],
+  "asset": "Toggle_ForgeBrass",
+  "instrument_type_id": "control.toggle",
+  "theme_id": "forge-brass",
+  "unity_mount_axis": "+Z",
+  "pivot": "switch_pivot",
+  "movable": "switch",
+  "greybox_triangle_budget": 1500,
+  "renderer_budget": 3,
+  "material_budget": 2,
+  "colliders": 0,
+  "realtime_lights": 0
+}
