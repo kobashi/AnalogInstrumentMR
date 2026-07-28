@@ -12,6 +12,9 @@
 - 固定部には小径rivets、操作部にはknurlまたは球gripを使う。
 - meterの埋没感は奥行きとself-shadowで作り、透明glassへの依存を避ける。
 - silhouette追加は共通visual envelope内に収め、pivotと可動範囲を変えない。
+- 窓枠サイズでは厚い鋳鉄housingと真鍮色の構造レールを使い、壁だけでなく
+  床機関区画や天井設備へ取り付けても支持構造が読める形にする。
+- 多段階状態LEDは鋳色housingと丸い宝石状RGB lensを組み合わせる。
 
 ## Materials and maps
 

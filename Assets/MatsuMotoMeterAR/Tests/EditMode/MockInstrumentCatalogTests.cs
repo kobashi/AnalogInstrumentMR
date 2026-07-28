@@ -27,6 +27,11 @@ namespace MatsuMotoMeterAR.Tests
         [TestCase(MockInstrumentKind.RotaryKnob, "control.rotary")]
         [TestCase(MockInstrumentKind.PushButton, "control.button")]
         [TestCase(MockInstrumentKind.IndicatorLamp, "indicator.lamp")]
+        [TestCase(MockInstrumentKind.WindowMeter, "meter.window")]
+        [TestCase(MockInstrumentKind.WindowPanel, "panel.window")]
+        [TestCase(MockInstrumentKind.StatusIndicator, "indicator.status")]
+        [TestCase(MockInstrumentKind.ThrottleLever, "control.throttle")]
+        [TestCase(MockInstrumentKind.PowerSlider, "control.power_slider")]
         public void TypeIds_PreservePlacementDataContract(
             MockInstrumentKind kind,
             string expectedTypeId)
@@ -54,15 +59,17 @@ namespace MatsuMotoMeterAR.Tests
         public void Cycle_WrapsInBothDirections()
         {
             Assert.That(
-                MockInstrumentCatalog.Cycle(MockInstrumentKind.IndicatorLamp, 1),
+                MockInstrumentCatalog.Cycle(MockInstrumentKind.PowerSlider, 1),
                 Is.EqualTo(MockInstrumentKind.RoundMeter));
             Assert.That(
                 MockInstrumentCatalog.Cycle(MockInstrumentKind.RoundMeter, -1),
-                Is.EqualTo(MockInstrumentKind.IndicatorLamp));
+                Is.EqualTo(MockInstrumentKind.PowerSlider));
         }
 
         [TestCase(MockInstrumentKind.Lever)]
         [TestCase(MockInstrumentKind.RotaryKnob)]
+        [TestCase(MockInstrumentKind.ThrottleLever)]
+        [TestCase(MockInstrumentKind.PowerSlider)]
         public void ManualControls_AreRejectedOnCeiling(MockInstrumentKind kind)
         {
             Assert.That(
@@ -76,10 +83,33 @@ namespace MatsuMotoMeterAR.Tests
                 Is.False);
         }
 
+        [Test]
+        public void CodeOnlyControls_WaitForAuthoredModels()
+        {
+            Assert.That(
+                MockInstrumentFactory.IsPlacementReady(
+                    MockInstrumentKind.ThrottleLever,
+                    MockInstrumentTheme.OrbitalAnalog),
+                Is.False);
+            Assert.That(
+                MockInstrumentFactory.IsPlacementReady(
+                    MockInstrumentKind.PowerSlider,
+                    MockInstrumentTheme.OrbitalAnalog),
+                Is.False);
+            Assert.That(
+                MockInstrumentFactory.IsPlacementReady(
+                    MockInstrumentKind.Lever,
+                    MockInstrumentTheme.OrbitalAnalog),
+                Is.True);
+        }
+
         [TestCase(MockInstrumentKind.RoundMeter)]
         [TestCase(MockInstrumentKind.ToggleSwitch)]
         [TestCase(MockInstrumentKind.PushButton)]
         [TestCase(MockInstrumentKind.IndicatorLamp)]
+        [TestCase(MockInstrumentKind.WindowMeter)]
+        [TestCase(MockInstrumentKind.WindowPanel)]
+        [TestCase(MockInstrumentKind.StatusIndicator)]
         public void DisplayAndCompactControls_SupportAllSurfaces(MockInstrumentKind kind)
         {
             Assert.That(

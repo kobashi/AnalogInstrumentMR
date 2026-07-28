@@ -13,6 +13,7 @@ namespace MatsuMotoMeterAR.Tests
         [TestCase(0)]
         [TestCase(1)]
         [TestCase(24)]
+        [TestCase(48)]
         public void Json_RoundTripsSupportedPlacementCounts(int count)
         {
             var source = CreateDocument(count);
@@ -21,7 +22,9 @@ namespace MatsuMotoMeterAR.Tests
             var result = PlacementJsonCodec.Deserialize(json);
 
             Assert.That(result.Status, Is.EqualTo(PlacementLoadStatus.Loaded));
-            Assert.That(result.Document.schemaVersion, Is.EqualTo(1));
+            Assert.That(
+                result.Document.schemaVersion,
+                Is.EqualTo(PlacementDocument.CurrentSchemaVersion));
             Assert.That(result.Document.revision, Is.EqualTo(7));
             Assert.That(result.Document.placements, Has.Count.EqualTo(count));
             for (var index = 0; index < count; index++)
@@ -29,7 +32,10 @@ namespace MatsuMotoMeterAR.Tests
                 var record = result.Document.placements[index];
                 Assert.That(record.placementId, Is.EqualTo($"placement-{index}"));
                 Assert.That(record.anchorId, Is.EqualTo(AnchorId(index)));
-                Assert.That(record.normalizedValue, Is.EqualTo(index / 24f).Within(0.0001f));
+                var expectedValue = count > 0 ? index / (float)count : 0f;
+                Assert.That(
+                    record.normalizedValue,
+                    Is.EqualTo(expectedValue).Within(0.0001f));
             }
         }
 
@@ -44,7 +50,7 @@ namespace MatsuMotoMeterAR.Tests
                 Is.EqualTo(PlacementLoadStatus.Corrupt));
 
             var future = PlacementJsonCodec.Deserialize(
-                "{\"schemaVersion\":2,\"revision\":9,\"placements\":[]}");
+                "{\"schemaVersion\":3,\"revision\":9,\"placements\":[]}");
             Assert.That(future.Status, Is.EqualTo(PlacementLoadStatus.UnsupportedVersion));
             Assert.That(future.CanWrite, Is.False);
             Assert.That(future.Document.revision, Is.EqualTo(9));
@@ -81,21 +87,37 @@ namespace MatsuMotoMeterAR.Tests
 
             var normalized = PlacementJsonCodec.Normalize(document);
 
-            Assert.That(normalized.placements, Has.Count.EqualTo(2));
+            Assert.That(normalized.placements, Has.Count.EqualTo(3));
             Assert.That(normalized.placements[0].normalizedValue, Is.Zero);
             Assert.That(normalized.placements[0].instrumentTypeId, Is.EqualTo("meter.round"));
             Assert.That(normalized.placements[0].surfaceKind, Is.EqualTo((int)SurfaceKind.Unknown));
+            Assert.That(
+                normalized.placements[2].anchorId,
+                Is.EqualTo(normalized.placements[1].anchorId));
         }
 
         [Test]
-        public void Normalize_CapsActivePlacementsAtTwentyFour()
+        public void Normalize_CapsActivePlacementsAtFortyEight()
         {
-            var normalized = PlacementJsonCodec.Normalize(CreateDocument(30));
+            var normalized = PlacementJsonCodec.Normalize(CreateDocument(60));
 
             Assert.That(
                 normalized.placements.FindAll(
                     record => record.lifecycle == (int)PlacementLifecycle.Active),
-                Has.Count.EqualTo(24));
+                Has.Count.EqualTo(48));
+        }
+
+        [Test]
+        public void Json_MigratesV1ToV2AndRequiresCommit()
+        {
+            var result = PlacementJsonCodec.Deserialize(
+                "{\"schemaVersion\":1,\"revision\":9,\"placements\":[]}");
+
+            Assert.That(result.Status, Is.EqualTo(PlacementLoadStatus.Loaded));
+            Assert.That(result.RequiresSave, Is.True);
+            Assert.That(
+                result.Document.schemaVersion,
+                Is.EqualTo(PlacementDocument.CurrentSchemaVersion));
         }
 
         [Test]
@@ -129,7 +151,7 @@ namespace MatsuMotoMeterAR.Tests
             {
                 Result = new PlacementLoadResult(
                     PlacementLoadStatus.UnsupportedVersion,
-                    new PlacementDocument { schemaVersion = 2 })
+                    new PlacementDocument { schemaVersion = 3 })
             };
 
             var result = LegacyPlacementMigration.LoadOrMigrate(
@@ -194,7 +216,7 @@ namespace MatsuMotoMeterAR.Tests
                     localOffset = SerializablePose.FromPose(new Pose(
                         new Vector3(index, index * 2f, -index),
                         Quaternion.Euler(0f, index, 0f))),
-                    normalizedValue = index / 24f
+                    normalizedValue = count > 0 ? index / (float)count : 0f
                 });
             }
             return document;

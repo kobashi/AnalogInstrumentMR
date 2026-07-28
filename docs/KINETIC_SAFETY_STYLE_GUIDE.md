@@ -12,6 +12,9 @@ orange/yellowの警告accentと明快なguardを組み合わせる。特定作�
 - 円形の操作部を角形guard内へ収め、Forge Brassとの差をsilhouetteで示す。
 - safety stripeは補助情報として限定的に使い、操作方向と状態表示を阻害しない。
 - guardも共通visual envelope内に収め、pivotと可動範囲を変えない。
+- 窓枠サイズではgraphiteの埋め込みshroud、太い左右guard、orange/yellowの
+  status vaneを使い、宇宙船内の高エネルギー区画用moduleとしてまとめる。
+- 多段階状態LEDはgraphite housingへ幅広い警告バー形状のRGB lensを置く。
 
 ## Materials and maps
 

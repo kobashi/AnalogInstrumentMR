@@ -82,8 +82,23 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                 throw new ArgumentNullException(nameof(legacySource));
 
             var existing = store.Load();
-            if (existing.Status == PlacementLoadStatus.Loaded ||
-                existing.Status == PlacementLoadStatus.UnsupportedVersion)
+            if (existing.Status == PlacementLoadStatus.Loaded)
+            {
+                if (!existing.RequiresSave)
+                    return existing;
+                if (!store.Save(existing.Document))
+                {
+                    return new PlacementLoadResult(
+                        PlacementLoadStatus.SaveFailed,
+                        existing.Document,
+                        "Placement schema migration could not be committed.");
+                }
+                Debug.Log(
+                    $"[Placement] {existing.Message} " +
+                    $"{existing.Document.placements.Count} record(s) preserved.");
+                return store.Load();
+            }
+            if (existing.Status == PlacementLoadStatus.UnsupportedVersion)
             {
                 return existing;
             }
@@ -110,7 +125,7 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                 return new PlacementLoadResult(
                     PlacementLoadStatus.SaveFailed,
                     document,
-                    "Legacy placement could not be committed to the v1 store.");
+                    "Legacy placement could not be committed to the v2 store.");
             }
 
             var verified = store.Load();

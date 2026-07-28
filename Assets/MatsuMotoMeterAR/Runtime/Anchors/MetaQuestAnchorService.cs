@@ -9,6 +9,7 @@ namespace MatsuMotoMeterAR.Anchors
     public sealed class MetaQuestAnchorService : IAnchorService
     {
         private const double LocalizationTimeoutSeconds = 10d;
+        private const int LoadBatchSize = 16;
 
         public async Task<AnchorRecord> CreateAsync(
             GameObject anchoredObject,
@@ -51,47 +52,65 @@ namespace MatsuMotoMeterAR.Anchors
                 throw new ArgumentNullException(nameof(ids));
 
             var uuids = new List<Guid>(ids.Count);
+            var uniqueUuids = new HashSet<Guid>();
             foreach (var id in ids)
             {
-                if (Guid.TryParse(id, out var uuid))
+                if (Guid.TryParse(id, out var uuid) && uniqueUuids.Add(uuid))
                     uuids.Add(uuid);
             }
             if (uuids.Count == 0)
                 return Array.Empty<AnchorRecord>();
 
-            cancellationToken.ThrowIfCancellationRequested();
-            var unboundAnchors = new List<OVRSpatialAnchor.UnboundAnchor>();
-            var loadResult = await OVRSpatialAnchor.LoadUnboundAnchorsAsync(
-                uuids,
-                unboundAnchors);
-            if (!loadResult.Success)
-                return Array.Empty<AnchorRecord>();
-
-            var records = new List<AnchorRecord>(unboundAnchors.Count);
-            foreach (var unbound in unboundAnchors)
+            var records = new List<AnchorRecord>(uuids.Count);
+            for (var batchStart = 0;
+                 batchStart < uuids.Count;
+                 batchStart += LoadBatchSize)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                if (!unbound.Localized &&
-                    !await unbound.LocalizeAsync(LocalizationTimeoutSeconds))
+                var batchCount = Math.Min(
+                    LoadBatchSize,
+                    uuids.Count - batchStart);
+                var batch = uuids.GetRange(batchStart, batchCount);
+                var unboundAnchors =
+                    new List<OVRSpatialAnchor.UnboundAnchor>(batchCount);
+                var loadResult = await OVRSpatialAnchor.LoadUnboundAnchorsAsync(
+                    batch,
+                    unboundAnchors);
+                if (!loadResult.Success)
                 {
-                    Debug.LogWarning($"Spatial anchor {unbound.Uuid:D} could not localize.");
-                    continue;
-                }
-                if (!unbound.TryGetPose(out var pose))
-                {
-                    Debug.LogWarning($"Spatial anchor {unbound.Uuid:D} has no pose.");
+                    Debug.LogWarning(
+                        $"Spatial anchor batch load failed at " +
+                        $"{batchStart}/{uuids.Count}.");
                     continue;
                 }
 
-                records.Add(new AnchorRecord
+                foreach (var unbound in unboundAnchors)
                 {
-                    Id = unbound.Uuid.ToString("D"),
-                    Pose = new AnchorPose(
-                        pose.position,
-                        pose.rotation,
-                        SurfaceKind.Unknown),
-                    NativeHandle = unbound
-                });
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (!unbound.Localized &&
+                        !await unbound.LocalizeAsync(LocalizationTimeoutSeconds))
+                    {
+                        Debug.LogWarning(
+                            $"Spatial anchor {unbound.Uuid:D} could not localize.");
+                        continue;
+                    }
+                    if (!unbound.TryGetPose(out var pose))
+                    {
+                        Debug.LogWarning(
+                            $"Spatial anchor {unbound.Uuid:D} has no pose.");
+                        continue;
+                    }
+
+                    records.Add(new AnchorRecord
+                    {
+                        Id = unbound.Uuid.ToString("D"),
+                        Pose = new AnchorPose(
+                            pose.position,
+                            pose.rotation,
+                            SurfaceKind.Unknown),
+                        NativeHandle = unbound
+                    });
+                }
             }
             return records;
         }

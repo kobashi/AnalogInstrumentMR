@@ -22,7 +22,9 @@ namespace MatsuMotoMeterAR.Editor
             ("Toggle", "switch_pivot"),
             ("Rotary", "knob_pivot"),
             ("Button", "button_travel"),
-            ("Lamp", "indicator")
+            ("Lamp", "indicator"),
+            ("Throttle", "throttle_pivot"),
+            ("PowerSlider", "slider_travel")
         };
 
         [MenuItem("Tools/MatsuMotoMeterAR/Rebuild Instrument Theme Assets")]

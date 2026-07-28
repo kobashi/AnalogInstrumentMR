@@ -52,7 +52,11 @@ namespace MatsuMotoMeterAR.PerformanceGate
 
         public static int NormalizeCount(int requestedCount)
         {
-            return requestedCount == 12 || requestedCount == 24 || requestedCount == 40
+            return requestedCount == 12 ||
+                   requestedCount == 24 ||
+                   requestedCount == 40 ||
+                   requestedCount == 48 ||
+                   requestedCount == 64
                 ? requestedCount
                 : 0;
         }

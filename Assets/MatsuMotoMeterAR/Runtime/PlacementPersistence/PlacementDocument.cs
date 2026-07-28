@@ -8,8 +8,9 @@ namespace MatsuMotoMeterAR.PlacementPersistence
     [Serializable]
     public sealed class PlacementDocument
     {
-        public const int CurrentSchemaVersion = 1;
-        public const int MaximumActivePlacements = 24;
+        public const int PreviousSchemaVersion = 1;
+        public const int CurrentSchemaVersion = 2;
+        public const int MaximumActivePlacements = 48;
 
         public int schemaVersion = CurrentSchemaVersion;
         public long revision;

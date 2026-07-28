@@ -26,6 +26,11 @@ Forge Brass / Kinetic Safety scripts:
 - Generator: `Tools/Blender/generate_remaining_themes.py`
 - Validator: `Tools/Blender/validate_remaining_themes.py`
 
+Throttle / power-slider scripts:
+
+- Three-theme generator:
+  `Tools/Blender/generate_throttle_power_controls.py`
+
 Blenderは通常のZ-up座標で制作する。
 
 - Blender X → Unity X
@@ -46,6 +51,10 @@ blender --background --factory-startup \
 
 blender --background --factory-startup \
   --python Tools/Blender/generate_remaining_themes.py -- \
+  --project-root "$PWD"
+
+blender --background --factory-startup \
+  --python Tools/Blender/generate_throttle_power_controls.py -- \
   --project-root "$PWD"
 ```
 

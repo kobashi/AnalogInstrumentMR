@@ -9,9 +9,15 @@ namespace MatsuMotoMeterAR.Tests
         [Test]
         public void TriggerPressAndRelease_UseDeterministicSemanticsForAllKinds()
         {
-            var initialValues = new[] { 0.5f, 0.5f, 0.5f, 0f, 0f, 1f };
-            var pressedValues = new[] { 0.75f, 0f, 0f, 0.125f, 1f, 0f };
-            var releasedValues = new[] { 0.75f, 0f, 0f, 0.125f, 0f, 0f };
+            var initialValues = new[] {
+                0.5f, 0.5f, 0.5f, 0f, 0f, 1f, 0.5f, 0.5f, 0f, 0f, 0f
+            };
+            var pressedValues = new[] {
+                0.75f, 0.75f, 0f, 0.125f, 1f, 0f, 0.75f, 0.75f, 1f / 3f, 0.2f, 0.1f
+            };
+            var releasedValues = new[] {
+                0.75f, 0.75f, 0f, 0.125f, 0f, 0f, 0.75f, 0.75f, 1f / 3f, 0.2f, 0.1f
+            };
 
             for (var index = 0; index < MockInstrumentCatalog.Count; index++)
             {
@@ -47,6 +53,197 @@ namespace MatsuMotoMeterAR.Tests
                 {
                     Object.DestroyImmediate(root);
                 }
+            }
+        }
+
+        [Test]
+        public void Lever_AdvancesAcrossFiveDetentsAndReversesAtEnds()
+        {
+            var root = MockInstrumentFactory.Create(
+                MockInstrumentKind.Lever,
+                Pose.identity);
+            try
+            {
+                var interaction = root
+                    .GetComponent<InstrumentGreyboxContract>()
+                    .InstrumentInteraction;
+                var expectedDetents = new[] { 3, 4, 3, 2, 1, 0, 1 };
+
+                Assert.That(
+                    interaction.DetentCount,
+                    Is.EqualTo(MockInstrumentMotion.LeverDetentCount));
+                Assert.That(interaction.DetentIndex, Is.EqualTo(2));
+
+                foreach (var expectedDetent in expectedDetents)
+                {
+                    interaction.SetPressed(true);
+                    Assert.That(
+                        interaction.DetentIndex,
+                        Is.EqualTo(expectedDetent));
+                    Assert.That(
+                        interaction.NormalizedValue,
+                        Is.EqualTo(expectedDetent / 4f).Within(0.0001f));
+                    interaction.SetPressed(false);
+                }
+
+                interaction.SetNormalizedValue(0.62f);
+                Assert.That(interaction.DetentIndex, Is.EqualTo(2));
+                Assert.That(
+                    interaction.NormalizedValue,
+                    Is.EqualTo(0.5f).Within(0.0001f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void Lever_ExtremeDetentsStayParallelToMountPlane()
+        {
+            var root = MockInstrumentFactory.Create(
+                MockInstrumentKind.Lever,
+                Pose.identity);
+            try
+            {
+                var interaction = root
+                    .GetComponent<InstrumentGreyboxContract>()
+                    .InstrumentInteraction;
+                var movingPart = interaction.Motion.MovingPart;
+                var neutralRotation = movingPart.localRotation;
+                var neutralPosition = movingPart.localPosition;
+                var neutralForward = neutralRotation * Vector3.forward;
+
+                interaction.SetLeverDetentIndex(0);
+
+                Assert.That(
+                    Quaternion.Angle(
+                        neutralRotation,
+                        movingPart.localRotation),
+                    Is.EqualTo(
+                        InstrumentGreyboxSpecification
+                            .LeverMaximumAngleDegrees)
+                        .Within(0.001f));
+                Assert.That(movingPart.localPosition, Is.EqualTo(neutralPosition));
+                Assert.That(
+                    Vector3.Dot(
+                        neutralForward,
+                        movingPart.localRotation * Vector3.forward),
+                    Is.GreaterThan(0.9999f),
+                    "Lever must swing across the panel, not into its base.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void StatusIndicator_CyclesOffSafeWarnDanger()
+        {
+            var root = MockInstrumentFactory.Create(
+                MockInstrumentKind.StatusIndicator,
+                Pose.identity);
+            try
+            {
+                var interaction = root
+                    .GetComponent<InstrumentGreyboxContract>()
+                    .InstrumentInteraction;
+                var expectedStates =
+                    new[] { "OFF", "SAFE", "WARN", "DANGER", "OFF" };
+
+                Assert.That(
+                    interaction.DetentCount,
+                    Is.EqualTo(MockInstrumentMotion.StatusIndicatorStateCount));
+                Assert.That(interaction.StateName, Is.EqualTo(expectedStates[0]));
+
+                for (var index = 1; index < expectedStates.Length; index++)
+                {
+                    interaction.SetPressed(true);
+                    Assert.That(
+                        interaction.StateName,
+                        Is.EqualTo(expectedStates[index]));
+                    interaction.SetPressed(false);
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void Throttle_AdvancesAcrossSixDetentsAndReversesAtFull()
+        {
+            var root = MockInstrumentFactory.Create(
+                MockInstrumentKind.ThrottleLever,
+                Pose.identity);
+            try
+            {
+                var interaction = root
+                    .GetComponent<InstrumentGreyboxContract>()
+                    .InstrumentInteraction;
+                var expectedStates = new[]
+                {
+                    "CUTOFF", "IDLE", "LOW", "CRUISE",
+                    "HIGH", "FULL", "HIGH"
+                };
+
+                Assert.That(
+                    interaction.DetentCount,
+                    Is.EqualTo(MockInstrumentMotion.ThrottleDetentCount));
+                Assert.That(interaction.StateName, Is.EqualTo(expectedStates[0]));
+                for (var index = 1; index < expectedStates.Length; index++)
+                {
+                    interaction.SetPressed(true);
+                    Assert.That(
+                        interaction.StateName,
+                        Is.EqualTo(expectedStates[index]));
+                    interaction.SetPressed(false);
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void PowerSlider_AdvancesByTenPercentAndReversesAtMaximum()
+        {
+            var root = MockInstrumentFactory.Create(
+                MockInstrumentKind.PowerSlider,
+                Pose.identity);
+            try
+            {
+                var interaction = root
+                    .GetComponent<InstrumentGreyboxContract>()
+                    .InstrumentInteraction;
+
+                Assert.That(
+                    interaction.DetentCount,
+                    Is.EqualTo(MockInstrumentMotion.PowerSliderDetentCount));
+                Assert.That(interaction.StateName, Is.EqualTo("OFF"));
+
+                for (var index = 1;
+                     index < MockInstrumentMotion.PowerSliderDetentCount;
+                     index++)
+                {
+                    interaction.SetPressed(true);
+                    interaction.SetPressed(false);
+                }
+                Assert.That(interaction.StateName, Is.EqualTo("MAX"));
+                Assert.That(interaction.NormalizedValue, Is.EqualTo(1f));
+
+                interaction.SetPressed(true);
+                Assert.That(interaction.StateName, Is.EqualTo("90%"));
+                Assert.That(
+                    interaction.NormalizedValue,
+                    Is.EqualTo(0.9f).Within(0.0001f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
             }
         }
 

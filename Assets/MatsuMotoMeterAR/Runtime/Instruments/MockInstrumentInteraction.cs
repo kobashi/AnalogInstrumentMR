@@ -8,6 +8,9 @@ namespace MatsuMotoMeterAR.Instruments
         public Collider InteractionCollider { get; private set; }
         public bool IsPressed { get; private set; }
         public float NormalizedValue => Motion != null ? Motion.NormalizedValue : 0f;
+        public int DetentCount => Motion != null ? Motion.DetentCount : 0;
+        public int DetentIndex => Motion != null ? Motion.DetentIndex : -1;
+        public string StateName => Motion != null ? Motion.StateName : string.Empty;
 
         public void Configure(
             MockInstrumentMotion motion,
@@ -29,6 +32,21 @@ namespace MatsuMotoMeterAR.Instruments
         public void SetNormalizedValue(float value)
         {
             Motion?.SetNormalizedValue(value);
+        }
+
+        public void SetLeverDetentIndex(int detentIndex)
+        {
+            Motion?.SetLeverDetentIndex(detentIndex);
+        }
+
+        public void SetThrottleDetentIndex(int detentIndex)
+        {
+            Motion?.SetThrottleDetentIndex(detentIndex);
+        }
+
+        public void SetPowerSliderDetentIndex(int detentIndex)
+        {
+            Motion?.SetPowerSliderDetentIndex(detentIndex);
         }
     }
 }

@@ -42,7 +42,7 @@ namespace MatsuMotoMeterAR.Editor
 
             Directory.CreateDirectory(OutputDirectory);
             var outputPath =
-                $"{OutputDirectory}/MatsuMotoMeterAR-{ReleaseName}-quest3.apk";
+                $"{OutputDirectory}/AnalogInstrumentMR-{ReleaseName}-quest3.apk";
             var options = new BuildPlayerOptions
             {
                 scenes = scenes,

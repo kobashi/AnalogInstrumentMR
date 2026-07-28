@@ -10,6 +10,8 @@ namespace MatsuMotoMeterAR.Tests
         [TestCase(12, 12)]
         [TestCase(24, 24)]
         [TestCase(40, 40)]
+        [TestCase(48, 48)]
+        [TestCase(64, 64)]
         [TestCase(0, 0)]
         [TestCase(23, 0)]
         public void NormalizeCount_AllowsOnlyDefinedScenarios(int requested, int expected)

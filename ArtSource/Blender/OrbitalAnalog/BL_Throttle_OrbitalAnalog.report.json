@@ -1,0 +1,32 @@
+{
+  "triangles": 412,
+  "mesh_objects": 2,
+  "materials": 2,
+  "material_slots": 4,
+  "unity_bounds_m": [
+    0.24,
+    0.3,
+    0.103
+  ],
+  "blender_bounds_min_m": [
+    -0.12,
+    -0.103,
+    -0.15
+  ],
+  "blender_bounds_max_m": [
+    0.12,
+    0.0,
+    0.15
+  ],
+  "asset": "Throttle_OrbitalAnalog",
+  "instrument_type_id": "control.throttle",
+  "theme_id": "orbital-analog",
+  "unity_mount_axis": "+Z",
+  "pivot": "throttle_pivot",
+  "movable": "throttle_handle",
+  "greybox_triangle_budget": 1500,
+  "renderer_budget": 3,
+  "material_budget": 2,
+  "colliders": 0,
+  "realtime_lights": 0
+}

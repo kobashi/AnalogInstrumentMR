@@ -4,7 +4,8 @@ namespace MatsuMotoMeterAR.Instruments
 {
     public static class MockInstrumentCatalog
     {
-        public const int Count = 6;
+        public const int PerformanceBaselineCount = 6;
+        public const int Count = 11;
 
         public static string GetTypeId(MockInstrumentKind kind)
         {
@@ -16,6 +17,11 @@ namespace MatsuMotoMeterAR.Instruments
                 MockInstrumentKind.RotaryKnob => "control.rotary",
                 MockInstrumentKind.PushButton => "control.button",
                 MockInstrumentKind.IndicatorLamp => "indicator.lamp",
+                MockInstrumentKind.WindowMeter => "meter.window",
+                MockInstrumentKind.WindowPanel => "panel.window",
+                MockInstrumentKind.StatusIndicator => "indicator.status",
+                MockInstrumentKind.ThrottleLever => "control.throttle",
+                MockInstrumentKind.PowerSlider => "control.power_slider",
                 _ => "meter.round"
             };
         }
@@ -30,6 +36,11 @@ namespace MatsuMotoMeterAR.Instruments
                 MockInstrumentKind.RotaryKnob => "ROTARY KNOB",
                 MockInstrumentKind.PushButton => "PUSH BUTTON",
                 MockInstrumentKind.IndicatorLamp => "STATUS LAMP",
+                MockInstrumentKind.WindowMeter => "WINDOW METER",
+                MockInstrumentKind.WindowPanel => "WINDOW PANEL",
+                MockInstrumentKind.StatusIndicator => "STATUS INDICATOR",
+                MockInstrumentKind.ThrottleLever => "THROTTLE LEVER",
+                MockInstrumentKind.PowerSlider => "POWER SLIDER",
                 _ => "ROUND METER"
             };
         }
@@ -43,6 +54,11 @@ namespace MatsuMotoMeterAR.Instruments
                 "control.rotary" => MockInstrumentKind.RotaryKnob,
                 "control.button" => MockInstrumentKind.PushButton,
                 "indicator.lamp" => MockInstrumentKind.IndicatorLamp,
+                "meter.window" => MockInstrumentKind.WindowMeter,
+                "panel.window" => MockInstrumentKind.WindowPanel,
+                "indicator.status" => MockInstrumentKind.StatusIndicator,
+                "control.throttle" => MockInstrumentKind.ThrottleLever,
+                "control.power_slider" => MockInstrumentKind.PowerSlider,
                 _ => MockInstrumentKind.RoundMeter
             };
         }
@@ -54,7 +70,12 @@ namespace MatsuMotoMeterAR.Instruments
                    typeId == "control.toggle" ||
                    typeId == "control.rotary" ||
                    typeId == "control.button" ||
-                   typeId == "indicator.lamp";
+                   typeId == "indicator.lamp" ||
+                   typeId == "meter.window" ||
+                   typeId == "panel.window" ||
+                   typeId == "indicator.status" ||
+                   typeId == "control.throttle" ||
+                   typeId == "control.power_slider";
         }
 
         public static MockInstrumentKind Cycle(MockInstrumentKind current, int direction)
@@ -69,7 +90,10 @@ namespace MatsuMotoMeterAR.Instruments
                 return true;
 
             return kind != MockInstrumentKind.Lever &&
-                   kind != MockInstrumentKind.RotaryKnob;
+                   kind != MockInstrumentKind.RotaryKnob &&
+                   kind != MockInstrumentKind.ThrottleLever &&
+                   kind != MockInstrumentKind.PowerSlider;
         }
+
     }
 }

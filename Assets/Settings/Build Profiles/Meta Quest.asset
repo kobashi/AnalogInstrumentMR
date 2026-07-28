@@ -20,9 +20,8 @@ MonoBehaviour:
     rid: 5855848614414778565
   m_OverrideGlobalSceneList: 0
   m_Scenes: []
-  m_HasScriptingDefines: 1
-  m_ScriptingDefines:
-  - MATSU_DEV_EXIT
+  m_HasScriptingDefines: 0
+  m_ScriptingDefines: []
   m_PlayerSettingsYaml:
     m_Settings: []
   references:

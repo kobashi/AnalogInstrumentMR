@@ -37,11 +37,13 @@
 
 | Asset | Shape grammar | Operation node |
 | --- | --- | --- |
-| Lever | 縦長plate、左右rail、球grip | `handle_pivot/handle`、±32° |
-| Toggle | 小型plate、短いcollar、細いshaft | `switch_pivot/switch`、±28° |
+| Lever | 縦長plate、左右rail、球grip | `handle_pivot/handle`、local X片側48° |
+| Toggle | 小型plate、短いcollar、細いshaft | `switch_pivot/switch`、local X片側56° |
 | Rotary | 厚いknurled風knob、annular collar、単一index | `knob_pivot/knob`、連続回転 |
 | Button | guard ring内の平たい円形cap | `button_travel/button`、14 mm |
 | Lamp | cage ring内の丸いdome lens | `indicator`、発光pulseのみ |
+| Throttle | 縦長gate、細い左右rail、横長grip | `throttle_pivot/throttle_handle`、local X片側70° |
+| Power slider | 縦slot、細いframe、横長carriage | `slider_travel/slider_handle`、0.18 m |
 
 buttonとlampは同じamber focusを使うが、buttonはflat cap、lampはdome lensとし、
 近距離だけでなくsilhouetteでも区別する。
@@ -53,6 +55,10 @@ buttonとlampは同じamber focusを使うが、buttonはflat cap、lampはdome 
 - fine detailはatlas内のminor tick、arc、wearへ限定する。
 - 1個のモデルへpanel全体のgreeble密度を持ち込まない。
 - console化するときはmeter、switch、button間のnegative spaceで密度を調整する。
+- 窓枠サイズでは薄いcharcoal frameと深い大型dialを主形状にし、細い支持レールと
+  amber vaneで宇宙船の隔壁／床／天井moduleとして読めるsilhouetteを作る。
+- 多段階状態LEDは薄いcharcoal housingへ横長のRGB lensを埋め込み、
+  `SAFE / WARN / DANGER`を緑・橙・赤の発光差で示す。
 
 ## Do not copy
 

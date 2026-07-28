@@ -13,11 +13,14 @@
 | ID | Object | Surfaces | Interaction/state | Mock motion |
 | --- | --- | --- | --- | --- |
 | `meter.round` | 円形アナログメーター | Wall / Floor / Ceiling | 表示のみ、0–1 value | 針の追従、微振動 |
-| `control.lever` | 縦型レバー | Wall / Floor | 掴み、-1–1 position | レバー角度、復帰/保持モード |
+| `control.lever` | 縦型レバー | Wall / Floor | 5段階、-2〜+2 position | 面に垂直な片側48° sweep、5 detents、端で進行方向反転 |
 | `control.toggle` | トグルスイッチ | Wall / Floor / Ceiling | On / Off | ノブ反転、クリック |
 | `control.rotary` | ロータリーノブ | Wall / Floor | 連続値または段階値 | 回転、detent feedback |
 | `control.button` | 押しボタン | Wall / Floor / Ceiling | Momentary / Latch | 押し込み、復帰、発光 |
-| `indicator.lamp` | 状態ランプ | Wall / Floor / Ceiling | 表示のみ、Off/Ready/Active/Error | 発光、点滅 |
+| `indicator.lamp` | 単色状態ランプ | Wall / Floor / Ceiling | On / Off | 単色発光 |
+| `indicator.status` | 多段階状態LED | Wall / Floor / Ceiling | Off / Safe / Warn / Danger | 緑・橙・赤の状態発光 |
+| `control.throttle` | スロットルレバー | Wall / Floor | Cutoff / Idle / Low / Cruise / High / Full | 面に垂直な片側70° sweep、6 detents、端で方向反転 |
+| `control.power_slider` | パワースライダー | Wall / Floor | Off / 10–90% / Max | 11 detents、上下0.18 m travel |
 
 P0 の目的は造形品質ではなく、同じ logic/collider/state に対してテーマ visual だけを安全に交換できることの検証とする。
 
@@ -39,6 +42,8 @@ P0 の目的は造形品質ではなく、同じ logic/collider/state に対し�
 | `meter.linear` | 縦/横バー計器 | Wall / Floor | 表示のみ、0–1 value | バー量と色変化 |
 | `display.scope` | 波形ディスプレイ | Wall / Floor | mode selection | スクロール波形、走査線 |
 | `panel.compact` | 4 部品用コンパクトパネル | Wall | 子部品の集合 | 通電シーケンス |
+| `meter.window` | 窓枠サイズ大型メーター | Wall / Floor / Ceiling | 表示値、0–1 value | 大型needle |
+| `panel.window` | 窓枠サイズ宇宙船パネル | Wall / Floor / Ceiling | status value | 大型status vane |
 
 ### P2: Room-scale atmosphere
 

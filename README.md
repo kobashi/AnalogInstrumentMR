@@ -1,5 +1,9 @@
 # AnalogInstrumentMR
 
+The Quest application is displayed as `AnalogInstrumentMR`. Its legacy Android
+package identifier remains `com.DefaultCompany.MatsuMotoMeterAR` so upgrades
+retain saved placement data and permissions.
+
 An experimental Unity 6 Mixed Reality project for placing modular analog
 instruments and physical controls on walls, floors, and ceilings on Meta Quest.
 Placed objects use Spatial Anchors for local persistence and can switch among
@@ -23,6 +27,20 @@ The `v0.1.0-concept.5-perfgate` source release includes:
   deletion
 - Meta Spatial Anchor localization and multi-object restoration
 - 12/24/40-object synthetic performance scenarios
+
+Current unreleased development also adds edit/operation mode separation,
+overlap-aware placement, multi-selection, horizontal/vertical distribution,
+group movement, layout undo/redo, automatic re-anchoring, plus
+window-frame-sized meters and spacecraft panels for walls, floors, and
+ceilings. Placement schema v2 raises the room limit to 48 objects and lets
+nearby objects share anchors. Lever interaction now uses five persistent
+detents instead of a binary end-to-end toggle. A separate multi-state status
+indicator cycles through off, safe, warning, and danger while the original
+status lamp retains binary on/off behavior. The throttle provides six
+persistent detents with a themed moving handle, while the power slider
+provides eleven off-to-maximum states with a themed moving carriage.
+The synthetic performance harness also accepts 48-object gate and 64-object
+stress scenarios; those new scenarios are not yet validated.
 
 Quest 3 verification passed the 24-object, 72 Hz, 10-minute performance gate,
 three-theme smoke tests, three-anchor restart restoration, and normal-use user

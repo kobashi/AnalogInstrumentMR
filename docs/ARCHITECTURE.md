@@ -9,6 +9,8 @@ Meta Quest のパススルー MR 上で、壁・床・天井に複数種類の�
 - `Instruments`: 計器の見た目、状態、アニメーション。初期段階は回転・点滅・針振れなどの Mock。
 - `Themes`: 計器、レバー、スイッチの機能から外観を分離し、テーマ単位で prefab、material、audio、animation profile を差し替える。
 - `Placement`: レイキャスト結果、面法線、配置可能面のルール、プレビュー、確定操作。
+- `InteractionModes`: 編集モードと操作モードの排他的な権限ポリシー。編集時だけ
+  配置・削除、操作時だけ計器interactionを許可する。
 - `Anchors`: 保存・読込・削除の抽象 API。Editor では `MockAnchorService`、Quest では Meta Spatial Anchor adapter を使う。
 - `Platform/Meta`: Meta XR SDK、Scene API、Passthrough、Spatial Anchors への依存を閉じ込める（次マイルストーンで追加）。
 - `App`: 起動シーケンス、権限、計器カタログ、永続 ID とアンカー ID の対応付け。
@@ -55,13 +57,21 @@ Meta SDK の更新は adapter と専用 asmdef 内に閉じ込める。Meta 固�
 そのまま移行し、互換キーはconcept.4実機確認まで保持する。Quest実装は
 `MetaQuestAnchorService`を介してUUID一括load、個別localize、root bind、eraseを行う。
 
-schema v1は`schemaVersion`、`revision`と最大24件のrecordを持つ。各recordは
+schema v2は`schemaVersion`、`revision`と最大48件のrecordを持つ。各recordは
 `placementId`、`anchorId`、stable `instrumentTypeId`、surface、local offset、
 normalized value、lifecycleを保存する。global themeは引き続き独立設定とする。
+schema v1は読込時にv2へ移行して即時保存し、v2を理解しない旧buildによる
+25件目以降の切り捨てを防ぐ。近接する配置は約2.75 m以内でAnchorを共有し、
+複数recordが同じ`anchorId`を参照できる。
+計器rootはSpatial Anchor専用rootの子に置き、整列・グループ移動の結果を
+`localOffset`へ保存する。Anchorの約2.75 m範囲内は既存rootを維持し、範囲外へ
+移動する場合は移動先の既存Anchorを再利用するか、新規Anchorへtransactionalに
+付け替える。複数オブジェクトのレイアウト変更は1回のplacement document更新として
+扱い、保存失敗時は元のAnchor参照とposeへrollbackする。
 未知の新schemaは上書きせず、破損JSONは有効な旧データからのみ回復する。
 旧データ移行成功後は完了マーカーを保存し、以後のJSON破損時に古い1件へ自動で
 巻き戻さない。削除中断は`PendingDelete`として次回起動時にeraseを再開し、
-一時的にlocalizeできないrecordは`Unavailable`として24個のactive枠から外して再試行する。
+一時的にlocalizeできないrecordは`Unavailable`として48個のactive枠から外して再試行する。
 
 初期リリースでは theme は部屋単位の global 設定、配置数は 1 部屋最大 24 個、操作は controller 優先とする。theme 変更は短い transition を伴い、操作中のオブジェクトは操作終了後に visual を交換する。
 

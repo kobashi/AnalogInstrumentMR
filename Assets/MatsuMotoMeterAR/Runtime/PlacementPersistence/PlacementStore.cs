@@ -20,16 +20,19 @@ namespace MatsuMotoMeterAR.PlacementPersistence
         public PlacementLoadResult(
             PlacementLoadStatus status,
             PlacementDocument document,
-            string message = null)
+            string message = null,
+            bool requiresSave = false)
         {
             Status = status;
             Document = document;
             Message = message;
+            RequiresSave = requiresSave;
         }
 
         public PlacementLoadStatus Status { get; }
         public PlacementDocument Document { get; }
         public string Message { get; }
+        public bool RequiresSave { get; }
         public bool CanWrite => Status == PlacementLoadStatus.Loaded ||
                                 Status == PlacementLoadStatus.Missing;
     }
@@ -106,6 +109,16 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                         $"Schema {document.schemaVersion} is newer than supported schema " +
                         $"{PlacementDocument.CurrentSchemaVersion}.");
                 }
+                if (document.schemaVersion == PlacementDocument.PreviousSchemaVersion)
+                {
+                    return new PlacementLoadResult(
+                        PlacementLoadStatus.Loaded,
+                        Normalize(document),
+                        $"Migrated placement schema " +
+                        $"{PlacementDocument.PreviousSchemaVersion} to " +
+                        $"{PlacementDocument.CurrentSchemaVersion}.",
+                        requiresSave: true);
+                }
                 if (document.schemaVersion != PlacementDocument.CurrentSchemaVersion)
                     return Corrupt($"Unsupported legacy schema {document.schemaVersion}.");
 
@@ -131,13 +144,11 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                 return normalized;
 
             var placementIds = new HashSet<string>(StringComparer.Ordinal);
-            var anchorIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var activeCount = 0;
             foreach (var sourceRecord in source.placements)
             {
                 if (!TryNormalizeRecord(sourceRecord, out var record) ||
-                    !placementIds.Add(record.placementId) ||
-                    !anchorIds.Add(record.anchorId))
+                    !placementIds.Add(record.placementId))
                 {
                     continue;
                 }

@@ -142,7 +142,8 @@ namespace MatsuMotoMeterAR.PerformanceGate
                     Vector3.up,
                     normal);
                 var instrument = MockInstrumentFactory.Create(
-                    (MockInstrumentKind)(index % MockInstrumentCatalog.Count),
+                    (MockInstrumentKind)(
+                        index % MockInstrumentCatalog.PerformanceBaselineCount),
                     pose,
                     theme: PerformanceGateConfiguration.Theme);
                 instrument.name = $"[PerfGate {index + 1:00}] {instrument.name}";
