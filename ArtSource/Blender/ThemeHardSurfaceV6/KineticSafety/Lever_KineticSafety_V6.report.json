@@ -1,0 +1,44 @@
+{
+  "asset": "Lever_KineticSafety_V6_Grayscale",
+  "type_id": "control.lever",
+  "theme_id": "kinetic-safety",
+  "art_pass": "V6 hybrid hard-surface prototype",
+  "quality_floor": "V4 hard-surface retopo",
+  "geometry_policy": "silhouette, major layers, supports and interaction structure",
+  "texture_policy": "engraving, micro grooves, knurling, wear and labels",
+  "assembly_policy": "gaskets, seams, bushings, stops and supports",
+  "source_topology": {
+    "vertices": 1552,
+    "edges": 3064,
+    "faces": 1562,
+    "triangles": 384,
+    "quads": 1104,
+    "ngons": 74,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangulated_topology": {
+    "vertices": 1552,
+    "edges": 4506,
+    "faces": 3004,
+    "triangles": 3004,
+    "quads": 0,
+    "ngons": 0,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangle_budget": 5000,
+  "pivot": {
+    "position": [
+      0.0,
+      -0.05,
+      -0.025
+    ],
+    "local_axis": [
+      1.0,
+      0.0,
+      0.0
+    ]
+  },
+  "production_integrated": false
+}

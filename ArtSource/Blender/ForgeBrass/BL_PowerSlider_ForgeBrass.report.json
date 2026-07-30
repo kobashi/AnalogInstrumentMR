@@ -1,0 +1,32 @@
+{
+  "triangles": 384,
+  "mesh_objects": 2,
+  "materials": 2,
+  "material_slots": 4,
+  "unity_bounds_m": [
+    0.16,
+    0.34,
+    0.094
+  ],
+  "blender_bounds_min_m": [
+    -0.08,
+    -0.094,
+    -0.17
+  ],
+  "blender_bounds_max_m": [
+    0.08,
+    0.0,
+    0.17
+  ],
+  "asset": "PowerSlider_ForgeBrass",
+  "instrument_type_id": "control.power_slider",
+  "theme_id": "forge-brass",
+  "unity_mount_axis": "+Z",
+  "pivot": "slider_travel",
+  "movable": "slider_handle",
+  "greybox_triangle_budget": 1500,
+  "renderer_budget": 3,
+  "material_budget": 2,
+  "colliders": 0,
+  "realtime_lights": 0
+}

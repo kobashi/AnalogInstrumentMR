@@ -58,8 +58,19 @@ namespace MatsuMotoMeterAR.Instruments
                 vfxSocket);
 
             if (preview)
+            {
                 RemoveColliders(root);
+            }
             return root;
+        }
+
+        public static bool IsPlacementReady(
+            MockInstrumentKind kind,
+            MockInstrumentTheme theme)
+        {
+            return (kind != MockInstrumentKind.ThrottleLever &&
+                    kind != MockInstrumentKind.PowerSlider) ||
+                   InstrumentThemeVisualFactory.HasVisualPrefab(kind, theme);
         }
 
         public static bool ApplyTheme(
@@ -148,6 +159,44 @@ namespace MatsuMotoMeterAR.Instruments
                     break;
                 case MockInstrumentKind.IndicatorLamp:
                     BuildIndicatorLamp(visualSocket, logic, preview, palette);
+                    break;
+                case MockInstrumentKind.StatusIndicator:
+                    BuildStatusIndicator(
+                        visualSocket,
+                        logic,
+                        preview,
+                        theme,
+                        palette);
+                    break;
+                case MockInstrumentKind.ThrottleLever:
+                    BuildThrottleCodeContract(
+                        visualSocket,
+                        logic,
+                        preview,
+                        theme);
+                    break;
+                case MockInstrumentKind.PowerSlider:
+                    BuildPowerSliderCodeContract(
+                        visualSocket,
+                        logic,
+                        preview,
+                        theme);
+                    break;
+                case MockInstrumentKind.WindowMeter:
+                    BuildWindowMeter(
+                        visualSocket,
+                        logic,
+                        preview,
+                        theme,
+                        palette);
+                    break;
+                case MockInstrumentKind.WindowPanel:
+                    BuildWindowPanel(
+                        visualSocket,
+                        logic,
+                        preview,
+                        theme,
+                        palette);
                     break;
                 default:
                     BuildRoundMeter(visualSocket, logic, preview, palette);
@@ -253,8 +302,10 @@ namespace MatsuMotoMeterAR.Instruments
                     MockInstrumentMotion.MotionKind.Lever,
                     pivot,
                     Vector3.right,
-                    32f,
-                    0.14f);
+                    InstrumentGreyboxSpecification.LeverMaximumAngleDegrees,
+                    0.14f,
+                    rotationOffset:
+                        -InstrumentGreyboxSpecification.LeverMaximumAngleDegrees);
             }
         }
 
@@ -288,7 +339,8 @@ namespace MatsuMotoMeterAR.Instruments
                     pivot,
                     Vector3.right,
                     28f,
-                    0.2f);
+                    0.2f,
+                    rotationOffset: -28f);
             }
         }
 
@@ -402,12 +454,298 @@ namespace MatsuMotoMeterAR.Instruments
             }
         }
 
+        private static void BuildStatusIndicator(
+            Transform visual,
+            Transform logic,
+            bool preview,
+            MockInstrumentTheme theme,
+            MockInstrumentThemeCatalog.Palette palette)
+        {
+            var visualRoot = new GameObject(
+                $"PF_Visual_StatusIndicator_{RuntimeThemeName(theme)}");
+            visualRoot.transform.SetParent(visual, false);
+            var housingDepth = theme == MockInstrumentTheme.ForgeBrass
+                ? 0.050f
+                : 0.044f;
+            var lensScale = theme switch
+            {
+                MockInstrumentTheme.ForgeBrass =>
+                    new Vector3(0.068f, 0.068f, 0.038f),
+                MockInstrumentTheme.KineticSafety =>
+                    new Vector3(0.120f, 0.045f, 0.035f),
+                _ => new Vector3(0.090f, 0.060f, 0.038f)
+            };
+            CreatePrimitive(
+                PrimitiveType.Cube,
+                "Status Housing",
+                visualRoot.transform,
+                new Vector3(0f, 0f, housingDepth * 0.5f),
+                new Vector3(0.18f, 0.12f, housingDepth),
+                Quaternion.identity,
+                ColorFor(preview, palette.Housing));
+            var lens = CreatePrimitive(
+                PrimitiveType.Sphere,
+                "RGB Status Lens",
+                visualRoot.transform,
+                new Vector3(0f, 0f, housingDepth + 0.006f),
+                lensScale,
+                Quaternion.identity,
+                ColorFor(
+                    preview,
+                    preview ? palette.Warning : Color.black));
+            var lensRenderer = lens.GetComponent<Renderer>();
+            visualRoot.AddComponent<ThemeVisualManifest>().Configure(
+                lens.transform,
+                lensRenderer);
+
+            if (!preview)
+            {
+                GetOrAddMotion(logic).ConfigureStatus(
+                    lens.transform,
+                    lensRenderer,
+                    palette.Ready,
+                    palette.Warning,
+                    palette.Primary);
+            }
+        }
+
+        private static void BuildThrottleCodeContract(
+            Transform visual,
+            Transform logic,
+            bool preview,
+            MockInstrumentTheme theme)
+        {
+            var visualRoot = new GameObject(
+                $"PF_Visual_Throttle_{RuntimeThemeName(theme)}");
+            visualRoot.transform.SetParent(visual, false);
+            var pivot = CreatePivot(
+                visualRoot.transform,
+                "throttle_pivot",
+                Vector3.zero);
+            visualRoot.AddComponent<ThemeVisualManifest>().Configure(pivot);
+
+            if (!preview)
+            {
+                GetOrAddMotion(logic).Configure(
+                    MockInstrumentMotion.MotionKind.Throttle,
+                    pivot,
+                    Vector3.right,
+                    InstrumentGreyboxSpecification
+                        .ThrottleMaximumAngleDegrees,
+                    0f,
+                    rotationOffset:
+                        -InstrumentGreyboxSpecification
+                            .ThrottleMaximumAngleDegrees);
+            }
+        }
+
+        private static void BuildPowerSliderCodeContract(
+            Transform visual,
+            Transform logic,
+            bool preview,
+            MockInstrumentTheme theme)
+        {
+            var visualRoot = new GameObject(
+                $"PF_Visual_PowerSlider_{RuntimeThemeName(theme)}");
+            visualRoot.transform.SetParent(visual, false);
+            var travel = CreatePivot(
+                visualRoot.transform,
+                "slider_travel",
+                Vector3.zero);
+            visualRoot.AddComponent<ThemeVisualManifest>().Configure(travel);
+
+            if (!preview)
+            {
+                GetOrAddMotion(logic).Configure(
+                    MockInstrumentMotion.MotionKind.PowerSlider,
+                    travel,
+                    Vector3.up,
+                    InstrumentGreyboxSpecification.PowerSliderTravelMeters,
+                    0f);
+            }
+        }
+
+        private static void BuildWindowMeter(
+            Transform visual,
+            Transform logic,
+            bool preview,
+            MockInstrumentTheme theme,
+            MockInstrumentThemeCatalog.Palette palette)
+        {
+            var housingDepth = theme switch
+            {
+                MockInstrumentTheme.ForgeBrass => 0.11f,
+                MockInstrumentTheme.KineticSafety => 0.10f,
+                _ => 0.065f
+            };
+            CreatePrimitive(
+                PrimitiveType.Cube,
+                "Window Meter Housing",
+                visual,
+                new Vector3(0f, 0f, housingDepth * 0.5f),
+                new Vector3(1.20f, 0.75f, housingDepth),
+                Quaternion.identity,
+                ColorFor(preview, palette.Housing));
+
+            var dialDepth = 0.028f;
+            var dialPosition = new Vector3(
+                0f,
+                0f,
+                housingDepth + dialDepth * 0.5f);
+            if (theme == MockInstrumentTheme.KineticSafety)
+            {
+                CreatePrimitive(
+                    PrimitiveType.Cube,
+                    "Guarded Dial Recess",
+                    visual,
+                    dialPosition,
+                    new Vector3(0.72f, 0.58f, dialDepth),
+                    Quaternion.identity,
+                    ColorFor(preview, palette.Dark));
+            }
+            else
+            {
+                CreatePrimitive(
+                    PrimitiveType.Cylinder,
+                    "Deep Circular Dial",
+                    visual,
+                    dialPosition,
+                    new Vector3(0.66f, dialDepth, 0.66f),
+                    Quaternion.Euler(90f, 0f, 0f),
+                    ColorFor(preview, palette.Dark));
+            }
+
+            var pivot = CreatePivot(
+                visual,
+                "Window Needle Pivot",
+                new Vector3(0f, -0.08f, housingDepth + dialDepth + 0.008f));
+            CreatePrimitive(
+                PrimitiveType.Cube,
+                "Window Needle",
+                pivot,
+                new Vector3(0f, 0.24f, 0f),
+                new Vector3(0.026f, 0.48f, 0.014f),
+                Quaternion.identity,
+                ColorFor(
+                    preview,
+                    theme == MockInstrumentTheme.KineticSafety
+                        ? palette.Warning
+                        : palette.Primary));
+            CreatePrimitive(
+                PrimitiveType.Sphere,
+                "Window Needle Hub",
+                pivot,
+                Vector3.zero,
+                Vector3.one * 0.075f,
+                Quaternion.identity,
+                ColorFor(preview, palette.Face));
+
+            if (!preview)
+            {
+                GetOrAddMotion(logic).Configure(
+                    MockInstrumentMotion.MotionKind.Meter,
+                    pivot,
+                    Vector3.forward,
+                    55f,
+                    0.12f);
+            }
+        }
+
+        private static void BuildWindowPanel(
+            Transform visual,
+            Transform logic,
+            bool preview,
+            MockInstrumentTheme theme,
+            MockInstrumentThemeCatalog.Palette palette)
+        {
+            var housingDepth = theme switch
+            {
+                MockInstrumentTheme.ForgeBrass => 0.14f,
+                MockInstrumentTheme.KineticSafety => 0.13f,
+                _ => 0.08f
+            };
+            CreatePrimitive(
+                PrimitiveType.Cube,
+                "Recessed Hull Information Field",
+                visual,
+                new Vector3(0f, 0f, housingDepth * 0.5f),
+                new Vector3(1.60f, 0.90f, housingDepth),
+                Quaternion.identity,
+                ColorFor(
+                    preview,
+                    theme == MockInstrumentTheme.OrbitalAnalog
+                        ? palette.Dark
+                        : palette.Housing));
+
+            var guardColor = theme switch
+            {
+                MockInstrumentTheme.ForgeBrass => palette.Face,
+                MockInstrumentTheme.KineticSafety => palette.Warning,
+                _ => palette.Face
+            };
+            var guardWidth =
+                theme == MockInstrumentTheme.OrbitalAnalog ? 0.035f : 0.075f;
+            CreatePrimitive(
+                PrimitiveType.Cube,
+                "Left Frame Rail",
+                visual,
+                new Vector3(-0.70f, 0f, housingDepth + 0.045f),
+                new Vector3(guardWidth, 0.72f, 0.05f),
+                Quaternion.identity,
+                ColorFor(preview, guardColor));
+            CreatePrimitive(
+                PrimitiveType.Cube,
+                "Right Frame Rail",
+                visual,
+                new Vector3(0.70f, 0f, housingDepth + 0.045f),
+                new Vector3(guardWidth, 0.72f, 0.05f),
+                Quaternion.identity,
+                ColorFor(preview, guardColor));
+
+            var pivot = CreatePivot(
+                visual,
+                "Panel Vane Pivot",
+                new Vector3(0f, -0.18f, housingDepth + 0.055f));
+            CreatePrimitive(
+                PrimitiveType.Cube,
+                "Panel Status Vane",
+                pivot,
+                new Vector3(0f, 0.25f, 0f),
+                new Vector3(0.035f, 0.50f, 0.018f),
+                Quaternion.identity,
+                ColorFor(
+                    preview,
+                    theme == MockInstrumentTheme.OrbitalAnalog
+                        ? palette.Primary
+                        : palette.Warning));
+
+            if (!preview)
+            {
+                GetOrAddMotion(logic).Configure(
+                    MockInstrumentMotion.MotionKind.Meter,
+                    pivot,
+                    Vector3.forward,
+                    42f,
+                    0.1f);
+            }
+        }
+
         private static Transform CreatePivot(Transform parent, string name, Vector3 position)
         {
             var pivot = new GameObject(name).transform;
             pivot.SetParent(parent, false);
             pivot.localPosition = position;
             return pivot;
+        }
+
+        private static string RuntimeThemeName(MockInstrumentTheme theme)
+        {
+            return theme switch
+            {
+                MockInstrumentTheme.ForgeBrass => "ForgeBrass",
+                MockInstrumentTheme.KineticSafety => "KineticSafety",
+                _ => "OrbitalAnalog"
+            };
         }
 
         private static MockInstrumentMotion GetOrAddMotion(Transform logic)
@@ -449,7 +787,19 @@ namespace MatsuMotoMeterAR.Instruments
 
         private static Color ColorFor(bool preview, Color normal)
         {
-            return preview ? PreviewGreen : normal;
+            if (!preview)
+                return normal;
+
+            var luminance = Mathf.Clamp01(
+                normal.r * 0.2126f +
+                normal.g * 0.7152f +
+                normal.b * 0.0722f);
+            var shade = Mathf.Lerp(0.35f, 1f, luminance);
+            return new Color(
+                PreviewGreen.r * Mathf.Lerp(0.45f, 1f, shade),
+                PreviewGreen.g * Mathf.Lerp(0.38f, 1f, shade),
+                PreviewGreen.b * Mathf.Lerp(0.45f, 1f, shade),
+                normal.a);
         }
 
         private static void RemoveColliders(GameObject root)

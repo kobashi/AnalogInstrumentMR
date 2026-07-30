@@ -1,0 +1,44 @@
+{
+  "asset": "Lever_OrbitalAnalog_V6_Grayscale",
+  "type_id": "control.lever",
+  "theme_id": "orbital-analog",
+  "art_pass": "V6 hybrid hard-surface prototype",
+  "quality_floor": "V4 hard-surface retopo",
+  "geometry_policy": "silhouette, major layers, supports and interaction structure",
+  "texture_policy": "engraving, micro grooves, knurling, wear and labels",
+  "assembly_policy": "gaskets, seams, bushings, stops and supports",
+  "source_topology": {
+    "vertices": 1700,
+    "edges": 3516,
+    "faces": 1862,
+    "triangles": 600,
+    "quads": 1192,
+    "ngons": 70,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangulated_topology": {
+    "vertices": 1700,
+    "edges": 4962,
+    "faces": 3308,
+    "triangles": 3308,
+    "quads": 0,
+    "ngons": 0,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangle_budget": 5000,
+  "pivot": {
+    "position": [
+      0.0,
+      -0.026,
+      -0.074
+    ],
+    "local_axis": [
+      1.0,
+      0.0,
+      0.0
+    ]
+  },
+  "production_integrated": false
+}

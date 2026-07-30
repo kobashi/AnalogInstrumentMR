@@ -7,15 +7,14 @@ namespace MatsuMotoMeterAR.Placement
     {
         public static bool IsCompatible(SurfaceKind required, Vector3 surfaceNormal)
         {
-            var normal = surfaceNormal.normalized;
-            return required switch
-            {
-                SurfaceKind.Floor => Vector3.Dot(normal, Vector3.up) > 0.7f,
-                SurfaceKind.Ceiling => Vector3.Dot(normal, Vector3.down) > 0.7f,
-                SurfaceKind.Wall => Mathf.Abs(Vector3.Dot(normal, Vector3.up)) < 0.3f,
-                _ => false
-            };
+            var isPlacementSurface =
+                required == SurfaceKind.Plane ||
+                required == SurfaceKind.Volume ||
+                required == SurfaceKind.Wall ||
+                required == SurfaceKind.Floor ||
+                required == SurfaceKind.Ceiling;
+            return isPlacementSurface &&
+                   surfaceNormal.sqrMagnitude > 0.5f;
         }
     }
 }
-

@@ -1,0 +1,43 @@
+{
+  "asset": "PowerSlider_OrbitalAnalog_V6_Grayscale",
+  "type_id": "control.power_slider",
+  "theme_id": "orbital-analog",
+  "art_pass": "V6 hybrid hard-surface prototype",
+  "quality_floor": "V4 hard-surface retopo",
+  "mechanical_rules": "flush fasteners, supported marks, visible pivots and fitted joints",
+  "assembly_policy": "gaskets, seams, bushings, stops and supports",
+  "source_topology": {
+    "vertices": 1836,
+    "edges": 3896,
+    "faces": 2116,
+    "triangles": 816,
+    "quads": 1208,
+    "ngons": 92,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangulated_topology": {
+    "vertices": 1836,
+    "edges": 5340,
+    "faces": 3560,
+    "triangles": 3560,
+    "quads": 0,
+    "ngons": 0,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangle_budget": 5000,
+  "pivot": {
+    "position": [
+      0.0,
+      -0.05,
+      0.0
+    ],
+    "local_axis": [
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "production_integrated": false
+}

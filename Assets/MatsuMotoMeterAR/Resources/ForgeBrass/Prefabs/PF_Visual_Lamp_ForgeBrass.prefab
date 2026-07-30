@@ -46,7 +46,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: MatsuMotoMeterAR.Runtime::MatsuMotoMeterAR.Instruments.ThemeVisualManifest
   motionTarget: {fileID: 6296401377157458072}
-  indicatorRenderer: {fileID: 738113349809641828}
+  indicatorRenderer: {fileID: 8523157768993919758}
+  stateRenderers: []
 --- !u!1001 &1012026230964082431
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -65,7 +66,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 472091d90add042d0a69d71dfcf7f2b8, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 0.000000007450581
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 472091d90add042d0a69d71dfcf7f2b8, type: 3}
       propertyPath: m_LocalRotation.w
@@ -95,18 +96,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 303217067205414811, guid: 472091d90add042d0a69d71dfcf7f2b8, type: 3}
+    - target: {fileID: -3309354168207290513, guid: 472091d90add042d0a69d71dfcf7f2b8, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 19662f6a96af944a7934dc479327b277, type: 2}
+      objectReference: {fileID: 2100000, guid: 060466081946344cebb79d9e0ddb1095, type: 2}
     - target: {fileID: 919132149155446097, guid: 472091d90add042d0a69d71dfcf7f2b8, type: 3}
       propertyPath: m_Name
       value: SM_Lamp_ForgeBrass
       objectReference: {fileID: 0}
-    - target: {fileID: 6890929050525240742, guid: 472091d90add042d0a69d71dfcf7f2b8, type: 3}
+    - target: {fileID: 8665812627873826289, guid: 472091d90add042d0a69d71dfcf7f2b8, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 060466081946344cebb79d9e0ddb1095, type: 2}
+      objectReference: {fileID: 2100000, guid: 19662f6a96af944a7934dc479327b277, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -117,13 +118,13 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 472091d90add042d0a69d71dfcf7f2b8, type: 3}
   m_PrefabInstance: {fileID: 1012026230964082431}
   m_PrefabAsset: {fileID: 0}
---- !u!23 &738113349809641828 stripped
-MeshRenderer:
-  m_CorrespondingSourceObject: {fileID: 303217067205414811, guid: 472091d90add042d0a69d71dfcf7f2b8, type: 3}
-  m_PrefabInstance: {fileID: 1012026230964082431}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &6296401377157458072 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6443032379077295719, guid: 472091d90add042d0a69d71dfcf7f2b8, type: 3}
+  m_PrefabInstance: {fileID: 1012026230964082431}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &8523157768993919758 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 8665812627873826289, guid: 472091d90add042d0a69d71dfcf7f2b8, type: 3}
   m_PrefabInstance: {fileID: 1012026230964082431}
   m_PrefabAsset: {fileID: 0}

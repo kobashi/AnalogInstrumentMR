@@ -5,6 +5,11 @@ namespace MatsuMotoMeterAR.Instruments
 {
     public sealed class MockInstrumentMotion : MonoBehaviour
     {
+        public const int LeverDetentCount = 5;
+        public const int StatusIndicatorStateCount = 4;
+        public const int ThrottleDetentCount = 6;
+        public const int PowerSliderDetentCount = 11;
+
         public enum MotionKind
         {
             Meter,
@@ -12,24 +17,76 @@ namespace MatsuMotoMeterAR.Instruments
             Toggle,
             Rotate,
             Press,
-            Pulse
+            Pulse,
+            Status,
+            Throttle,
+            PowerSlider
         }
 
         [SerializeField] private MotionKind motionKind;
         [SerializeField] private Transform movingPart;
         [SerializeField] private Vector3 localAxis = Vector3.forward;
         [SerializeField] private float amplitude = 45f;
+        [SerializeField] private float frequencyHz;
+        [SerializeField] private float rotationOffsetDegrees;
         [SerializeField, Range(0f, 1f)] private float normalizedValue;
         [SerializeField] private Renderer indicatorRenderer;
+        [SerializeField] private Renderer[] statusRenderers;
 
         private Quaternion initialRotation;
         private Vector3 initialPosition;
         private Color indicatorColor = Color.white;
+        private Color statusSafeColor = Color.green;
+        private Color statusWarningColor = Color.yellow;
+        private Color statusDangerColor = Color.red;
+        private float meterPhase;
+        private bool ambientAnimationEnabled;
         private bool configured;
+        private int leverDirection = 1;
+        private int throttleDirection = 1;
+        private int powerSliderDirection = 1;
 
         public MotionKind Kind => motionKind;
         public Transform MovingPart => movingPart;
         public float NormalizedValue => normalizedValue;
+        public int DetentCount => motionKind switch
+        {
+            MotionKind.Lever => LeverDetentCount,
+            MotionKind.Status => StatusIndicatorStateCount,
+            MotionKind.Throttle => ThrottleDetentCount,
+            MotionKind.PowerSlider => PowerSliderDetentCount,
+            _ => 0
+        };
+        public int DetentIndex =>
+            DetentCount > 0
+                ? Mathf.RoundToInt(normalizedValue * (DetentCount - 1))
+                : -1;
+        public string StateName => motionKind switch
+        {
+            MotionKind.Status => DetentIndex switch
+            {
+                1 => "SAFE",
+                2 => "WARN",
+                3 => "DANGER",
+                _ => "OFF"
+            },
+            MotionKind.Throttle => DetentIndex switch
+            {
+                1 => "IDLE",
+                2 => "LOW",
+                3 => "CRUISE",
+                4 => "HIGH",
+                5 => "FULL",
+                _ => "CUTOFF"
+            },
+            MotionKind.PowerSlider => DetentIndex switch
+            {
+                0 => "OFF",
+                PowerSliderDetentCount - 1 => "MAX",
+                _ => $"{DetentIndex * 10}%"
+            },
+            _ => string.Empty
+        };
 
         public void Configure(
             MotionKind kind,
@@ -38,13 +95,16 @@ namespace MatsuMotoMeterAR.Instruments
             float range,
             float frequency,
             Renderer indicator = null,
-            Color? activeColor = null)
+            Color? activeColor = null,
+            float rotationOffset = 0f)
         {
             var preservedValue = normalizedValue;
             motionKind = kind;
             movingPart = part;
             localAxis = axis.normalized;
             amplitude = range;
+            frequencyHz = frequency;
+            rotationOffsetDegrees = rotationOffset;
             indicatorRenderer = indicator;
             indicatorColor = activeColor ?? Color.white;
             initialRotation = movingPart != null
@@ -57,8 +117,45 @@ namespace MatsuMotoMeterAR.Instruments
             if (!configured)
                 normalizedValue = DefaultValue(kind);
             else
-                normalizedValue = Mathf.Clamp01(preservedValue);
+                normalizedValue = NormalizeValue(kind, preservedValue);
             configured = true;
+            meterPhase = Mathf.Repeat(
+                movingPart != null
+                    ? movingPart.GetInstanceID() * 0.173f
+                    : 0f,
+                Mathf.PI * 2f);
+            ApplyState();
+        }
+
+        public void SetAmbientAnimationEnabled(bool enabled)
+        {
+            if (ambientAnimationEnabled == enabled)
+                return;
+
+            ambientAnimationEnabled = enabled;
+            ApplyState();
+        }
+
+        public void ConfigureStatus(
+            Transform part,
+            Renderer indicator,
+            Color safeColor,
+            Color warningColor,
+            Color dangerColor,
+            Renderer[] segmentedRenderers = null)
+        {
+            Configure(
+                MotionKind.Status,
+                part,
+                Vector3.forward,
+                1f,
+                0f,
+                indicator,
+                safeColor);
+            statusSafeColor = safeColor;
+            statusWarningColor = warningColor;
+            statusDangerColor = dangerColor;
+            statusRenderers = segmentedRenderers;
             ApplyState();
         }
 
@@ -79,12 +176,11 @@ namespace MatsuMotoMeterAR.Instruments
             switch (motionKind)
             {
                 case MotionKind.Meter:
-                    SetNormalizedValue(
-                        normalizedValue >= 0.999f
-                            ? 0f
-                            : normalizedValue + 0.25f);
+                    // Meters are read-only in operation mode.
                     break;
                 case MotionKind.Lever:
+                    AdvanceLeverDetent();
+                    break;
                 case MotionKind.Toggle:
                 case MotionKind.Pulse:
                     SetNormalizedValue(normalizedValue >= 0.5f ? 0f : 1f);
@@ -92,13 +188,119 @@ namespace MatsuMotoMeterAR.Instruments
                 case MotionKind.Rotate:
                     SetNormalizedValue(Mathf.Repeat(normalizedValue + 0.125f, 1f));
                     break;
+                case MotionKind.Status:
+                    SetNormalizedValue(
+                        (DetentIndex + 1) %
+                        StatusIndicatorStateCount /
+                        (float)(StatusIndicatorStateCount - 1));
+                    break;
+                case MotionKind.Throttle:
+                    AdvanceThrottleDetent();
+                    break;
+                case MotionKind.PowerSlider:
+                    AdvancePowerSliderDetent();
+                    break;
             }
         }
 
         public void SetNormalizedValue(float value)
         {
-            normalizedValue = Mathf.Clamp01(value);
+            normalizedValue = NormalizeValue(motionKind, value);
+            if (motionKind == MotionKind.Lever)
+            {
+                if (DetentIndex <= 0)
+                    leverDirection = 1;
+                else if (DetentIndex >= LeverDetentCount - 1)
+                    leverDirection = -1;
+            }
+            else if (motionKind == MotionKind.Throttle)
+            {
+                if (DetentIndex <= 0)
+                    throttleDirection = 1;
+                else if (DetentIndex >= ThrottleDetentCount - 1)
+                    throttleDirection = -1;
+            }
+            else if (motionKind == MotionKind.PowerSlider)
+            {
+                if (DetentIndex <= 0)
+                    powerSliderDirection = 1;
+                else if (DetentIndex >= PowerSliderDetentCount - 1)
+                    powerSliderDirection = -1;
+            }
             ApplyState();
+        }
+
+        public void SetLeverDetentIndex(int detentIndex)
+        {
+            if (motionKind != MotionKind.Lever)
+                return;
+
+            var clampedIndex = Mathf.Clamp(
+                detentIndex,
+                0,
+                LeverDetentCount - 1);
+            SetNormalizedValue(
+                clampedIndex / (float)(LeverDetentCount - 1));
+        }
+
+        public void SetThrottleDetentIndex(int detentIndex)
+        {
+            if (motionKind != MotionKind.Throttle)
+                return;
+
+            var clampedIndex = Mathf.Clamp(
+                detentIndex,
+                0,
+                ThrottleDetentCount - 1);
+            SetNormalizedValue(
+                clampedIndex / (float)(ThrottleDetentCount - 1));
+        }
+
+        public void SetPowerSliderDetentIndex(int detentIndex)
+        {
+            if (motionKind != MotionKind.PowerSlider)
+                return;
+
+            var clampedIndex = Mathf.Clamp(
+                detentIndex,
+                0,
+                PowerSliderDetentCount - 1);
+            SetNormalizedValue(
+                clampedIndex / (float)(PowerSliderDetentCount - 1));
+        }
+
+        private void AdvanceLeverDetent()
+        {
+            var currentIndex = DetentIndex;
+            if (currentIndex >= LeverDetentCount - 1)
+                leverDirection = -1;
+            else if (currentIndex <= 0)
+                leverDirection = 1;
+
+            SetLeverDetentIndex(currentIndex + leverDirection);
+        }
+
+        private void AdvanceThrottleDetent()
+        {
+            var currentIndex = DetentIndex;
+            if (currentIndex >= ThrottleDetentCount - 1)
+                throttleDirection = -1;
+            else if (currentIndex <= 0)
+                throttleDirection = 1;
+
+            SetThrottleDetentIndex(currentIndex + throttleDirection);
+        }
+
+        private void AdvancePowerSliderDetent()
+        {
+            var currentIndex = DetentIndex;
+            if (currentIndex >= PowerSliderDetentCount - 1)
+                powerSliderDirection = -1;
+            else if (currentIndex <= 0)
+                powerSliderDirection = 1;
+
+            SetPowerSliderDetentIndex(
+                currentIndex + powerSliderDirection);
         }
 
         private void ApplyState()
@@ -111,7 +313,10 @@ namespace MatsuMotoMeterAR.Instruments
                 case MotionKind.Meter:
                 case MotionKind.Lever:
                 case MotionKind.Toggle:
-                    var angle = Mathf.Lerp(-amplitude, amplitude, normalizedValue);
+                case MotionKind.Throttle:
+                    var angle =
+                        Mathf.Lerp(-amplitude, amplitude, normalizedValue) +
+                        rotationOffsetDegrees;
                     movingPart.localRotation =
                         initialRotation * Quaternion.AngleAxis(angle, localAxis);
                     break;
@@ -132,7 +337,96 @@ namespace MatsuMotoMeterAR.Instruments
                         indicatorRenderer,
                         color * 1.5f);
                     break;
+                case MotionKind.Status:
+                    var statusColor = DetentIndex switch
+                    {
+                        1 => statusSafeColor,
+                        2 => statusWarningColor,
+                        3 => statusDangerColor,
+                        _ => Color.black
+                    };
+                    RuntimeMaterialUtility.SetColor(
+                        indicatorRenderer,
+                        statusColor);
+                    RuntimeMaterialUtility.SetEmissionColor(
+                        indicatorRenderer,
+                        statusColor * (DetentIndex == 0 ? 0f : 1.5f));
+                    ApplySegmentedStatus();
+                    break;
+                case MotionKind.PowerSlider:
+                    movingPart.localPosition =
+                        initialPosition +
+                        localAxis *
+                        Mathf.Lerp(
+                            -amplitude * 0.5f,
+                            amplitude * 0.5f,
+                            normalizedValue);
+                    break;
             }
+        }
+
+        private void ApplySegmentedStatus()
+        {
+            if (statusRenderers == null || statusRenderers.Length == 0)
+                return;
+
+            var activeIndex = DetentIndex - 1;
+            for (var index = 0;
+                 index < statusRenderers.Length;
+                 index++)
+            {
+                var active =
+                    index == activeIndex &&
+                    index < 3;
+                var color = active
+                    ? StatusColor(index)
+                    : Color.black;
+                RuntimeMaterialUtility.SetColor(
+                    statusRenderers[index],
+                    color);
+                RuntimeMaterialUtility.SetEmissionColor(
+                    statusRenderers[index],
+                    color * (active ? 1.5f : 0f));
+            }
+        }
+
+        private Color StatusColor(int index)
+        {
+            return index switch
+            {
+                0 => statusSafeColor,
+                1 => statusWarningColor,
+                2 => statusDangerColor,
+                _ => Color.black
+            };
+        }
+
+        private void Update()
+        {
+            if (!configured ||
+                !ambientAnimationEnabled ||
+                motionKind != MotionKind.Meter ||
+                movingPart == null)
+            {
+                return;
+            }
+
+            var baseAngle =
+                Mathf.Lerp(-amplitude, amplitude, normalizedValue) +
+                rotationOffsetDegrees;
+            var time = Time.unscaledTime * Mathf.PI * 2f;
+            var primary =
+                Mathf.Sin(time * Mathf.Max(0.05f, frequencyHz) + meterPhase);
+            var secondary =
+                Mathf.Sin(
+                    time * Mathf.Max(0.08f, frequencyHz * 1.73f) +
+                    meterPhase * 0.43f);
+            var microAngle = primary * 1.4f + secondary * 0.45f;
+            movingPart.localRotation =
+                initialRotation *
+                Quaternion.AngleAxis(
+                    baseAngle + microAngle,
+                    localAxis);
         }
 
         private static float DefaultValue(MotionKind kind)
@@ -141,8 +435,30 @@ namespace MatsuMotoMeterAR.Instruments
             {
                 MotionKind.Meter or MotionKind.Lever or MotionKind.Toggle => 0.5f,
                 MotionKind.Pulse => 1f,
+                MotionKind.Status => 0f,
+                MotionKind.Throttle => 0f,
+                MotionKind.PowerSlider => 0f,
                 _ => 0f
             };
+        }
+
+        private static float NormalizeValue(MotionKind kind, float value)
+        {
+            var clamped = Mathf.Clamp01(value);
+            var stepCount = kind switch
+            {
+                MotionKind.Lever => LeverDetentCount,
+                MotionKind.Status => StatusIndicatorStateCount,
+                MotionKind.Throttle => ThrottleDetentCount,
+                MotionKind.PowerSlider => PowerSliderDetentCount,
+                _ => 0
+            };
+            if (stepCount == 0)
+                return clamped;
+
+            var detentIndex = Mathf.RoundToInt(
+                clamped * (stepCount - 1));
+            return detentIndex / (float)(stepCount - 1);
         }
     }
 }

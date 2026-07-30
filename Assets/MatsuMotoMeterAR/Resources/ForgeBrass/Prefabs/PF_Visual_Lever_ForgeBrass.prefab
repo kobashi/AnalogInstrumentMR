@@ -47,6 +47,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: MatsuMotoMeterAR.Runtime::MatsuMotoMeterAR.Instruments.ThemeVisualManifest
   motionTarget: {fileID: 786966139634929678}
   indicatorRenderer: {fileID: 0}
+  stateRenderers: []
 --- !u!1001 &5720985010770932121
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -59,10 +60,6 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 060466081946344cebb79d9e0ddb1095, type: 2}
-    - target: {fileID: -9198363513734074584, guid: 9036fb9f383d1419cb51e8f0938031a8, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
-      value: 
-      objectReference: {fileID: 2100000, guid: 19662f6a96af944a7934dc479327b277, type: 2}
     - target: {fileID: -8679921383154817045, guid: 9036fb9f383d1419cb51e8f0938031a8, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -73,7 +70,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9036fb9f383d1419cb51e8f0938031a8, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 0.0016000196
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 9036fb9f383d1419cb51e8f0938031a8, type: 3}
       propertyPath: m_LocalRotation.w
@@ -107,7 +104,7 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Lever_ForgeBrass
       objectReference: {fileID: 0}
-    - target: {fileID: 6890929050525240742, guid: 9036fb9f383d1419cb51e8f0938031a8, type: 3}
+    - target: {fileID: 3554019330220468718, guid: 9036fb9f383d1419cb51e8f0938031a8, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 060466081946344cebb79d9e0ddb1095, type: 2}

@@ -1,0 +1,43 @@
+{
+  "asset": "StatusIndicator_ForgeBrass_V6_Grayscale",
+  "type_id": "indicator.status",
+  "theme_id": "forge-brass",
+  "art_pass": "V6 hybrid hard-surface prototype",
+  "quality_floor": "V4 hard-surface retopo",
+  "mechanical_rules": "flush fasteners, supported marks, visible pivots and fitted joints",
+  "assembly_policy": "gaskets, seams, bushings, stops and supports",
+  "source_topology": {
+    "vertices": 1698,
+    "edges": 3460,
+    "faces": 1802,
+    "triangles": 440,
+    "quads": 1344,
+    "ngons": 18,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangulated_topology": {
+    "vertices": 1698,
+    "edges": 4974,
+    "faces": 3316,
+    "triangles": 3316,
+    "quads": 0,
+    "ngons": 0,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangle_budget": 5000,
+  "pivot": {
+    "position": [
+      0.0,
+      -0.065,
+      0.0
+    ],
+    "local_axis": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "production_integrated": false
+}

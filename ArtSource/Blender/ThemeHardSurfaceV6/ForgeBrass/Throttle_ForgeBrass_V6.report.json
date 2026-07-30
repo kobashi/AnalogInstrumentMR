@@ -1,0 +1,43 @@
+{
+  "asset": "Throttle_ForgeBrass_V6_Grayscale",
+  "type_id": "control.throttle",
+  "theme_id": "forge-brass",
+  "art_pass": "V6 hybrid hard-surface prototype",
+  "quality_floor": "V4 hard-surface retopo",
+  "mechanical_rules": "flush fasteners, supported marks, visible pivots and fitted joints",
+  "assembly_policy": "gaskets, seams, bushings, stops and supports",
+  "source_topology": {
+    "vertices": 1272,
+    "edges": 2592,
+    "faces": 1366,
+    "triangles": 480,
+    "quads": 864,
+    "ngons": 22,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangulated_topology": {
+    "vertices": 1272,
+    "edges": 3678,
+    "faces": 2452,
+    "triangles": 2452,
+    "quads": 0,
+    "ngons": 0,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangle_budget": 5000,
+  "pivot": {
+    "position": [
+      0.0,
+      -0.051,
+      -0.105
+    ],
+    "local_axis": [
+      1.0,
+      0.0,
+      0.0
+    ]
+  },
+  "production_integrated": false
+}

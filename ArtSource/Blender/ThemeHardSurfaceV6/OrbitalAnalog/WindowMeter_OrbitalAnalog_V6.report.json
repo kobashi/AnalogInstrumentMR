@@ -1,0 +1,43 @@
+{
+  "asset": "WindowMeter_OrbitalAnalog_V6_Grayscale",
+  "type_id": "meter.window",
+  "theme_id": "orbital-analog",
+  "art_pass": "V6 hybrid hard-surface prototype",
+  "quality_floor": "V4 hard-surface retopo",
+  "mechanical_rules": "flush fasteners, supported marks, visible pivots and fitted joints",
+  "assembly_policy": "gaskets, seams, bushings, stops and supports",
+  "source_topology": {
+    "vertices": 2546,
+    "edges": 5364,
+    "faces": 2888,
+    "triangles": 992,
+    "quads": 1876,
+    "ngons": 20,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangulated_topology": {
+    "vertices": 2546,
+    "edges": 7428,
+    "faces": 4952,
+    "triangles": 4952,
+    "quads": 0,
+    "ngons": 0,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangle_budget": 25000,
+  "pivot": {
+    "position": [
+      0.0,
+      -0.133,
+      -0.065
+    ],
+    "local_axis": [
+      0.0,
+      1.0,
+      0.0
+    ]
+  },
+  "production_integrated": false
+}

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using MatsuMotoMeterAR.Anchors;
 using MatsuMotoMeterAR.Instruments;
+using MatsuMotoMeterAR.Signals;
 using UnityEngine;
 
 namespace MatsuMotoMeterAR.PlacementPersistence
@@ -20,16 +21,19 @@ namespace MatsuMotoMeterAR.PlacementPersistence
         public PlacementLoadResult(
             PlacementLoadStatus status,
             PlacementDocument document,
-            string message = null)
+            string message = null,
+            bool requiresSave = false)
         {
             Status = status;
             Document = document;
             Message = message;
+            RequiresSave = requiresSave;
         }
 
         public PlacementLoadStatus Status { get; }
         public PlacementDocument Document { get; }
         public string Message { get; }
+        public bool RequiresSave { get; }
         public bool CanWrite => Status == PlacementLoadStatus.Loaded ||
                                 Status == PlacementLoadStatus.Missing;
     }
@@ -106,6 +110,20 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                         $"Schema {document.schemaVersion} is newer than supported schema " +
                         $"{PlacementDocument.CurrentSchemaVersion}.");
                 }
+                if (document.schemaVersion >=
+                    PlacementDocument.LegacySchemaVersion &&
+                    document.schemaVersion <
+                    PlacementDocument.CurrentSchemaVersion)
+                {
+                    var sourceVersion = document.schemaVersion;
+                    return new PlacementLoadResult(
+                        PlacementLoadStatus.Loaded,
+                        Normalize(document),
+                        $"Migrated placement schema " +
+                        $"{sourceVersion} to " +
+                        $"{PlacementDocument.CurrentSchemaVersion}.",
+                        requiresSave: true);
+                }
                 if (document.schemaVersion != PlacementDocument.CurrentSchemaVersion)
                     return Corrupt($"Unsupported legacy schema {document.schemaVersion}.");
 
@@ -125,32 +143,123 @@ namespace MatsuMotoMeterAR.PlacementPersistence
             {
                 schemaVersion = PlacementDocument.CurrentSchemaVersion,
                 revision = Math.Max(0, source?.revision ?? 0),
-                placements = new List<PlacementRecord>()
+                placements = new List<PlacementRecord>(),
+                connections = new List<SignalConnectionRecord>()
             };
             if (source?.placements == null)
                 return normalized;
 
             var placementIds = new HashSet<string>(StringComparer.Ordinal);
-            var anchorIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var activeCount = 0;
+            var activeTypeIds = new Dictionary<string, string>(
+                StringComparer.Ordinal);
+            var storedCount = 0;
+            var roomPlacementCounts = new Dictionary<string, int>(
+                StringComparer.OrdinalIgnoreCase);
             foreach (var sourceRecord in source.placements)
             {
                 if (!TryNormalizeRecord(sourceRecord, out var record) ||
-                    !placementIds.Add(record.placementId) ||
-                    !anchorIds.Add(record.anchorId))
+                    !placementIds.Add(record.placementId))
                 {
                     continue;
                 }
 
-                if (record.lifecycle == (int)PlacementLifecycle.Active)
+                if (record.lifecycle == (int)PlacementLifecycle.Active ||
+                    record.lifecycle == (int)PlacementLifecycle.Unavailable)
                 {
-                    if (activeCount >= PlacementDocument.MaximumActivePlacements)
+                    var roomKey = record.roomId ?? string.Empty;
+                    roomPlacementCounts.TryGetValue(
+                        roomKey,
+                        out var roomPlacementCount);
+                    if (roomPlacementCount >=
+                            PlacementDocument.MaximumActivePlacements ||
+                        storedCount >=
+                            PlacementDocument.MaximumStoredPlacements)
+                    {
                         continue;
-                    activeCount++;
+                    }
+                    roomPlacementCounts[roomKey] =
+                        roomPlacementCount + 1;
+                    storedCount++;
+                    activeTypeIds[record.placementId] =
+                        record.instrumentTypeId;
                 }
                 normalized.placements.Add(record);
             }
+
+            if (source.connections == null)
+                return normalized;
+
+            var connectionIds = new HashSet<string>(StringComparer.Ordinal);
+            var endpointPairs = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var sourceConnection in source.connections)
+            {
+                if (normalized.connections.Count >=
+                    PlacementDocument.MaximumConnections)
+                {
+                    break;
+                }
+                if (!TryNormalizeConnection(
+                        sourceConnection,
+                        activeTypeIds,
+                        connectionIds,
+                        endpointPairs,
+                        out var connection))
+                {
+                    continue;
+                }
+                normalized.connections.Add(connection);
+            }
             return normalized;
+        }
+
+        private static bool TryNormalizeConnection(
+            SignalConnectionRecord source,
+            IReadOnlyDictionary<string, string> activeTypeIds,
+            ISet<string> connectionIds,
+            ISet<string> endpointPairs,
+            out SignalConnectionRecord connection)
+        {
+            connection = null;
+            if (source == null ||
+                string.IsNullOrWhiteSpace(source.connectionId) ||
+                string.IsNullOrWhiteSpace(source.sourcePlacementId) ||
+                string.IsNullOrWhiteSpace(source.targetPlacementId))
+            {
+                return false;
+            }
+
+            var connectionId = source.connectionId.Trim();
+            var sourceId = source.sourcePlacementId.Trim();
+            var targetId = source.targetPlacementId.Trim();
+            if (sourceId == targetId ||
+                !connectionIds.Add(connectionId) ||
+                !activeTypeIds.TryGetValue(sourceId, out var sourceTypeId) ||
+                !activeTypeIds.TryGetValue(targetId, out var targetTypeId) ||
+                !InstrumentSignalPolicy.CanSource(
+                    MockInstrumentCatalog.FromTypeId(sourceTypeId)) ||
+                !InstrumentSignalPolicy.CanTarget(
+                    MockInstrumentCatalog.FromTypeId(targetTypeId)))
+            {
+                return false;
+            }
+
+            var endpointPair = sourceId + "\n" + targetId;
+            if (!endpointPairs.Add(endpointPair))
+                return false;
+
+            var transform = Enum.IsDefined(
+                typeof(SignalTransformKind),
+                source.transformKind)
+                ? source.transformKind
+                : (int)SignalTransformKind.Direct;
+            connection = new SignalConnectionRecord
+            {
+                connectionId = connectionId,
+                sourcePlacementId = sourceId,
+                targetPlacementId = targetId,
+                transformKind = transform
+            };
+            return true;
         }
 
         private static bool TryNormalizeRecord(
@@ -189,6 +298,11 @@ namespace MatsuMotoMeterAR.PlacementPersistence
             record = source.Clone();
             record.placementId = source.placementId.Trim();
             record.anchorId = anchorId.ToString("D");
+            record.roomId = Guid.TryParse(
+                source.roomId,
+                out var roomId)
+                ? roomId.ToString("D")
+                : string.Empty;
             record.instrumentTypeId = MockInstrumentCatalog.IsKnownTypeId(
                     source.instrumentTypeId)
                 ? source.instrumentTypeId

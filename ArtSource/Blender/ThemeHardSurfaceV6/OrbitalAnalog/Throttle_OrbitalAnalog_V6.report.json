@@ -1,0 +1,43 @@
+{
+  "asset": "Throttle_OrbitalAnalog_V6_Grayscale",
+  "type_id": "control.throttle",
+  "theme_id": "orbital-analog",
+  "art_pass": "V6 hybrid hard-surface prototype",
+  "quality_floor": "V4 hard-surface retopo",
+  "mechanical_rules": "flush fasteners, supported marks, visible pivots and fitted joints",
+  "assembly_policy": "gaskets, seams, bushings, stops and supports",
+  "source_topology": {
+    "vertices": 1356,
+    "edges": 2874,
+    "faces": 1568,
+    "triangles": 656,
+    "quads": 898,
+    "ngons": 14,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangulated_topology": {
+    "vertices": 1356,
+    "edges": 3918,
+    "faces": 2612,
+    "triangles": 2612,
+    "quads": 0,
+    "ngons": 0,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangle_budget": 5000,
+  "pivot": {
+    "position": [
+      0.0,
+      -0.048,
+      -0.112
+    ],
+    "local_axis": [
+      1.0,
+      0.0,
+      0.0
+    ]
+  },
+  "production_integrated": false
+}

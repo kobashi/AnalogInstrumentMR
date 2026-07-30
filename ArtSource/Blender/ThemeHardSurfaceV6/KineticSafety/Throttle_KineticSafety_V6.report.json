@@ -1,0 +1,43 @@
+{
+  "asset": "Throttle_KineticSafety_V6_Grayscale",
+  "type_id": "control.throttle",
+  "theme_id": "kinetic-safety",
+  "art_pass": "V6 hybrid hard-surface prototype",
+  "quality_floor": "V4 hard-surface retopo",
+  "mechanical_rules": "flush fasteners, supported marks, visible pivots and fitted joints",
+  "assembly_policy": "gaskets, seams, bushings, stops and supports",
+  "source_topology": {
+    "vertices": 1476,
+    "edges": 3134,
+    "faces": 1708,
+    "triangles": 664,
+    "quads": 1022,
+    "ngons": 22,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangulated_topology": {
+    "vertices": 1476,
+    "edges": 4278,
+    "faces": 2852,
+    "triangles": 2852,
+    "quads": 0,
+    "ngons": 0,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangle_budget": 5000,
+  "pivot": {
+    "position": [
+      0.0,
+      -0.08,
+      -0.112
+    ],
+    "local_axis": [
+      1.0,
+      0.0,
+      0.0
+    ]
+  },
+  "production_integrated": false
+}

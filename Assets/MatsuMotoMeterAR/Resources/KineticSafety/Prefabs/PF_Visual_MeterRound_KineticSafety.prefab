@@ -47,6 +47,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: MatsuMotoMeterAR.Runtime::MatsuMotoMeterAR.Instruments.ThemeVisualManifest
   motionTarget: {fileID: 7428183730625333818}
   indicatorRenderer: {fileID: 0}
+  stateRenderers: []
 --- !u!1001 &8387237300706516212
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -65,7 +66,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: e3b7be62fdb8a465faf4674345ed6394, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 0.000000007450581
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: e3b7be62fdb8a465faf4674345ed6394, type: 3}
       propertyPath: m_LocalRotation.w
@@ -95,21 +96,25 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -5392446672585335873, guid: e3b7be62fdb8a465faf4674345ed6394, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 50895c29d4aa24d6da5944ea8e753fce, type: 2}
+    - target: {fileID: -5392446672585335873, guid: e3b7be62fdb8a465faf4674345ed6394, type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value:
+      objectReference: {fileID: 2100000, guid: c4b671603b08d47fe81934e176f61f95, type: 2}
     - target: {fileID: 919132149155446097, guid: e3b7be62fdb8a465faf4674345ed6394, type: 3}
       propertyPath: m_Name
       value: SM_MeterRound_KineticSafety
       objectReference: {fileID: 0}
     - target: {fileID: 3088350899068688043, guid: e3b7be62fdb8a465faf4674345ed6394, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: c4b671603b08d47fe81934e176f61f95, type: 2}
-    - target: {fileID: 6722178034172671860, guid: e3b7be62fdb8a465faf4674345ed6394, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: 50895c29d4aa24d6da5944ea8e753fce, type: 2}
-    - target: {fileID: 6890929050525240742, guid: e3b7be62fdb8a465faf4674345ed6394, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+    - target: {fileID: 3088350899068688043, guid: e3b7be62fdb8a465faf4674345ed6394, type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value:
       objectReference: {fileID: 2100000, guid: 50895c29d4aa24d6da5944ea8e753fce, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

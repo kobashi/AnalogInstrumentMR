@@ -1,5 +1,9 @@
 # AnalogInstrumentMR
 
+The Quest application is displayed as `AnalogInstrumentMR`. Its legacy Android
+package identifier remains `com.DefaultCompany.MatsuMotoMeterAR` so upgrades
+retain saved placement data and permissions.
+
 An experimental Unity 6 Mixed Reality project for placing modular analog
 instruments and physical controls on walls, floors, and ceilings on Meta Quest.
 Placed objects use Spatial Anchors for local persistence and can switch among
@@ -13,21 +17,29 @@ Unity paths and namespaces as a historical development identifier.
 
 ## Project status
 
-The `v0.1.0-concept.5-perfgate` source release includes:
+The current release candidate is `v0.2.0-concept.1` and includes:
 
-- six object types: round meter, lever, toggle, rotary knob, push button, and
-  status lamp
-- three original themes: Orbital Analog, Forge Brass, and Kinetic Safety
-- ray/direct interaction, haptics, and logical-state persistence
-- schema-v1 storage for up to 24 placements, legacy migration, and targeted
-  deletion
-- Meta Spatial Anchor localization and multi-object restoration
-- 12/24/40-object synthetic performance scenarios
+- 13 instrument types in four functional categories: meters, indicators,
+  switches, and motion controls
+- 39 V6 visual prefabs across Orbital Analog, Forge Brass, and Kinetic Safety
+- Operation, Edit, and Connect modes
+- two-hand beam/trigger interaction, contact buttons, and grip-motion lever,
+  throttle, and power-slider controls
+- placement on any usable face of an MRUK Plane or Volume
+- overlap avoidance, grid/nearby alignment, multi-selection, move,
+  directional rotation, distribution preview, and confirmation
+- type-colored Direct, Invert, Range, and Threshold signal connections
+- schema-v4 persistence for up to 48 placements per Room, 192 placements
+  across all Rooms, and 192 connections, including Room UUID ownership and
+  runtime Current Room switching
+- shared Spatial Anchors, restoration, and automatic re-anchoring
 
-Quest 3 verification passed the 24-object, 72 Hz, 10-minute performance gate,
-three-theme smoke tests, three-anchor restart restoration, and normal-use user
-acceptance. Quest 3S physical verification was intentionally deferred. See
-[`docs/releases/v0.1.0-concept.5-perfgate.md`](docs/releases/v0.1.0-concept.5-perfgate.md).
+The release candidate passes all 99 Unity EditMode tests and all 39 active
+visual-prefab checks. The previous release passed the Quest 3 24-object,
+72 Hz, 10-minute performance gate. The expanded 48/64-object scenarios have
+not yet received the same physical performance run, and Quest 3S remains
+unverified. See
+[`docs/releases/v0.2.0-concept.1.md`](docs/releases/v0.2.0-concept.1.md).
 
 This repository distributes source only. It does not provide or support an
 official APK, store build, production package identifier, or production
@@ -79,7 +91,9 @@ For environment setup, USB debugging, MRUK, and Quest procedures, start with:
 2. [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
 3. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 4. [`docs/GREYBOX_INSTRUMENT_SPEC.md`](docs/GREYBOX_INSTRUMENT_SPEC.md)
-5. [`ArtSource/Blender/README.md`](ArtSource/Blender/README.md)
+5. [`docs/MODEL_REPLACEMENT_WORKFLOW.md`](docs/MODEL_REPLACEMENT_WORKFLOW.md)
+6. [`docs/RELEASE_ASSET_SCOPE.md`](docs/RELEASE_ASSET_SCOPE.md)
+7. [`ArtSource/Blender/README.md`](ArtSource/Blender/README.md)
 
 ## Asset provenance
 

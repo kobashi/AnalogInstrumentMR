@@ -9,8 +9,8 @@ namespace MatsuMotoMeterAR.Editor
 {
     internal static class ConceptReleaseBuilder
     {
-        private const string Version = "0.1.0";
-        private const string ReleaseName = "v0.1.0-concept.5-perfgate";
+        private const string Version = "0.2.0";
+        private const string ReleaseName = "v0.2.0-concept.1";
         private const string OutputDirectory = "Builds/Release";
         private const int MetaQuestBuildSubtarget = 6;
         private const string DevAgentSettingsPath =
@@ -42,7 +42,7 @@ namespace MatsuMotoMeterAR.Editor
 
             Directory.CreateDirectory(OutputDirectory);
             var outputPath =
-                $"{OutputDirectory}/MatsuMotoMeterAR-{ReleaseName}-quest3.apk";
+                $"{OutputDirectory}/AnalogInstrumentMR-{ReleaseName}-quest3.apk";
             var options = new BuildPlayerOptions
             {
                 scenes = scenes,

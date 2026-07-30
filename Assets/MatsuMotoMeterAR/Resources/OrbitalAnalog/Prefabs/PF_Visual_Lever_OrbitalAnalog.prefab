@@ -47,6 +47,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: MatsuMotoMeterAR.Runtime::MatsuMotoMeterAR.Instruments.ThemeVisualManifest
   motionTarget: {fileID: 3406179651059258739}
   indicatorRenderer: {fileID: 0}
+  stateRenderers: []
 --- !u!1001 &7695515272851731684
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -57,11 +58,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -9198363513734074584, guid: 7f51f3ad7887e4a09825b2ba2a28b26a, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: f18c165e4cf1f49bfa4012258b872bc0, type: 2}
     - target: {fileID: -9198363513734074584, guid: 7f51f3ad7887e4a09825b2ba2a28b26a, type: 3}
       propertyPath: 'm_Materials.Array.data[1]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: fbd48d6f4f66049898ffd8397131d0e1, type: 2}
     - target: {fileID: -8679921383154817045, guid: 7f51f3ad7887e4a09825b2ba2a28b26a, type: 3}
       propertyPath: m_LocalPosition.x
@@ -73,7 +74,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 7f51f3ad7887e4a09825b2ba2a28b26a, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 0.000000011175871
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 7f51f3ad7887e4a09825b2ba2a28b26a, type: 3}
       propertyPath: m_LocalRotation.w
@@ -107,10 +108,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: SM_Lever_OrbitalAnalog
       objectReference: {fileID: 0}
-    - target: {fileID: 6890929050525240742, guid: 7f51f3ad7887e4a09825b2ba2a28b26a, type: 3}
+    - target: {fileID: 3554019330220468718, guid: 7f51f3ad7887e4a09825b2ba2a28b26a, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: f18c165e4cf1f49bfa4012258b872bc0, type: 2}
+    - target: {fileID: 3554019330220468718, guid: 7f51f3ad7887e4a09825b2ba2a28b26a, type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value:
+      objectReference: {fileID: 2100000, guid: fbd48d6f4f66049898ffd8397131d0e1, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

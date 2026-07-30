@@ -1,0 +1,43 @@
+{
+  "asset": "PowerSlider_KineticSafety_V6_Grayscale",
+  "type_id": "control.power_slider",
+  "theme_id": "kinetic-safety",
+  "art_pass": "V6 hybrid hard-surface prototype",
+  "quality_floor": "V4 hard-surface retopo",
+  "mechanical_rules": "flush fasteners, supported marks, visible pivots and fitted joints",
+  "assembly_policy": "gaskets, seams, bushings, stops and supports",
+  "source_topology": {
+    "vertices": 2078,
+    "edges": 4376,
+    "faces": 2356,
+    "triangles": 832,
+    "quads": 1424,
+    "ngons": 100,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangulated_topology": {
+    "vertices": 2078,
+    "edges": 6060,
+    "faces": 4040,
+    "triangles": 4040,
+    "quads": 0,
+    "ngons": 0,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangle_budget": 5000,
+  "pivot": {
+    "position": [
+      0.0,
+      -0.082,
+      0.0
+    ],
+    "local_axis": [
+      0.0,
+      0.0,
+      1.0
+    ]
+  },
+  "production_integrated": false
+}

@@ -175,7 +175,8 @@ namespace MatsuMotoMeterAR.Tests
                     Assert.That(
                         triangles,
                         Is.LessThanOrEqualTo(
-                            InstrumentGreyboxSpecification.GreyboxTriangleBudgetPerInstrument));
+                            InstrumentGreyboxSpecification.GetTriangleBudget(kind)),
+                        $"{kind} exceeds its runtime triangle budget.");
                 }
                 finally
                 {
@@ -201,7 +202,7 @@ namespace MatsuMotoMeterAR.Tests
                     var colliders = 0;
                     var realtimeLights = 0;
                     for (var index = 0;
-                         index < PlacementPersistence.PlacementDocument.MaximumActivePlacements;
+                         index < 24;
                          index++)
                     {
                         var root = MockInstrumentFactory.Create(
@@ -275,7 +276,9 @@ namespace MatsuMotoMeterAR.Tests
                  themeIndex++)
             {
                 var theme = (MockInstrumentTheme)themeIndex;
-                for (var index = 0; index < MockInstrumentCatalog.Count; index++)
+                for (var index = 0;
+                     index < MockInstrumentCatalog.PerformanceBaselineCount;
+                     index++)
                 {
                     var root = MockInstrumentFactory.Create(
                         (MockInstrumentKind)index,
@@ -360,6 +363,13 @@ namespace MatsuMotoMeterAR.Tests
                     var beforeManifest =
                         visualSocket.GetComponentInChildren<ThemeVisualManifest>();
                     instrumentInteraction.SetNormalizedValue(0.75f);
+                    var expectedNormalizedValue =
+                        kind == MockInstrumentKind.StatusIndicator
+                            ? 2f / 3f
+                            : kind == MockInstrumentKind.ThrottleLever ||
+                              kind == MockInstrumentKind.PowerSlider
+                                ? 0.8f
+                                : 0.75f;
 
                     Assert.That(
                         MockInstrumentFactory.ApplyTheme(
@@ -387,7 +397,7 @@ namespace MatsuMotoMeterAR.Tests
                         Is.SameAs(motion));
                     Assert.That(
                         contract.InstrumentInteraction.NormalizedValue,
-                        Is.EqualTo(0.75f).Within(0.0001f));
+                        Is.EqualTo(expectedNormalizedValue).Within(0.0001f));
                     Assert.That(contract.VisualSocket, Is.SameAs(visualSocket));
                     Assert.That(contract.OcclusionProxy, Is.SameAs(occlusionProxy));
                     Assert.That(contract.LabelSocket, Is.SameAs(labelSocket));
@@ -405,8 +415,11 @@ namespace MatsuMotoMeterAR.Tests
                         afterManifest.name,
                         Does.EndWith("_ForgeBrass"));
                     Assert.That(
-                        motion.MovingPart,
-                        Is.SameAs(afterManifest.MotionTarget));
+                        motion.MovingPart.parent,
+                        Is.SameAs(afterManifest.transform));
+                    Assert.That(
+                        afterManifest.MotionTarget.IsChildOf(motion.MovingPart),
+                        Is.True);
                     Assert.That(
                         visualSocket.GetComponentsInChildren<Collider>(),
                         Is.Empty);

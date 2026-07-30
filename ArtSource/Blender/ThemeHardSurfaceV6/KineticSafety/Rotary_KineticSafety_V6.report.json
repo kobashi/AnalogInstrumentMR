@@ -1,0 +1,43 @@
+{
+  "asset": "Rotary_KineticSafety_V6_Grayscale",
+  "type_id": "control.rotary",
+  "theme_id": "kinetic-safety",
+  "art_pass": "V6 hybrid hard-surface prototype",
+  "quality_floor": "V4 hard-surface retopo",
+  "mechanical_rules": "flush fasteners, supported marks, visible pivots and fitted joints",
+  "assembly_policy": "gaskets, seams, bushings, stops and supports",
+  "source_topology": {
+    "vertices": 1530,
+    "edges": 3200,
+    "faces": 1716,
+    "triangles": 576,
+    "quads": 1112,
+    "ngons": 28,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangulated_topology": {
+    "vertices": 1530,
+    "edges": 4452,
+    "faces": 2968,
+    "triangles": 2968,
+    "quads": 0,
+    "ngons": 0,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangle_budget": 5000,
+  "pivot": {
+    "position": [
+      0.0,
+      -0.067,
+      0.0
+    ],
+    "local_axis": [
+      0.0,
+      1.0,
+      0.0
+    ]
+  },
+  "production_integrated": false
+}

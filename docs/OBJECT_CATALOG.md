@@ -2,9 +2,34 @@
 
 ## Scope
 
-計器、操作部品、表示部品を機能と外観に分離し、壁・床・天井への配置と 3 テーマの切り替えを検証する。最初から多数の完成モデルを作らず、共通 contract を灰色モデルで固めてからテーマ別アセットを制作する。
+計器、操作部品、表示部品を機能と外観に分離し、MRUK Plane／Volumeの任意面への
+配置と3テーマの切り替えを検証する。共通contractを先に固定し、テーマ別Visualを
+交換してもSpatial Anchor、操作状態、接続を維持する。
 
-## Planned catalog
+## Implemented catalog
+
+右スティック左右は次の順で移動し、右スティック上下はカテゴリ先頭へジャンプする。
+
+| Category | Order | Type ID |
+| --- | ---: | --- |
+| Meters | 1 | `meter.round` |
+| Meters | 2 | `meter.round.medium` |
+| Meters | 3 | `meter.round.large` |
+| Meters | 4 | `meter.window` |
+| Indicators | 5 | `indicator.lamp` |
+| Indicators | 6 | `indicator.status` |
+| Indicators | 7 | `panel.window` |
+| Switches | 8 | `control.toggle` |
+| Switches | 9 | `control.button` |
+| Switches | 10 | `control.rotary` |
+| Motion | 11 | `control.lever` |
+| Motion | 12 | `control.throttle` |
+| Motion | 13 | `control.power_slider` |
+
+全13種類を3テーマで実装済みで、すべてPlane／Volumeの任意面へ配置できる。
+Mesh raycastは配置対象にしない。
+
+## Historical plan
 
 ### P0: Interaction and theme prototype
 
@@ -12,25 +37,30 @@
 
 | ID | Object | Surfaces | Interaction/state | Mock motion |
 | --- | --- | --- | --- | --- |
-| `meter.round` | 円形アナログメーター | Wall / Floor / Ceiling | 表示のみ、0–1 value | 針の追従、微振動 |
-| `control.lever` | 縦型レバー | Wall / Floor | 掴み、-1–1 position | レバー角度、復帰/保持モード |
+| `meter.round` | 円形アナログメーター | Wall / Floor / Ceiling | 読取専用、0–1 value | 操作モード中の針微動 |
+| `control.lever` | 縦型レバー | Wall / Floor | Triggerまたは接触Grip＋上下motion、5段階 | 面に垂直な片側48° sweep、5 detents |
 | `control.toggle` | トグルスイッチ | Wall / Floor / Ceiling | On / Off | ノブ反転、クリック |
 | `control.rotary` | ロータリーノブ | Wall / Floor | 連続値または段階値 | 回転、detent feedback |
-| `control.button` | 押しボタン | Wall / Floor / Ceiling | Momentary / Latch | 押し込み、復帰、発光 |
-| `indicator.lamp` | 状態ランプ | Wall / Floor / Ceiling | 表示のみ、Off/Ready/Active/Error | 発光、点滅 |
+| `control.button` | 押しボタン | Wall / Floor / Ceiling | 両手接触またはビーム＋TriggerのMomentary | 押下中の沈み込み、解放時復帰 |
+| `indicator.lamp` | 単色状態ランプ | Wall / Floor / Ceiling | On / Off | 単色発光 |
+| `indicator.status` | 多段階状態LED | Wall / Floor / Ceiling | Off / Safe / Warn / Danger | 緑・橙・赤の状態発光 |
+| `control.throttle` | スロットルレバー | Wall / Floor | Triggerまたは接触Grip＋アークmotion、6段階 | engine quadrant型の片側70° sweep |
+| `control.power_slider` | パワースライダー | Wall / Floor | Triggerまたは接触Grip＋上下motion、11段階 | 上下0.18 m travel |
 
 P0 の目的は造形品質ではなく、同じ logic/collider/state に対してテーマ visual だけを安全に交換できることの検証とする。
 
-### Implemented greybox
+### Initial greybox milestone
 
-2026-07-17時点で、P0の6種類をUnity Primitiveからruntime生成するMockを実装済み。
+2026-07-17時点の初期マイルストーンでは、P0の6種類をUnity Primitiveから
+runtime生成した。以下は当時の記録で、現在の操作は前節を正とする。
 
-- 右スティック左右で種類を切り替え、緑色previewで形状を確認する。
+- 配置対象は `METERS / INDICATORS / SWITCHES / MOTION` の機能カテゴリ順に並べる。
+  右スティック左右で種類、右スティック上下でカテゴリ先頭、左スティック左右で
+  テーマを切り替え、緑色previewで形状を確認する。
 - `A`で選択中の1種類を配置し、type IDとSpatial Anchor UUIDを保存する。
 - Activity終了・再起動後は、保存したtype IDから同じ種類を復元する。
-- レバーとロータリーノブは天井配置を拒否し、それ以外は3面へ配置できる。
-- 針、レバー、トグル、ノブ、ボタン、ランプは機能しているように自動アニメーションする。
-- 現段階は1個を置き換えるvertical sliceであり、掴む・押す等の直接操作と操作状態保存は次工程とする。
+- 当初は種類別に配置面を制限していたが、現在は全種類を任意面へ配置できる。
+- 初期自動アニメーションは、現在の操作モード・接続駆動へ置き換えた。
 
 ### P1: Instrument panel vertical slice
 
@@ -39,6 +69,8 @@ P0 の目的は造形品質ではなく、同じ logic/collider/state に対し�
 | `meter.linear` | 縦/横バー計器 | Wall / Floor | 表示のみ、0–1 value | バー量と色変化 |
 | `display.scope` | 波形ディスプレイ | Wall / Floor | mode selection | スクロール波形、走査線 |
 | `panel.compact` | 4 部品用コンパクトパネル | Wall | 子部品の集合 | 通電シーケンス |
+| `meter.window` | 窓枠サイズ大型メーター | Wall / Floor / Ceiling | 表示値、0–1 value | 大型needle |
+| `panel.window` | 窓枠サイズ宇宙船パネル | Wall / Floor / Ceiling | status value | 大型status vane |
 
 ### P2: Room-scale atmosphere
 

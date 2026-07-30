@@ -5,6 +5,9 @@ namespace MatsuMotoMeterAR.Anchors
         Unknown = -1,
         Wall,
         Floor,
-        Ceiling
+        Ceiling,
+        Volume,
+        Environment,
+        Plane
     }
 }

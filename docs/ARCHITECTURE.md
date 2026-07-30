@@ -2,15 +2,18 @@
 
 ## Goal
 
-Meta Quest のパススルー MR 上で、壁・床・天井に複数種類の計器を配置し、空間アンカーによって次回起動時にも復元する。
+Meta QuestのパススルーMR上で、Scene APIが認識したPlane／Volumeの任意面へ
+複数種類の計器を配置し、空間アンカーによって次回起動時にも復元する。
 
 ## Layers
 
 - `Instruments`: 計器の見た目、状態、アニメーション。初期段階は回転・点滅・針振れなどの Mock。
 - `Themes`: 計器、レバー、スイッチの機能から外観を分離し、テーマ単位で prefab、material、audio、animation profile を差し替える。
 - `Placement`: レイキャスト結果、面法線、配置可能面のルール、プレビュー、確定操作。
+- `InteractionModes`: Operation、Edit、Connectの排他的な権限ポリシー。
+- `Signals`: Source／Target適合、値変換、複数入力合成、接続選択。
 - `Anchors`: 保存・読込・削除の抽象 API。Editor では `MockAnchorService`、Quest では Meta Spatial Anchor adapter を使う。
-- `Platform/Meta`: Meta XR SDK、Scene API、Passthrough、Spatial Anchors への依存を閉じ込める（次マイルストーンで追加）。
+- `Platform/Meta`: Meta XR SDK、Scene API、Passthrough、Spatial Anchorsへの依存を閉じ込める。
 - `App`: 起動シーケンス、権限、計器カタログ、永続 ID とアンカー ID の対応付け。
 
 Unity Editor での Mock 動作が Meta SDK に依存しないことを設計上の境界とする。実機固有コードは asmdef を分離し、Android/Quest のみで有効化する。
@@ -24,7 +27,7 @@ Unity Editor での Mock 動作が Meta SDK に依存しないことを設計上
 | Capability | Quest implementation | App-facing boundary |
 | --- | --- | --- |
 | カラーパススルー | Unity OpenXR Meta | Passthrough bootstrap |
-| 壁・床・天井の理解 | Meta Scene API / MRUK | `IRoomSceneProvider` |
+| Plane／Volumeの理解 | Meta Scene API / MRUK | placement surface query |
 | 配置位置の永続化 | Meta Spatial Anchors | `IAnchorService` |
 | 現実物による遮蔽 | Environment Depth / OpenXR occlusion | Occlusion capability |
 | 手・コントローラー操作 | OpenXR Input / Meta Interaction SDK | Input/interaction service |
@@ -55,15 +58,30 @@ Meta SDK の更新は adapter と専用 asmdef 内に閉じ込める。Meta 固�
 そのまま移行し、互換キーはconcept.4実機確認まで保持する。Quest実装は
 `MetaQuestAnchorService`を介してUUID一括load、個別localize、root bind、eraseを行う。
 
-schema v1は`schemaVersion`、`revision`と最大24件のrecordを持つ。各recordは
-`placementId`、`anchorId`、stable `instrumentTypeId`、surface、local offset、
-normalized value、lifecycleを保存する。global themeは引き続き独立設定とする。
+schema v4は`schemaVersion`、`revision`、Roomごと最大48件・全Room合計最大192件の
+配置recordと、最大192件の`SignalConnectionRecord`を持つ。各配置recordは
+`placementId`、`anchorId`、MRUK Room UUID、stable `instrumentTypeId`、surface、
+local offset、normalized value、lifecycleを保存する。接続recordはconnection ID、Source/Targetの
+placement ID、変換方式を保存する。global themeは引き続き独立設定とする。
+schema v1/v2/v3は読込時にv4へ移行して即時保存し、旧buildによる
+25件目以降の切り捨てを防ぐ。近接する配置は約2.75 m以内でAnchorを共有し、
+複数recordが同じ`anchorId`を参照できる。
+実行中に`GetCurrentRoom()`が1秒間安定して別Roomを返した場合は旧Roomのruntime
+objectをアンロードし、新しいRoom UUIDに属するSpatial Anchorだけを再ロードする。
+Room UUIDなしの旧recordは、復元に成功した最初のRoomへ所属させる。
+計器rootはSpatial Anchor専用rootの子に置き、整列・グループ移動の結果を
+`localOffset`へ保存する。Anchorの約2.75 m範囲内は既存rootを維持し、範囲外へ
+移動する場合は移動先の既存Anchorを再利用するか、新規Anchorへtransactionalに
+付け替える。複数オブジェクトのレイアウト変更は1回のplacement document更新として
+扱い、保存失敗時は元のAnchor参照とposeへrollbackする。
 未知の新schemaは上書きせず、破損JSONは有効な旧データからのみ回復する。
 旧データ移行成功後は完了マーカーを保存し、以後のJSON破損時に古い1件へ自動で
 巻き戻さない。削除中断は`PendingDelete`として次回起動時にeraseを再開し、
-一時的にlocalizeできないrecordは`Unavailable`として24個のactive枠から外して再試行する。
+一時的にlocalizeできないrecordは`Unavailable`としてRoomの配置枠を保持したまま
+再試行する。
 
-初期リリースでは theme は部屋単位の global 設定、配置数は 1 部屋最大 24 個、操作は controller 優先とする。theme 変更は短い transition を伴い、操作中のオブジェクトは操作終了後に visual を交換する。
+`v0.2.0-concept.1`ではthemeはglobal設定、配置数は1部屋最大48個、接続は最大
+192件、操作はcontroller優先とする。theme変更時もAnchor、pose、値、接続を維持する。
 
 ## Milestones
 

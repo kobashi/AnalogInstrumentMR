@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using MatsuMotoMeterAR.Anchors;
 using MatsuMotoMeterAR.Instruments;
 using MatsuMotoMeterAR.PlacementPersistence;
+using MatsuMotoMeterAR.Signals;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -13,6 +14,7 @@ namespace MatsuMotoMeterAR.Tests
         [TestCase(0)]
         [TestCase(1)]
         [TestCase(24)]
+        [TestCase(48)]
         public void Json_RoundTripsSupportedPlacementCounts(int count)
         {
             var source = CreateDocument(count);
@@ -21,7 +23,9 @@ namespace MatsuMotoMeterAR.Tests
             var result = PlacementJsonCodec.Deserialize(json);
 
             Assert.That(result.Status, Is.EqualTo(PlacementLoadStatus.Loaded));
-            Assert.That(result.Document.schemaVersion, Is.EqualTo(1));
+            Assert.That(
+                result.Document.schemaVersion,
+                Is.EqualTo(PlacementDocument.CurrentSchemaVersion));
             Assert.That(result.Document.revision, Is.EqualTo(7));
             Assert.That(result.Document.placements, Has.Count.EqualTo(count));
             for (var index = 0; index < count; index++)
@@ -29,7 +33,11 @@ namespace MatsuMotoMeterAR.Tests
                 var record = result.Document.placements[index];
                 Assert.That(record.placementId, Is.EqualTo($"placement-{index}"));
                 Assert.That(record.anchorId, Is.EqualTo(AnchorId(index)));
-                Assert.That(record.normalizedValue, Is.EqualTo(index / 24f).Within(0.0001f));
+                Assert.That(record.roomId, Is.EqualTo(RoomId(index % 2)));
+                var expectedValue = count > 0 ? index / (float)count : 0f;
+                Assert.That(
+                    record.normalizedValue,
+                    Is.EqualTo(expectedValue).Within(0.0001f));
             }
         }
 
@@ -44,7 +52,7 @@ namespace MatsuMotoMeterAR.Tests
                 Is.EqualTo(PlacementLoadStatus.Corrupt));
 
             var future = PlacementJsonCodec.Deserialize(
-                "{\"schemaVersion\":2,\"revision\":9,\"placements\":[]}");
+                "{\"schemaVersion\":5,\"revision\":9,\"placements\":[]}");
             Assert.That(future.Status, Is.EqualTo(PlacementLoadStatus.UnsupportedVersion));
             Assert.That(future.CanWrite, Is.False);
             Assert.That(future.Document.revision, Is.EqualTo(9));
@@ -57,6 +65,7 @@ namespace MatsuMotoMeterAR.Tests
             document.placements[0].normalizedValue = -4f;
             document.placements[0].instrumentTypeId = "unknown";
             document.placements[0].surfaceKind = 99;
+            document.placements[0].roomId = "not-a-room-guid";
             document.placements.Add(new PlacementRecord
             {
                 placementId = "placement-0",
@@ -81,21 +90,190 @@ namespace MatsuMotoMeterAR.Tests
 
             var normalized = PlacementJsonCodec.Normalize(document);
 
-            Assert.That(normalized.placements, Has.Count.EqualTo(2));
+            Assert.That(normalized.placements, Has.Count.EqualTo(3));
             Assert.That(normalized.placements[0].normalizedValue, Is.Zero);
             Assert.That(normalized.placements[0].instrumentTypeId, Is.EqualTo("meter.round"));
             Assert.That(normalized.placements[0].surfaceKind, Is.EqualTo((int)SurfaceKind.Unknown));
+            Assert.That(
+                normalized.placements[2].anchorId,
+                Is.EqualTo(normalized.placements[1].anchorId));
+            Assert.That(normalized.placements[0].roomId, Is.Empty);
         }
 
         [Test]
-        public void Normalize_CapsActivePlacementsAtTwentyFour()
+        public void Normalize_CapsPlacementsAtFortyEightPerRoom()
         {
-            var normalized = PlacementJsonCodec.Normalize(CreateDocument(30));
+            var document = CreateDocument(60);
+            foreach (var record in document.placements)
+                record.roomId = RoomId(0);
+
+            var normalized = PlacementJsonCodec.Normalize(document);
 
             Assert.That(
                 normalized.placements.FindAll(
                     record => record.lifecycle == (int)PlacementLifecycle.Active),
-                Has.Count.EqualTo(24));
+                Has.Count.EqualTo(48));
+        }
+
+        [Test]
+        public void Normalize_AllowsFortyEightPlacementsInEachRoom()
+        {
+            var document = CreateDocument(96);
+            for (var index = 0; index < document.placements.Count; index++)
+                document.placements[index].roomId = RoomId(index / 48);
+
+            var normalized = PlacementJsonCodec.Normalize(document);
+
+            Assert.That(normalized.placements, Has.Count.EqualTo(96));
+        }
+
+        [Test]
+        public void Normalize_CapsAllRoomStorageAtOneHundredNinetyTwo()
+        {
+            var document = CreateDocument(240);
+            for (var index = 0; index < document.placements.Count; index++)
+                document.placements[index].roomId = RoomId(index / 48);
+
+            var normalized = PlacementJsonCodec.Normalize(document);
+
+            Assert.That(
+                normalized.placements,
+                Has.Count.EqualTo(
+                    PlacementDocument.MaximumStoredPlacements));
+        }
+
+        [Test]
+        public void Normalize_PreservesConnectionsForTemporarilyUnavailableRoomAnchors()
+        {
+            var document = CreateDocument(2);
+            document.placements[0].instrumentTypeId = "control.lever";
+            document.placements[1].instrumentTypeId = "indicator.status";
+            document.placements[1].lifecycle =
+                (int)PlacementLifecycle.Unavailable;
+            document.connections.Add(new SignalConnectionRecord
+            {
+                connectionId = "cross-room",
+                sourcePlacementId = document.placements[0].placementId,
+                targetPlacementId = document.placements[1].placementId
+            });
+
+            var normalized = PlacementJsonCodec.Normalize(document);
+
+            Assert.That(normalized.connections, Has.Count.EqualTo(1));
+            Assert.That(
+                normalized.connections[0].connectionId,
+                Is.EqualTo("cross-room"));
+        }
+
+        [Test]
+        public void Json_MigratesLegacySchemasToV4AndRequiresCommit()
+        {
+            foreach (var schemaVersion in new[] { 1, 2, 3 })
+            {
+                var result = PlacementJsonCodec.Deserialize(
+                    $"{{\"schemaVersion\":{schemaVersion}," +
+                    "\"revision\":9,\"placements\":[]}");
+
+                Assert.That(
+                    result.Status,
+                    Is.EqualTo(PlacementLoadStatus.Loaded));
+                Assert.That(result.RequiresSave, Is.True);
+                Assert.That(
+                    result.Document.schemaVersion,
+                    Is.EqualTo(PlacementDocument.CurrentSchemaVersion));
+            }
+        }
+
+        [Test]
+        public void ConnectionSelection_CyclesIncomingAndOutgoingConnections()
+        {
+            var outgoingFirst = Connection("first", "selected", "target-a");
+            var incoming = Connection("second", "source-b", "selected");
+            var unrelated = Connection("other", "source-c", "target-c");
+            var outgoingLast = Connection("third", "selected", "target-d");
+            var connections = new List<SignalConnectionRecord>
+            {
+                outgoingFirst,
+                incoming,
+                unrelated,
+                outgoingLast
+            };
+
+            var selected = SignalConnectionSelectionPolicy.SelectNext(
+                connections,
+                "selected",
+                null);
+            Assert.That(selected, Is.SameAs(outgoingFirst));
+
+            selected = SignalConnectionSelectionPolicy.SelectNext(
+                connections,
+                "selected",
+                selected.connectionId);
+            Assert.That(selected, Is.SameAs(incoming));
+
+            selected = SignalConnectionSelectionPolicy.SelectNext(
+                connections,
+                "selected",
+                selected.connectionId);
+            Assert.That(selected, Is.SameAs(outgoingLast));
+
+            selected = SignalConnectionSelectionPolicy.SelectNext(
+                connections,
+                "selected",
+                selected.connectionId);
+            Assert.That(selected, Is.SameAs(outgoingFirst));
+        }
+
+        [Test]
+        public void ConnectionSelection_CountsOnlySelectedObjectConnections()
+        {
+            var connections = new List<SignalConnectionRecord>
+            {
+                Connection("first", "selected", "target-a"),
+                Connection("second", "source-b", "selected"),
+                Connection("other", "source-c", "target-c")
+            };
+
+            Assert.That(
+                SignalConnectionSelectionPolicy.CountForPlacement(
+                    connections,
+                    "selected"),
+                Is.EqualTo(2));
+            Assert.That(
+                SignalConnectionSelectionPolicy.CountForPlacement(
+                    connections,
+                    "missing"),
+                Is.Zero);
+        }
+
+        [Test]
+        public void ConnectionTransform_CyclesInBothDirectionsAndWraps()
+        {
+            Assert.That(
+                InstrumentSignalPolicy.Cycle(
+                    SignalTransformKind.Direct,
+                    1),
+                Is.EqualTo(SignalTransformKind.Invert));
+            Assert.That(
+                InstrumentSignalPolicy.Cycle(
+                    SignalTransformKind.Invert,
+                    1),
+                Is.EqualTo(SignalTransformKind.Range));
+            Assert.That(
+                InstrumentSignalPolicy.Cycle(
+                    SignalTransformKind.Range,
+                    1),
+                Is.EqualTo(SignalTransformKind.Threshold));
+            Assert.That(
+                InstrumentSignalPolicy.Cycle(
+                    SignalTransformKind.Threshold,
+                    1),
+                Is.EqualTo(SignalTransformKind.Direct));
+            Assert.That(
+                InstrumentSignalPolicy.Cycle(
+                    SignalTransformKind.Direct,
+                    -1),
+                Is.EqualTo(SignalTransformKind.Threshold));
         }
 
         [Test]
@@ -129,7 +307,7 @@ namespace MatsuMotoMeterAR.Tests
             {
                 Result = new PlacementLoadResult(
                     PlacementLoadStatus.UnsupportedVersion,
-                    new PlacementDocument { schemaVersion = 2 })
+                    new PlacementDocument { schemaVersion = 5 })
             };
 
             var result = LegacyPlacementMigration.LoadOrMigrate(
@@ -188,13 +366,14 @@ namespace MatsuMotoMeterAR.Tests
                 {
                     placementId = $"placement-{index}",
                     anchorId = AnchorId(index),
+                    roomId = RoomId(index % 2),
                     instrumentTypeId = MockInstrumentCatalog.GetTypeId(
                         (MockInstrumentKind)(index % MockInstrumentCatalog.Count)),
                     surfaceKind = (int)(SurfaceKind)(index % 3),
                     localOffset = SerializablePose.FromPose(new Pose(
                         new Vector3(index, index * 2f, -index),
                         Quaternion.Euler(0f, index, 0f))),
-                    normalizedValue = index / 24f
+                    normalizedValue = count > 0 ? index / (float)count : 0f
                 });
             }
             return document;
@@ -203,6 +382,24 @@ namespace MatsuMotoMeterAR.Tests
         private static string AnchorId(int index)
         {
             return new Guid(index + 1, 0, 0, new byte[8]).ToString("D");
+        }
+
+        private static string RoomId(int index)
+        {
+            return new Guid(1000 + index, 0, 0, new byte[8]).ToString("D");
+        }
+
+        private static SignalConnectionRecord Connection(
+            string id,
+            string sourceId,
+            string targetId)
+        {
+            return new SignalConnectionRecord
+            {
+                connectionId = id,
+                sourcePlacementId = sourceId,
+                targetPlacementId = targetId
+            };
         }
 
         private sealed class FixedLegacySource : ILegacyPlacementSource

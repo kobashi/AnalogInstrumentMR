@@ -6,6 +6,103 @@
 
 ## [Unreleased]
 
+## [0.2.0-concept.1] - 2026-07-30
+
+### Added
+
+- Operation / Edit / Connectの3モードと、接続タイプ別に色分けした
+  Direct / Invert / Range / Threshold接続
+- schema v4によるRoomごと最大48配置・全Room合計192配置・192接続の保存、
+  Room UUID所属、旧schemaからの移行
+- アプリ実行中のMRUK Current Room変更検出。1秒間の安定確認後に旧Roomの表示と
+  Colliderをアンロードし、移動先RoomのPlane／VolumeとSpatial Anchorを復元
+- 丸形メーター中・大を含む13種類、3テーマ、計39個のV6 visual prefab
+- PlaneとVolumeの任意面への配置、面wireframe、ray hit安定化
+- 機能カテゴリ順の追加オブジェクト選択と右スティック上下のカテゴリジャンプ
+- 操作モードの左右コントローラービーム／Trigger。左右別の状態管理により、
+  2つの計器を両手で同時操作可能
+- レバー／スライダーの接触Grip＋上下motion、スロットルの接触Grip＋
+  アークmotion操作とdetent haptics、Grip解放時の状態保存
+- 押しボタンの左右コントローラー接触押下と、読取専用メーター／大型パネルの
+  操作モード限定の非同期微動アニメーション
+- 第1選択の位置を起点に、整列前の空間的な並び順を維持する横・縦整列と、
+  右スティック方向へ選択集合を回転する配置操作
+- `X`でOperation → Edit → Connectを循環し、各モードの入力を排他的にする
+- Operationモードの左スティック押し込み2秒長押しによる、`X`モード切替の
+  ロック／解除
+- 重なりを避ける自動配置、同一面の横一列整列、相対配置を保つグループ移動
+- Spatial Anchor専用rootと永続化済み`localOffset`による編集レイアウトの再起動復元
+- 壁・床・天井へ置ける窓枠サイズの`meter.window`と`panel.window`。
+  3テーマの形状指針を踏襲した宇宙船向けruntime greybox
+- 3テーマ対応のスロットルとパワースライダーのBlender原本、FBX、Unity Prefab。
+  それぞれ`throttle_pivot`と`slider_travel`へ多段階motionを接続
+- 編集移動中に新規配置previewを置き換える移動先target marker。壁・床・天井を
+  またぐ移動後の外形と向きを表示し、面適合・重複を緑／赤とHUD理由で事前表示。
+  Aで確定、Xで取消
+- 3テーマ×4可動機種の全段階についてRenderer移動量、軸、取付面クリアランスを
+  検査し、コンタクトシートを生成するUnity Editor監査
+- Editモードの左スティック押し込み2秒長押しによる安全終了。
+  保存中はActivity終了を保留
+
+### Fixed
+
+- スロットルのGrip開始判定を計器全体のColliderから、可動pivotへ追従する
+  palm grip専用boxへ変更し、見た目のグリップとコントローラー反応位置のずれを修正
+- 押しボタンを接触操作に加えて左右ビーム＋Triggerでも押下可能に修正
+- 大型パネル、大型メーター、多段階警告LEDの配置previewが一律緑色になる
+  material上書きを廃止し、テーマ固有配色を保持
+- controller grip pose由来だったビームをOpenXR aim poseへ分離し、
+  Quest HOME相当の照準角度・原点へ修正。Grip接触判定は物理poseを維持
+- スロットルを左右fork、幅広palm grip、quadrant gate、6段階目盛を持つ
+  航空機／船舶型エンジン出力レバーへ再設計し、Grip操作を直線移動から
+  pivot中心の実アーク角入力へ変更
+- トグルのpivotをbase上のauthoring位置に維持し、レバー・トグル・スロットルへ
+  初期角offsetを適用。local X軸の片側sweepで可動面を取付面に垂直にし、
+  初期状態と端位置でbaseへめり込む問題を修正
+- HUD文字サイズを従来の50%へ縮小
+- 配置済みオブジェクト照準中は新規previewと追加を停止し、複数選択中は
+  追加・削除・種類変更を無効化。第1選択を太いシアン枠で表示
+- 配置・整列の重複marginを外形に沿う2 mmへ縮小し、整列gapを12 mmに分離。
+  第1選択の位置を固定した選択順整列へ変更し、外形は離れているのに
+  margin判定で整列が失敗する問題を修正
+- FBX可動ノードへ実行時motion proxyを挿入し、レバーの値だけ変化して
+  3Dハンドルが追従しない問題を修正
+- トグルの初期位置でbaseへめり込む問題を修正
+- Metaメニューから復帰した際にOpenXR controller pose actionを再同期し、
+  描画直前にも姿勢を更新してビームと実コントローラーのずれを修正
+- FBX可動プロキシの座標をvisual root基準へ統一し、レバー、トグル、
+  スロットル、パワースライダーの回転軸・移動軸を修正
+- schema v4 placement store、旧schema自動移行、Roomごと最大48配置、
+  全Room合計最大192配置、最大192接続、
+  16 Anchor単位のbatch load、約2.75 m圏内の配置によるSpatial Anchor共有
+- 右Triggerによる複数選択と選択枠、横・縦の等間隔整列、選択集合の移動。
+  選択中の`B`は選択解除、`Y`は将来用の予約入力
+- Anchor共有範囲外へのグループ移動で、近傍Anchor再利用または新規Anchor作成を
+  行うtransactionalな自動再アンカーと保存失敗時rollback
+- `control.lever`の操作を二値切替から5ノッチへ拡張。隣接ノッチ移動、端での
+  方向反転、detent HUD、保存値の最寄りノッチ正規化
+- レバーの可動域を片側48°へ調整し、端位置を含むInteractionColliderを
+  幅0.24 mへ拡張
+- ON/OFF専用`indicator.lamp`を維持しながら、`OFF / SAFE / WARN / DANGER`を
+  消灯・緑・橙・赤で循環表示する`indicator.status`を9番目の配置種別として追加
+- `control.throttle`へ6ノッチ状態、保存・復元、`throttle_pivot` motion contractと
+  3テーマの完成モデルを実装
+- `control.power_slider`へOFFからMAXまでの11ノッチ、0.18 mの
+  `slider_travel` contract、保存・復元、3テーマの完成モデルを実装
+
+### Validated
+
+- Unity EditMode 99 / 99
+- active V6 visual prefab 39 / 39
+- Quest 3への非Development APK build / install
+
+### Known limitations
+
+- 48配置gateと64配置stressはQuest実機で長時間性能未再検証
+- Quest 3Sは未検証
+- ConnectのRangeは0.2–0.8、Thresholdは0.5固定、複数入力は平均合成
+- モニターの数値／グラフ／図形表示は今後の実装対象
+
 ## [0.1.0-concept.5-perfgate] - 2026-07-23
 
 このsource releaseにはconcept.3からconcept.5までの操作、複数配置、

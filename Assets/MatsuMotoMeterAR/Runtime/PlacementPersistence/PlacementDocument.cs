@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using MatsuMotoMeterAR.Anchors;
+using MatsuMotoMeterAR.Signals;
 using UnityEngine;
 
 namespace MatsuMotoMeterAR.PlacementPersistence
@@ -8,12 +9,37 @@ namespace MatsuMotoMeterAR.PlacementPersistence
     [Serializable]
     public sealed class PlacementDocument
     {
-        public const int CurrentSchemaVersion = 1;
-        public const int MaximumActivePlacements = 24;
+        public const int LegacySchemaVersion = 1;
+        public const int PreviousSchemaVersion = 3;
+        public const int CurrentSchemaVersion = 4;
+        public const int MaximumActivePlacements = 48;
+        public const int MaximumStoredPlacements = 192;
+        public const int MaximumConnections = 192;
 
         public int schemaVersion = CurrentSchemaVersion;
         public long revision;
         public List<PlacementRecord> placements = new();
+        public List<SignalConnectionRecord> connections = new();
+    }
+
+    [Serializable]
+    public sealed class SignalConnectionRecord
+    {
+        public string connectionId;
+        public string sourcePlacementId;
+        public string targetPlacementId;
+        public int transformKind = (int)SignalTransformKind.Direct;
+
+        public SignalConnectionRecord Clone()
+        {
+            return new SignalConnectionRecord
+            {
+                connectionId = connectionId,
+                sourcePlacementId = sourcePlacementId,
+                targetPlacementId = targetPlacementId,
+                transformKind = transformKind
+            };
+        }
     }
 
     [Serializable]
@@ -21,6 +47,7 @@ namespace MatsuMotoMeterAR.PlacementPersistence
     {
         public string placementId;
         public string anchorId;
+        public string roomId;
         public string instrumentTypeId;
         public int surfaceKind = (int)SurfaceKind.Unknown;
         public SerializablePose localOffset = SerializablePose.Identity;
@@ -33,6 +60,7 @@ namespace MatsuMotoMeterAR.PlacementPersistence
             {
                 placementId = placementId,
                 anchorId = anchorId,
+                roomId = roomId,
                 instrumentTypeId = instrumentTypeId,
                 surfaceKind = surfaceKind,
                 localOffset = localOffset,
