@@ -1,0 +1,44 @@
+{
+  "asset": "MeterRound_KineticSafety_V6_Grayscale",
+  "type_id": "meter.round",
+  "theme_id": "kinetic-safety",
+  "art_pass": "V6 hybrid hard-surface prototype",
+  "quality_floor": "V4 hard-surface retopo",
+  "geometry_policy": "silhouette, major layers, supports and interaction structure",
+  "texture_policy": "engraving, micro grooves, knurling, wear and labels",
+  "assembly_policy": "gaskets, seams, bushings, stops and supports",
+  "source_topology": {
+    "vertices": 2060,
+    "edges": 4376,
+    "faces": 2380,
+    "triangles": 904,
+    "quads": 1408,
+    "ngons": 68,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangulated_topology": {
+    "vertices": 2060,
+    "edges": 5988,
+    "faces": 3992,
+    "triangles": 3992,
+    "quads": 0,
+    "ngons": 0,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangle_budget": 5000,
+  "pivot": {
+    "position": [
+      0.0,
+      -0.077,
+      -0.004
+    ],
+    "local_axis": [
+      0.0,
+      1.0,
+      0.0
+    ]
+  },
+  "production_integrated": false
+}

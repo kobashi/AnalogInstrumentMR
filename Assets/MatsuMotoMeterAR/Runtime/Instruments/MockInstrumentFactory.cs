@@ -58,7 +58,9 @@ namespace MatsuMotoMeterAR.Instruments
                 vfxSocket);
 
             if (preview)
+            {
                 RemoveColliders(root);
+            }
             return root;
         }
 
@@ -488,7 +490,9 @@ namespace MatsuMotoMeterAR.Instruments
                 new Vector3(0f, 0f, housingDepth + 0.006f),
                 lensScale,
                 Quaternion.identity,
-                preview ? PreviewGreen : Color.black);
+                ColorFor(
+                    preview,
+                    preview ? palette.Warning : Color.black));
             var lensRenderer = lens.GetComponent<Renderer>();
             visualRoot.AddComponent<ThemeVisualManifest>().Configure(
                 lens.transform,
@@ -783,7 +787,19 @@ namespace MatsuMotoMeterAR.Instruments
 
         private static Color ColorFor(bool preview, Color normal)
         {
-            return preview ? PreviewGreen : normal;
+            if (!preview)
+                return normal;
+
+            var luminance = Mathf.Clamp01(
+                normal.r * 0.2126f +
+                normal.g * 0.7152f +
+                normal.b * 0.0722f);
+            var shade = Mathf.Lerp(0.35f, 1f, luminance);
+            return new Color(
+                PreviewGreen.r * Mathf.Lerp(0.45f, 1f, shade),
+                PreviewGreen.g * Mathf.Lerp(0.38f, 1f, shade),
+                PreviewGreen.b * Mathf.Lerp(0.45f, 1f, shade),
+                normal.a);
         }
 
         private static void RemoveColliders(GameObject root)

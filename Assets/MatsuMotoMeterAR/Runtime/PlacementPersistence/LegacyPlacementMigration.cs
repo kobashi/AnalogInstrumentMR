@@ -50,6 +50,8 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                 MockInstrumentCatalog.GetTypeId(MockInstrumentKind.RoundMeter));
             var kind = MockInstrumentCatalog.FromTypeId(typeId);
             var defaultValue = kind == MockInstrumentKind.RoundMeter ||
+                               kind == MockInstrumentKind.RoundMeterMedium ||
+                               kind == MockInstrumentKind.RoundMeterLarge ||
                                kind == MockInstrumentKind.Lever ||
                                kind == MockInstrumentKind.ToggleSwitch
                 ? 0.5f
@@ -125,7 +127,7 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                 return new PlacementLoadResult(
                     PlacementLoadStatus.SaveFailed,
                     document,
-                    "Legacy placement could not be committed to the v2 store.");
+                    "Legacy placement could not be committed to the v3 store.");
             }
 
             var verified = store.Load();

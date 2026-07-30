@@ -32,6 +32,8 @@ namespace MatsuMotoMeterAR.Tests
         [TestCase(MockInstrumentKind.StatusIndicator, "indicator.status")]
         [TestCase(MockInstrumentKind.ThrottleLever, "control.throttle")]
         [TestCase(MockInstrumentKind.PowerSlider, "control.power_slider")]
+        [TestCase(MockInstrumentKind.RoundMeterMedium, "meter.round.medium")]
+        [TestCase(MockInstrumentKind.RoundMeterLarge, "meter.round.large")]
         public void TypeIds_PreservePlacementDataContract(
             MockInstrumentKind kind,
             string expectedTypeId)
@@ -66,11 +68,60 @@ namespace MatsuMotoMeterAR.Tests
                 Is.EqualTo(MockInstrumentKind.PowerSlider));
         }
 
+        [Test]
+        public void Cycle_UsesFunctionalObjectOrder()
+        {
+            Assert.That(
+                MockInstrumentCatalog.Cycle(MockInstrumentKind.RoundMeter, 1),
+                Is.EqualTo(MockInstrumentKind.RoundMeterMedium));
+            Assert.That(
+                MockInstrumentCatalog.Cycle(
+                    MockInstrumentKind.WindowMeter,
+                    1),
+                Is.EqualTo(MockInstrumentKind.IndicatorLamp));
+            Assert.That(
+                MockInstrumentCatalog.Cycle(
+                    MockInstrumentKind.WindowPanel,
+                    1),
+                Is.EqualTo(MockInstrumentKind.ToggleSwitch));
+            Assert.That(
+                MockInstrumentCatalog.Cycle(
+                    MockInstrumentKind.RotaryKnob,
+                    1),
+                Is.EqualTo(MockInstrumentKind.Lever));
+        }
+
+        [Test]
+        public void CategoryJump_MovesToAdjacentCategoryStart()
+        {
+            Assert.That(
+                MockInstrumentCatalog.JumpCategory(
+                    MockInstrumentKind.RoundMeterLarge,
+                    1),
+                Is.EqualTo(MockInstrumentKind.IndicatorLamp));
+            Assert.That(
+                MockInstrumentCatalog.JumpCategory(
+                    MockInstrumentKind.StatusIndicator,
+                    1),
+                Is.EqualTo(MockInstrumentKind.ToggleSwitch));
+            Assert.That(
+                MockInstrumentCatalog.JumpCategory(
+                    MockInstrumentKind.ToggleSwitch,
+                    -1),
+                Is.EqualTo(MockInstrumentKind.IndicatorLamp));
+            Assert.That(
+                MockInstrumentCatalog.JumpCategory(
+                    MockInstrumentKind.RoundMeter,
+                    -1),
+                Is.EqualTo(MockInstrumentKind.Lever));
+        }
+
         [TestCase(MockInstrumentKind.Lever)]
         [TestCase(MockInstrumentKind.RotaryKnob)]
         [TestCase(MockInstrumentKind.ThrottleLever)]
         [TestCase(MockInstrumentKind.PowerSlider)]
-        public void ManualControls_AreRejectedOnCeiling(MockInstrumentKind kind)
+        public void ManualControls_SupportEveryPlacementSurface(
+            MockInstrumentKind kind)
         {
             Assert.That(
                 MockInstrumentCatalog.SupportsSurface(kind, SurfaceKind.Wall),
@@ -80,30 +131,44 @@ namespace MatsuMotoMeterAR.Tests
                 Is.True);
             Assert.That(
                 MockInstrumentCatalog.SupportsSurface(kind, SurfaceKind.Ceiling),
-                Is.False);
-        }
-
-        [Test]
-        public void CodeOnlyControls_WaitForAuthoredModels()
-        {
+                Is.True);
             Assert.That(
-                MockInstrumentFactory.IsPlacementReady(
-                    MockInstrumentKind.ThrottleLever,
-                    MockInstrumentTheme.OrbitalAnalog),
-                Is.False);
+                MockInstrumentCatalog.SupportsSurface(kind, SurfaceKind.Plane),
+                Is.True);
             Assert.That(
-                MockInstrumentFactory.IsPlacementReady(
-                    MockInstrumentKind.PowerSlider,
-                    MockInstrumentTheme.OrbitalAnalog),
-                Is.False);
-            Assert.That(
-                MockInstrumentFactory.IsPlacementReady(
-                    MockInstrumentKind.Lever,
-                    MockInstrumentTheme.OrbitalAnalog),
+                MockInstrumentCatalog.SupportsSurface(kind, SurfaceKind.Volume),
                 Is.True);
         }
 
+        [Test]
+        public void AuthoredMotionControls_ArePlacementReadyInEveryTheme()
+        {
+            for (var themeIndex = 0;
+                 themeIndex < MockInstrumentThemeCatalog.Count;
+                 themeIndex++)
+            {
+                var theme = (MockInstrumentTheme)themeIndex;
+                Assert.That(
+                    MockInstrumentFactory.IsPlacementReady(
+                        MockInstrumentKind.ThrottleLever,
+                        theme),
+                    Is.True);
+                Assert.That(
+                    MockInstrumentFactory.IsPlacementReady(
+                        MockInstrumentKind.PowerSlider,
+                        theme),
+                    Is.True);
+                Assert.That(
+                    MockInstrumentFactory.IsPlacementReady(
+                        MockInstrumentKind.Lever,
+                        theme),
+                    Is.True);
+            }
+        }
+
         [TestCase(MockInstrumentKind.RoundMeter)]
+        [TestCase(MockInstrumentKind.RoundMeterMedium)]
+        [TestCase(MockInstrumentKind.RoundMeterLarge)]
         [TestCase(MockInstrumentKind.ToggleSwitch)]
         [TestCase(MockInstrumentKind.PushButton)]
         [TestCase(MockInstrumentKind.IndicatorLamp)]
@@ -120,6 +185,12 @@ namespace MatsuMotoMeterAR.Tests
                 Is.True);
             Assert.That(
                 MockInstrumentCatalog.SupportsSurface(kind, SurfaceKind.Ceiling),
+                Is.True);
+            Assert.That(
+                MockInstrumentCatalog.SupportsSurface(kind, SurfaceKind.Plane),
+                Is.True);
+            Assert.That(
+                MockInstrumentCatalog.SupportsSurface(kind, SurfaceKind.Volume),
                 Is.True);
         }
     }

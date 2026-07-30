@@ -96,7 +96,8 @@ Quest 3Sを下限とし、両端末に同じ合格基準を適用する。
 | Transparency | 0 | lens/glassの必要箇所だけ |
 | Managed allocation | steady state 0 B/frame | steady state 0 B/frame |
 
-- schema v2の配置上限は1部屋48個。性能保証点は従来の24個を維持し、
+- schema v4の配置上限はRoomごと48個・全Room合計192個、接続上限は192件。
+  性能保証点は従来の24個を維持し、
   12 / 24 / 40個の既存結果に48個gateと64個stressを追加して昇格判定する。
 - 72 Hzの13.9 ms/frameに対し、アプリ側p95 CPU/GPU timeは各11 ms以下を暫定合格値とする。
 - 24個時のcontent目安は120k triangles以下、renderer submissionsは通常72以下、meter混在時も96以下とする。
@@ -114,17 +115,17 @@ Quest 3Sを下限とし、両端末に同じ合格基準を適用する。
 - stable type IDとenum順を維持し、未知type IDは旧配置互換のため円形メーターへfallbackする。
 - visual primitiveにColliderがなく、previewにはColliderがない。
 - renderer、shared material、triangle上限をEditMode testで検査できる。
-- レバーとロータリーだけが天井不可という既存面規則を維持する。
-- 次工程で9種類それぞれを配置し、Activity終了後のSpatial Anchor復元をQuest 3で確認できる。
+- 全種類をPlane／Volumeの任意面へ配置でき、Meshを配置対象にしない。
+- 13種類それぞれを配置し、Activity終了後のSpatial Anchor復元をQuest 3で確認できる。
 
 ## Blender reference asset set
 
-P0の3テーマ×8種類をBlender原本、FBX、1K PBR texture、Unity prefabとして制作済み。
-P1大型2種類と多段階状態LEDはruntime greyboxまで実装済みで、Blender原本とLODは
-次のart passで追加する。スロットルは6段階motionと`throttle_pivot`、
-パワースライダーは11段階motionと`slider_travel`を持つ。
+3テーマ×13種類をV6 Blender原本、FBX、PBR texture、Unity prefabとして制作済み。
+スロットルは6段階motionと`throttle_pivot`、パワースライダーは11段階motionと
+`slider_travel`を持つ。
 
-- Blender sources: `ArtSource/Blender/{OrbitalAnalog,ForgeBrass,KineticSafety}/`
+- Final Blender sources:
+  `ArtSource/Blender/ThemeHardSurfaceV6/*/*_ProductionReady.blend`
 - Unity FBX: `Assets/MatsuMotoMeterAR/Content/Themes/<Theme>/Models/`
 - Shared maps: `Assets/MatsuMotoMeterAR/Content/Themes/<Theme>/Textures/`
 - Unity prefabs: `Assets/MatsuMotoMeterAR/Resources/<Theme>/Prefabs/`
@@ -139,14 +140,14 @@ P1大型2種類と多段階状態LEDはruntime greyboxまで実装済みで、Bl
 | Lever | 372 | 428 | 460 | 2 | 2 |
 | Toggle | 220 | 276 | 308 | 2 | 2 |
 | Rotary | 356 | 412 | 444 | 2 | 2 |
-| Throttle | 412 | 564 | 412 | 2 | 2 |
+| Throttle | 868 | 1,020 | 868 | 2 | 2 |
 | PowerSlider | 352 | 384 | 352 | 2 | 2 |
 | Button | 280 | 336 | 368 | 2 | 2 |
 | Lamp | 396 | 452 | 484 | 2 | 2 |
 
-全18アセットは1,500 triangles以下、0 collider、0 realtime lightで、
-`.blend`とFBX再読込の両方を自動検証済み。Unity EditMode test 29件でも
-3テーマ共通のroot/socket、外形、可動ノード、material予算を検証済み。
+全39アセットは種類別triangle上限以下、0 Collider、0 realtime Lightで、
+Unity EditMode 96件とactive visual prefab validatorで3テーマ共通のroot/socket、
+外形、可動ノード、material予算を検証済み。
 
 Blender sourceはZ-upで制作し、FBX export時にUnityのY-upへ変換する。Blender
 `-Y` outwardがUnity local `+Z` outwardへ対応する。生成と検証手順は

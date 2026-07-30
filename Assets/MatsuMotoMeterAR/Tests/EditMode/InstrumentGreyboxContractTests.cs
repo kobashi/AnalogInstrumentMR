@@ -175,7 +175,8 @@ namespace MatsuMotoMeterAR.Tests
                     Assert.That(
                         triangles,
                         Is.LessThanOrEqualTo(
-                            InstrumentGreyboxSpecification.GreyboxTriangleBudgetPerInstrument));
+                            InstrumentGreyboxSpecification.GetTriangleBudget(kind)),
+                        $"{kind} exceeds its runtime triangle budget.");
                 }
                 finally
                 {
@@ -414,8 +415,11 @@ namespace MatsuMotoMeterAR.Tests
                         afterManifest.name,
                         Does.EndWith("_ForgeBrass"));
                     Assert.That(
-                        motion.MovingPart,
-                        Is.SameAs(afterManifest.MotionTarget));
+                        motion.MovingPart.parent,
+                        Is.SameAs(afterManifest.transform));
+                    Assert.That(
+                        afterManifest.MotionTarget.IsChildOf(motion.MovingPart),
+                        Is.True);
                     Assert.That(
                         visualSocket.GetComponentsInChildren<Collider>(),
                         Is.Empty);

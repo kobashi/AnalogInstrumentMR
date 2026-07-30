@@ -1,0 +1,29 @@
+{
+  "theme": "ForgeBrass",
+  "source": "ArtSource/Textures/ThemeMaterialV6/ForgeBrass/T_ForgeBrass_V6_Source.png",
+  "size": 1024,
+  "model_scale_class": "Large",
+  "detail_repeats": {
+    "body": 8,
+    "metal": 12,
+    "gasket": 7,
+    "readout": 1
+  },
+  "quadrants": [
+    "body",
+    "metal",
+    "gasket",
+    "readout"
+  ],
+  "packing": {
+    "metallic_smoothness": "R=metallic, A=smoothness",
+    "orm": "R=ambient occlusion, G=roughness, B=metallic"
+  },
+  "outputs": {
+    "base_color": "Assets/MatsuMotoMeterAR/Content/Themes/ForgeBrass/Textures/ThemeMaterialV6/T_ForgeBrass_V6_Atlas_Large_BaseColor.png",
+    "normal": "Assets/MatsuMotoMeterAR/Content/Themes/ForgeBrass/Textures/ThemeMaterialV6/T_ForgeBrass_V6_Atlas_Large_Normal.png",
+    "metallic_smoothness": "Assets/MatsuMotoMeterAR/Content/Themes/ForgeBrass/Textures/ThemeMaterialV6/T_ForgeBrass_V6_Atlas_Large_MetallicSmoothness.png",
+    "orm": "Assets/MatsuMotoMeterAR/Content/Themes/ForgeBrass/Textures/ThemeMaterialV6/T_ForgeBrass_V6_Atlas_Large_ORM.png",
+    "emission": "Assets/MatsuMotoMeterAR/Content/Themes/ForgeBrass/Textures/ThemeMaterialV6/T_ForgeBrass_V6_Atlas_Large_Emission.png"
+  }
+}

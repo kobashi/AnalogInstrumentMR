@@ -1,0 +1,44 @@
+{
+  "asset": "WindowPanel_OrbitalAnalog_V6_Grayscale",
+  "type_id": "panel.window",
+  "theme_id": "orbital-analog",
+  "art_pass": "V6 hybrid hard-surface prototype",
+  "quality_floor": "V4 hard-surface retopo",
+  "geometry_policy": "silhouette, major layers, supports and interaction structure",
+  "texture_policy": "engraving, micro grooves, knurling, wear and labels",
+  "assembly_policy": "gaskets, seams, bushings, stops and supports",
+  "source_topology": {
+    "vertices": 1754,
+    "edges": 3708,
+    "faces": 2006,
+    "triangles": 720,
+    "quads": 1260,
+    "ngons": 26,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangulated_topology": {
+    "vertices": 1754,
+    "edges": 5106,
+    "faces": 3404,
+    "triangles": 3404,
+    "quads": 0,
+    "ngons": 0,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangle_budget": 25000,
+  "pivot": {
+    "position": [
+      0.0,
+      -0.124,
+      -0.205
+    ],
+    "local_axis": [
+      0.0,
+      1.0,
+      0.0
+    ]
+  },
+  "production_integrated": false
+}

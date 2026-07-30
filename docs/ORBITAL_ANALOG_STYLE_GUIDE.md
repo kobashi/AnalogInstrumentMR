@@ -42,7 +42,7 @@
 | Rotary | 厚いknurled風knob、annular collar、単一index | `knob_pivot/knob`、連続回転 |
 | Button | guard ring内の平たい円形cap | `button_travel/button`、14 mm |
 | Lamp | cage ring内の丸いdome lens | `indicator`、発光pulseのみ |
-| Throttle | 縦長gate、細い左右rail、横長grip | `throttle_pivot/throttle_handle`、local X片側70° |
+| Throttle | engine quadrant、左右fork arm、幅広palm grip、6段階目盛 | `throttle_pivot/throttle_handle`、local X片側70° |
 | Power slider | 縦slot、細いframe、横長carriage | `slider_travel/slider_handle`、0.18 m |
 
 buttonとlampは同じamber focusを使うが、buttonはflat cap、lampはdome lensとし、

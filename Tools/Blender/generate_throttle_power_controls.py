@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import math
 import shutil
 import sys
 from pathlib import Path
@@ -54,10 +55,42 @@ def theme_static_parts(theme, kind, opaque, emissive):
     if kind == "Throttle":
         parts = [
             cube("housing_plate", (0.24, 0.060, 0.30), (0, -0.030, 0), opaque),
-            cube("slot_left", (0.012, 0.012, 0.22), (-0.032, -0.067, 0.015), opaque),
-            cube("slot_right", (0.012, 0.012, 0.22), (0.032, -0.067, 0.015), opaque),
-            cube("detent_scale", (0.010, 0.008, 0.23), (0.087, -0.066, 0.015), emissive),
+            cube(
+                "quadrant_cheek_left",
+                (0.026, 0.038, 0.235),
+                (-0.070, -0.068, -0.005),
+                opaque,
+                bevel=0.004,
+            ),
+            cube(
+                "quadrant_cheek_right",
+                (0.026, 0.038, 0.235),
+                (0.070, -0.068, -0.005),
+                opaque,
+                bevel=0.004,
+            ),
+            cube(
+                "lever_gate",
+                (0.060, 0.012, 0.225),
+                (0.0, -0.067, 0.010),
+                opaque,
+                bevel=0.005,
+            ),
         ]
+        for index in range(6):
+            angle = math.radians(-35.0 + index * 14.0)
+            tick = cube(
+                f"detent_tick_{index}",
+                (0.018, 0.009, 0.008),
+                (
+                    0.102,
+                    -0.069 - math.cos(angle) * 0.010,
+                    -0.105 + math.sin(angle) * 0.060,
+                ),
+                emissive,
+                bevel=0.001,
+            )
+            parts.append(tick)
         if theme == "ForgeBrass":
             for x in (-0.095, 0.095):
                 for z in (-0.125, 0.125):
@@ -75,13 +108,31 @@ def theme_static_parts(theme, kind, opaque, emissive):
         else:
             parts.extend(
                 (
-                    cube("rail_left", (0.014, 0.014, 0.26), (-0.092, -0.069, 0), opaque),
-                    cube("rail_right", (0.014, 0.014, 0.26), (0.092, -0.069, 0), opaque),
+                    cube(
+                        "outer_rail_left",
+                        (0.012, 0.018, 0.265),
+                        (-0.105, -0.068, 0),
+                        opaque,
+                    ),
+                    cube(
+                        "outer_rail_right",
+                        (0.012, 0.018, 0.265),
+                        (0.105, -0.068, 0),
+                        opaque,
+                    ),
                 )
             )
-        collar = cylinder("housing_collar", 0.038, 0.018, 0.077, opaque)
-        collar.location.z = -0.105
-        parts.append(collar)
+        for x in (-0.070, 0.070):
+            collar = cylinder(
+                "pivot_bearing",
+                0.031,
+                0.018,
+                0.077,
+                opaque,
+            )
+            collar.location.x = x
+            collar.location.z = -0.105
+            parts.append(collar)
         return parts
 
     parts = [
@@ -127,25 +178,52 @@ def build_throttle(theme, suffix, opaque, emissive):
         root,
     )
     pivot_point = (0.0, -0.086, -0.105)
-    shaft = controls.add_vertical_cylinder(
-        "throttle_shaft",
-        0.011,
-        0.205,
-        (0.0, -0.086, -0.0025),
-        12,
-        opaque,
-        (0.875, 0.125),
-    )
-    crossbar = cube(
-        "throttle_grip",
-        (0.105, 0.034, 0.045),
-        (0.0, -0.086, 0.122),
-        emissive,
-        (0.375, 0.125),
-        0.006,
+    movable_parts = []
+    for x in (-0.022, 0.022):
+        movable_parts.append(
+            controls.add_vertical_cylinder(
+                "throttle_fork_arm",
+                0.009,
+                0.205,
+                (x, -0.087, -0.0025),
+                12,
+                opaque,
+                (0.875, 0.125),
+            )
+        )
+    movable_parts.extend(
+        (
+            cube(
+                "throttle_palm_grip",
+                (0.140, 0.054, 0.052),
+                (0.0, -0.088, 0.120),
+                emissive,
+                (0.375, 0.125),
+                0.010,
+            ),
+            cube(
+                "throttle_grip_spine",
+                (0.090, 0.070, 0.020),
+                (0.0, -0.091, 0.092),
+                opaque,
+                (0.875, 0.125),
+                0.006,
+            ),
+            cube(
+                "throttle_fork_bridge",
+                (0.075, 0.030, 0.018),
+                (0.0, -0.087, -0.080),
+                opaque,
+                (0.875, 0.125),
+                0.004,
+            ),
+        )
     )
     pivot, handle = controls.parent_at_pivot(
-        [shaft, crossbar], "throttle_handle", pivot_point, root
+        movable_parts,
+        "throttle_handle",
+        pivot_point,
+        root,
     )
     pivot.name = "throttle_pivot"
     controls.set_smooth([housing, handle])

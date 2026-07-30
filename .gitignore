@@ -30,3 +30,24 @@ __pycache__/
 # Meta Immersive Debugger local credentials. Never commit or ship this Resources asset.
 Assets/Resources/DevAgentSettings.asset
 Assets/Resources/DevAgentSettings.asset.meta
+
+# Local model iteration and replacement staging. Keep the final V6 production
+# Blender sources below while excluding superseded topology/material variants.
+ArtSource/Blender/HardSurfacePrototype/
+ArtSource/Blender/Refined/
+ArtSource/Blender/ThemeSilhouetteV5/
+ArtSource/Blender/ThemeHardSurfaceV6/**
+!ArtSource/Blender/ThemeHardSurfaceV6/
+!ArtSource/Blender/ThemeHardSurfaceV6/*/
+!ArtSource/Blender/ThemeHardSurfaceV6/*/*_ProductionReady.blend
+!ArtSource/Blender/ThemeHardSurfaceV6/*/*.report.json
+Assets/MatsuMotoMeterAR/Content/RefinedCandidates/
+Assets/MatsuMotoMeterAR/Content/RefinedCandidates.meta
+
+# Internal AI-review packages and temporary review captures are not part of
+# the distributable source. Curated project-owned contact sheets remain public.
+docs/AnalogInstrumentMR_3Dモデル_AIレビュー資料.docx
+docs/reviews/
+docs/review_assets/
+docs/images/AnalogInstrumentMR_V4_*
+docs/images/AnalogInstrumentMR_V5_*

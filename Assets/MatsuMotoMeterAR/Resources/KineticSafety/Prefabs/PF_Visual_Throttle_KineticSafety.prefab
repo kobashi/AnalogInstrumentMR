@@ -47,6 +47,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: MatsuMotoMeterAR.Runtime::MatsuMotoMeterAR.Instruments.ThemeVisualManifest
   motionTarget: {fileID: 7748108634069387542}
   indicatorRenderer: {fileID: 0}
+  stateRenderers: []
 --- !u!1001 &3194705733571521862
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -65,7 +66,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 20381f2ce30954826b7f4575924400da, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 0.000000018626451
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 20381f2ce30954826b7f4575924400da, type: 3}
       propertyPath: m_LocalRotation.w
@@ -99,19 +100,15 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 50895c29d4aa24d6da5944ea8e753fce, type: 2}
-    - target: {fileID: -965988689758360126, guid: 20381f2ce30954826b7f4575924400da, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
-      value: 
-      objectReference: {fileID: 2100000, guid: c4b671603b08d47fe81934e176f61f95, type: 2}
     - target: {fileID: 919132149155446097, guid: 20381f2ce30954826b7f4575924400da, type: 3}
       propertyPath: m_Name
       value: SM_Throttle_KineticSafety
       objectReference: {fileID: 0}
-    - target: {fileID: 6890929050525240742, guid: 20381f2ce30954826b7f4575924400da, type: 3}
+    - target: {fileID: 1656278179460039651, guid: 20381f2ce30954826b7f4575924400da, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 50895c29d4aa24d6da5944ea8e753fce, type: 2}
-    - target: {fileID: 6890929050525240742, guid: 20381f2ce30954826b7f4575924400da, type: 3}
+    - target: {fileID: 1656278179460039651, guid: 20381f2ce30954826b7f4575924400da, type: 3}
       propertyPath: 'm_Materials.Array.data[1]'
       value: 
       objectReference: {fileID: 2100000, guid: c4b671603b08d47fe81934e176f61f95, type: 2}

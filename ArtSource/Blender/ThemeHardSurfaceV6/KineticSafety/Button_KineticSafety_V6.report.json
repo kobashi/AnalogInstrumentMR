@@ -1,0 +1,43 @@
+{
+  "asset": "Button_KineticSafety_V6_Grayscale",
+  "type_id": "control.button",
+  "theme_id": "kinetic-safety",
+  "art_pass": "V6 hybrid hard-surface prototype",
+  "quality_floor": "V4 hard-surface retopo",
+  "mechanical_rules": "flush fasteners, supported marks, visible pivots and fitted joints",
+  "assembly_policy": "gaskets, seams, bushings, stops and supports",
+  "source_topology": {
+    "vertices": 832,
+    "edges": 1744,
+    "faces": 938,
+    "triangles": 320,
+    "quads": 600,
+    "ngons": 18,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangulated_topology": {
+    "vertices": 832,
+    "edges": 2418,
+    "faces": 1612,
+    "triangles": 1612,
+    "quads": 0,
+    "ngons": 0,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangle_budget": 5000,
+  "pivot": {
+    "position": [
+      0.0,
+      -0.067,
+      0.0
+    ],
+    "local_axis": [
+      0.0,
+      1.0,
+      0.0
+    ]
+  },
+  "production_integrated": false
+}

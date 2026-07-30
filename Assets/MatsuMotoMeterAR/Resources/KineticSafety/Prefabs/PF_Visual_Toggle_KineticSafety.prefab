@@ -47,6 +47,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: MatsuMotoMeterAR.Runtime::MatsuMotoMeterAR.Instruments.ThemeVisualManifest
   motionTarget: {fileID: 8186046387552254388}
   indicatorRenderer: {fileID: 0}
+  stateRenderers: []
 --- !u!1001 &634383908348475111
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -65,7 +66,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: d36c9ca0834d74344bc400af9b1bab2d, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 0.000000007450581
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: d36c9ca0834d74344bc400af9b1bab2d, type: 3}
       propertyPath: m_LocalRotation.w
@@ -101,16 +102,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4471606256046198519, guid: d36c9ca0834d74344bc400af9b1bab2d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 50895c29d4aa24d6da5944ea8e753fce, type: 2}
-    - target: {fileID: 4471606256046198519, guid: d36c9ca0834d74344bc400af9b1bab2d, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
-      value: 
-      objectReference: {fileID: 2100000, guid: c4b671603b08d47fe81934e176f61f95, type: 2}
-    - target: {fileID: 6890929050525240742, guid: d36c9ca0834d74344bc400af9b1bab2d, type: 3}
+    - target: {fileID: 7016675623766549820, guid: d36c9ca0834d74344bc400af9b1bab2d, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 50895c29d4aa24d6da5944ea8e753fce, type: 2}
+    - target: {fileID: 7016675623766549820, guid: d36c9ca0834d74344bc400af9b1bab2d, type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value:
+      objectReference: {fileID: 2100000, guid: c4b671603b08d47fe81934e176f61f95, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

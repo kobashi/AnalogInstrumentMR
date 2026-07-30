@@ -1,0 +1,29 @@
+{
+  "theme": "OrbitalAnalog",
+  "source": "ArtSource/Textures/ThemeMaterialV6/OrbitalAnalog/T_OrbitalAnalog_V6_Source.png",
+  "size": 1024,
+  "model_scale_class": "Standard",
+  "detail_repeats": {
+    "body": 3,
+    "metal": 5,
+    "gasket": 3,
+    "readout": 1
+  },
+  "quadrants": [
+    "body",
+    "metal",
+    "gasket",
+    "readout"
+  ],
+  "packing": {
+    "metallic_smoothness": "R=metallic, A=smoothness",
+    "orm": "R=ambient occlusion, G=roughness, B=metallic"
+  },
+  "outputs": {
+    "base_color": "Assets/MatsuMotoMeterAR/Content/Themes/OrbitalAnalog/Textures/ThemeMaterialV6/T_OrbitalAnalog_V6_Atlas_BaseColor.png",
+    "normal": "Assets/MatsuMotoMeterAR/Content/Themes/OrbitalAnalog/Textures/ThemeMaterialV6/T_OrbitalAnalog_V6_Atlas_Normal.png",
+    "metallic_smoothness": "Assets/MatsuMotoMeterAR/Content/Themes/OrbitalAnalog/Textures/ThemeMaterialV6/T_OrbitalAnalog_V6_Atlas_MetallicSmoothness.png",
+    "orm": "Assets/MatsuMotoMeterAR/Content/Themes/OrbitalAnalog/Textures/ThemeMaterialV6/T_OrbitalAnalog_V6_Atlas_ORM.png",
+    "emission": "Assets/MatsuMotoMeterAR/Content/Themes/OrbitalAnalog/Textures/ThemeMaterialV6/T_OrbitalAnalog_V6_Atlas_Emission.png"
+  }
+}

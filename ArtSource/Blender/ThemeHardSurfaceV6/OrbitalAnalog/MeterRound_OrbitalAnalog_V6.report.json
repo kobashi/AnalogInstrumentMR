@@ -1,0 +1,44 @@
+{
+  "asset": "MeterRound_OrbitalAnalog_V6_Grayscale",
+  "type_id": "meter.round",
+  "theme_id": "orbital-analog",
+  "art_pass": "V6 hybrid hard-surface prototype",
+  "quality_floor": "V4 hard-surface retopo",
+  "geometry_policy": "silhouette, major layers, supports and interaction structure",
+  "texture_policy": "engraving, micro grooves, knurling, wear and labels",
+  "assembly_policy": "gaskets, seams, bushings, stops and supports",
+  "source_topology": {
+    "vertices": 2532,
+    "edges": 5396,
+    "faces": 2946,
+    "triangles": 1168,
+    "quads": 1764,
+    "ngons": 14,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangulated_topology": {
+    "vertices": 2532,
+    "edges": 7350,
+    "faces": 4900,
+    "triangles": 4900,
+    "quads": 0,
+    "ngons": 0,
+    "non_manifold_edges": 0,
+    "zero_area_faces": 0
+  },
+  "triangle_budget": 5000,
+  "pivot": {
+    "position": [
+      0.0,
+      -0.051,
+      -0.004
+    ],
+    "local_axis": [
+      0.0,
+      1.0,
+      0.0
+    ]
+  },
+  "production_integrated": false
+}

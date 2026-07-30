@@ -27,9 +27,11 @@ namespace MatsuMotoMeterAR.Instruments
         [SerializeField] private Transform movingPart;
         [SerializeField] private Vector3 localAxis = Vector3.forward;
         [SerializeField] private float amplitude = 45f;
+        [SerializeField] private float frequencyHz;
         [SerializeField] private float rotationOffsetDegrees;
         [SerializeField, Range(0f, 1f)] private float normalizedValue;
         [SerializeField] private Renderer indicatorRenderer;
+        [SerializeField] private Renderer[] statusRenderers;
 
         private Quaternion initialRotation;
         private Vector3 initialPosition;
@@ -37,6 +39,8 @@ namespace MatsuMotoMeterAR.Instruments
         private Color statusSafeColor = Color.green;
         private Color statusWarningColor = Color.yellow;
         private Color statusDangerColor = Color.red;
+        private float meterPhase;
+        private bool ambientAnimationEnabled;
         private bool configured;
         private int leverDirection = 1;
         private int throttleDirection = 1;
@@ -99,6 +103,7 @@ namespace MatsuMotoMeterAR.Instruments
             movingPart = part;
             localAxis = axis.normalized;
             amplitude = range;
+            frequencyHz = frequency;
             rotationOffsetDegrees = rotationOffset;
             indicatorRenderer = indicator;
             indicatorColor = activeColor ?? Color.white;
@@ -114,6 +119,20 @@ namespace MatsuMotoMeterAR.Instruments
             else
                 normalizedValue = NormalizeValue(kind, preservedValue);
             configured = true;
+            meterPhase = Mathf.Repeat(
+                movingPart != null
+                    ? movingPart.GetInstanceID() * 0.173f
+                    : 0f,
+                Mathf.PI * 2f);
+            ApplyState();
+        }
+
+        public void SetAmbientAnimationEnabled(bool enabled)
+        {
+            if (ambientAnimationEnabled == enabled)
+                return;
+
+            ambientAnimationEnabled = enabled;
             ApplyState();
         }
 
@@ -122,7 +141,8 @@ namespace MatsuMotoMeterAR.Instruments
             Renderer indicator,
             Color safeColor,
             Color warningColor,
-            Color dangerColor)
+            Color dangerColor,
+            Renderer[] segmentedRenderers = null)
         {
             Configure(
                 MotionKind.Status,
@@ -135,6 +155,7 @@ namespace MatsuMotoMeterAR.Instruments
             statusSafeColor = safeColor;
             statusWarningColor = warningColor;
             statusDangerColor = dangerColor;
+            statusRenderers = segmentedRenderers;
             ApplyState();
         }
 
@@ -155,10 +176,7 @@ namespace MatsuMotoMeterAR.Instruments
             switch (motionKind)
             {
                 case MotionKind.Meter:
-                    SetNormalizedValue(
-                        normalizedValue >= 0.999f
-                            ? 0f
-                            : normalizedValue + 0.25f);
+                    // Meters are read-only in operation mode.
                     break;
                 case MotionKind.Lever:
                     AdvanceLeverDetent();
@@ -333,6 +351,7 @@ namespace MatsuMotoMeterAR.Instruments
                     RuntimeMaterialUtility.SetEmissionColor(
                         indicatorRenderer,
                         statusColor * (DetentIndex == 0 ? 0f : 1.5f));
+                    ApplySegmentedStatus();
                     break;
                 case MotionKind.PowerSlider:
                     movingPart.localPosition =
@@ -344,6 +363,70 @@ namespace MatsuMotoMeterAR.Instruments
                             normalizedValue);
                     break;
             }
+        }
+
+        private void ApplySegmentedStatus()
+        {
+            if (statusRenderers == null || statusRenderers.Length == 0)
+                return;
+
+            var activeIndex = DetentIndex - 1;
+            for (var index = 0;
+                 index < statusRenderers.Length;
+                 index++)
+            {
+                var active =
+                    index == activeIndex &&
+                    index < 3;
+                var color = active
+                    ? StatusColor(index)
+                    : Color.black;
+                RuntimeMaterialUtility.SetColor(
+                    statusRenderers[index],
+                    color);
+                RuntimeMaterialUtility.SetEmissionColor(
+                    statusRenderers[index],
+                    color * (active ? 1.5f : 0f));
+            }
+        }
+
+        private Color StatusColor(int index)
+        {
+            return index switch
+            {
+                0 => statusSafeColor,
+                1 => statusWarningColor,
+                2 => statusDangerColor,
+                _ => Color.black
+            };
+        }
+
+        private void Update()
+        {
+            if (!configured ||
+                !ambientAnimationEnabled ||
+                motionKind != MotionKind.Meter ||
+                movingPart == null)
+            {
+                return;
+            }
+
+            var baseAngle =
+                Mathf.Lerp(-amplitude, amplitude, normalizedValue) +
+                rotationOffsetDegrees;
+            var time = Time.unscaledTime * Mathf.PI * 2f;
+            var primary =
+                Mathf.Sin(time * Mathf.Max(0.05f, frequencyHz) + meterPhase);
+            var secondary =
+                Mathf.Sin(
+                    time * Mathf.Max(0.08f, frequencyHz * 1.73f) +
+                    meterPhase * 0.43f);
+            var microAngle = primary * 1.4f + secondary * 0.45f;
+            movingPart.localRotation =
+                initialRotation *
+                Quaternion.AngleAxis(
+                    baseAngle + microAngle,
+                    localAxis);
         }
 
         private static float DefaultValue(MotionKind kind)

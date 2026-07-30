@@ -12,6 +12,8 @@ namespace MatsuMotoMeterAR.Instruments
         WindowPanel = 7,
         StatusIndicator = 8,
         ThrottleLever = 9,
-        PowerSlider = 10
+        PowerSlider = 10,
+        RoundMeterMedium = 11,
+        RoundMeterLarge = 12
     }
 }

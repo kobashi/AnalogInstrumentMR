@@ -14,20 +14,16 @@ namespace MatsuMotoMeterAR.Instruments
             Transform logic,
             bool preview)
         {
-            if (kind == MockInstrumentKind.WindowMeter ||
-                kind == MockInstrumentKind.WindowPanel ||
-                kind == MockInstrumentKind.StatusIndicator)
-            {
-                return false;
-            }
-
             var resourcePath =
                 $"{ThemeFolder(theme)}/Prefabs/{PrefabName(kind, theme)}";
             var prefab = Resources.Load<GameObject>(resourcePath);
             if (prefab == null)
             {
                 if (kind != MockInstrumentKind.ThrottleLever &&
-                    kind != MockInstrumentKind.PowerSlider)
+                    kind != MockInstrumentKind.PowerSlider &&
+                    kind != MockInstrumentKind.StatusIndicator &&
+                    kind != MockInstrumentKind.WindowMeter &&
+                    kind != MockInstrumentKind.WindowPanel)
                 {
                     Debug.LogWarning(
                         $"{theme} visual prefab is missing for {kind}; " +
@@ -52,8 +48,11 @@ namespace MatsuMotoMeterAR.Instruments
             {
                 foreach (var renderer in visual.GetComponentsInChildren<Renderer>(true))
                 {
-                    RuntimeMaterialUtility.SetColor(renderer, PreviewGreen);
-                    RuntimeMaterialUtility.SetEmissionColor(renderer, PreviewGreen);
+                    var previewColor = PreviewTint(renderer.sharedMaterial);
+                    RuntimeMaterialUtility.SetColor(renderer, previewColor);
+                    RuntimeMaterialUtility.SetEmissionColor(
+                        renderer,
+                        previewColor * 0.18f);
                 }
                 return true;
             }
@@ -83,6 +82,8 @@ namespace MatsuMotoMeterAR.Instruments
             switch (kind)
             {
                 case MockInstrumentKind.RoundMeter:
+                case MockInstrumentKind.RoundMeterMedium:
+                case MockInstrumentKind.RoundMeterLarge:
                     AddMotion(
                         logic,
                         MockInstrumentMotion.MotionKind.Meter,
@@ -132,6 +133,8 @@ namespace MatsuMotoMeterAR.Instruments
                 case MockInstrumentKind.IndicatorLamp:
                     var warning =
                         MockInstrumentThemeCatalog.GetPalette(theme).Warning;
+                    PrepareDynamicIndicator(
+                        manifest.IndicatorRenderer);
                     GetOrAddMotion(logic).Configure(
                         MockInstrumentMotion.MotionKind.Pulse,
                         motionTarget,
@@ -140,6 +143,19 @@ namespace MatsuMotoMeterAR.Instruments
                         0.55f,
                         manifest.IndicatorRenderer,
                         warning);
+                    break;
+                case MockInstrumentKind.StatusIndicator:
+                    var statusPalette =
+                        MockInstrumentThemeCatalog.GetPalette(theme);
+                    PrepareDynamicIndicators(
+                        manifest.StateRenderers);
+                    GetOrAddMotion(logic).ConfigureStatus(
+                        motionTarget,
+                        manifest.IndicatorRenderer,
+                        statusPalette.Ready,
+                        statusPalette.Warning,
+                        statusPalette.Primary,
+                        manifest.StateRenderers);
                     break;
                 case MockInstrumentKind.ThrottleLever:
                     AddMotion(
@@ -163,7 +179,46 @@ namespace MatsuMotoMeterAR.Instruments
                             .PowerSliderTravelMeters,
                         0f);
                     break;
+                case MockInstrumentKind.WindowMeter:
+                    AddMotion(
+                        logic,
+                        MockInstrumentMotion.MotionKind.Meter,
+                        motionTarget,
+                        Vector3.forward,
+                        55f,
+                        0.12f);
+                    break;
+                case MockInstrumentKind.WindowPanel:
+                    AddMotion(
+                        logic,
+                        MockInstrumentMotion.MotionKind.Meter,
+                        motionTarget,
+                        Vector3.forward,
+                        42f,
+                        0.1f);
+                    break;
             }
+        }
+
+        private static void PrepareDynamicIndicators(
+            Renderer[] renderers)
+        {
+            if (renderers == null)
+                return;
+
+            foreach (var renderer in renderers)
+                PrepareDynamicIndicator(renderer);
+        }
+
+        private static void PrepareDynamicIndicator(
+            Renderer renderer)
+        {
+            if (renderer == null)
+                return;
+
+            RuntimeMaterialUtility.ApplySharedUnlit(
+                renderer,
+                Color.black);
         }
 
         private static Transform CreateRuntimeMotionTarget(
@@ -218,8 +273,13 @@ namespace MatsuMotoMeterAR.Instruments
                 MockInstrumentKind.RotaryKnob => "Rotary",
                 MockInstrumentKind.PushButton => "Button",
                 MockInstrumentKind.IndicatorLamp => "Lamp",
+                MockInstrumentKind.StatusIndicator => "StatusIndicator",
                 MockInstrumentKind.ThrottleLever => "Throttle",
                 MockInstrumentKind.PowerSlider => "PowerSlider",
+                MockInstrumentKind.WindowMeter => "WindowMeter",
+                MockInstrumentKind.WindowPanel => "WindowPanel",
+                MockInstrumentKind.RoundMeterMedium => "MeterMedium",
+                MockInstrumentKind.RoundMeterLarge => "MeterLarge",
                 _ => "MeterRound"
             };
             return $"PF_Visual_{key}_{ThemeFolder(theme)}";
@@ -241,6 +301,25 @@ namespace MatsuMotoMeterAR.Instruments
                 Object.Destroy(component);
             else
                 Object.DestroyImmediate(component);
+        }
+
+        private static Color PreviewTint(Material material)
+        {
+            var source = material != null && material.HasProperty("_BaseColor")
+                ? material.GetColor("_BaseColor")
+                : material != null && material.HasProperty("_Color")
+                    ? material.GetColor("_Color")
+                    : Color.white;
+            var luminance = Mathf.Clamp01(
+                source.r * 0.2126f +
+                source.g * 0.7152f +
+                source.b * 0.0722f);
+            var shade = Mathf.Lerp(0.35f, 1f, luminance);
+            return new Color(
+                PreviewGreen.r * Mathf.Lerp(0.45f, 1f, shade),
+                PreviewGreen.g * Mathf.Lerp(0.38f, 1f, shade),
+                PreviewGreen.b * Mathf.Lerp(0.45f, 1f, shade),
+                source.a);
         }
     }
 }

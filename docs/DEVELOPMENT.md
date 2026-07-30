@@ -43,14 +43,13 @@
 
 ### Safe exit control
 
-編集／操作のどちらのモードでも、右コントローラーのBボタンを2秒間長押しすると
-保存処理完了後にAndroid Activityを終了する。HUDに長押し進捗を表示し、Anchorや
-配置データの保存中は終了を保留する。照準式の開発用終了パネルは通常ビルドでは
-起動しない。ADBから停止する場合は`./scripts/stop-quest-app.sh`を使用する。
+Editモードで左スティックを2秒間押し込み続けると、保存処理完了後にAndroid
+Activityを終了する。HUDに長押し進捗を表示し、Anchorや配置データの保存中は
+終了を保留する。ADBから停止する場合は`./scripts/stop-quest-app.sh`を使用する。
 
 ## Current readiness
 
-2026-07-17 時点:
+2026-07-30 時点:
 
 - [x] Unity 6.3 LTS、Android Build Support、SDK、NDK、OpenJDK
 - [x] ADB、Git LFS
@@ -81,51 +80,83 @@ SRP Batcherを有効としている。
 
 ### Mock instrument placement controls
 
-- 起動時は`OPERATION MODE`。左コントローラーの`X`で`EDIT MODE`と
-  `OPERATION MODE`を切り替える。モード切替時には短いhapticsが入る。
+- 起動時は`OPERATION MODE`。左コントローラーの`X`で
+  `OPERATION → EDIT → CONNECT → OPERATION`を循環する。モード切替時には
+  短いhapticsが入る。
 - `EDIT MODE`だけでpreview、種類・テーマ選択、配置、削除が有効になる。
 - `OPERATION MODE`だけで配置済み計器へのray/direct Trigger操作が有効になる。
+- `OPERATION MODE`で左スティックを2秒間押し込み続けると、`X`による
+  モード切替をロックする。同じ操作をもう一度行うとロックを解除する。
+- `OPERATION MODE`では左右コントローラーのOpenXR `aim pose`
+  (`pointerPosition` / `pointerRotation`)からビームを描画し、Triggerを独立して
+  使える。Quest HOMEと同じ照準姿勢を使い、左右の手で別々の操作対象を同時に扱える。
+- レバー、スロットル、パワースライダーは、操作部へ接触してGripを握って
+  多段階値を変更する。レバーはlocal Y方向0.24 m、スライダーはlocal Y方向
+  0.18 mを全可動域として換算する。スロットルはpivot中心の70°アークに沿って
+  操作する。detent通過時に操作側コントローラーへhapticsを返し、
+  Grip解放時に保存する。
+- 押しボタンは左右いずれかのコントローラー先端がColliderへ接触すると押下し、
+  両方が離れたときに復帰する。ビーム＋Triggerでも同じ押下／復帰を行える。
+- 円形メーター、窓枠メーター、窓枠パネルは操作不能とし、操作モード中は
+  保存値を中心に小さな非同期needle/vane微動を続ける。編集モードでは停止する。
 - `EDIT MODE`で配置位置が既存計器と重なる場合は、同じ認識面上の近傍を探索して
   previewを空き位置へ自動的にずらす。近傍に空きがない場合は配置を確定しない。
 - 配置済み計器を照準して右Triggerを押すと個別に選択・選択解除する。選択中は
   第1選択を太いシアン枠、以降をオレンジ枠で表示し、異なる種類の計器も
   複数選択できる。選択中は新規追加・削除・配置種別変更を無効にする。
 - 配置済み計器を照準している間は、新規配置previewと`A`による追加を停止する。
-  未選択の照準対象は右スティック押込みで削除できる。
-- `Y`で選択集合を横方向、`左Grip + Y`で縦方向へ、外形寸法とgapを考慮して
-  等間隔に整列する。第1選択の位置を固定した起点とし、以降を選択順に並べる。
-  未選択時は照準した計器と同一平面の全計器を対象にする。外形間隔は12 mm、
-  重複判定の追加marginは2 mmとする。
-- `左Grip + A`で選択集合の移動を開始し、移動先の面を照準してもう一度
-  `左Grip + A`を押すと、相対配置を保ってまとめて移動・回転する。未選択時は
-  照準した計器と同一平面のグループを自動選択する。`X`で選択をキャンセルする。
-- 左スティック押込みで直前の整列・移動をUndoし、`左Grip + 左スティック押込み`
-  でRedoする。履歴は最大32操作で、配置・削除を行うとクリアする。
+  未選択の照準対象は`B`で削除できる。右スティック押込みは照準対象を削除し、
+  その種類へ追加対象を切り替える再配置操作とする。
+- 選択中は移動先targetを表示し、`A`で移動を確定する。2個以上の選択中は
+  右スティックを倒した方向へ、第1選択を起点に選択集合を回転する。
+  選択中の`B`は選択集合全体を解除する。`Y`は将来の編集機能用に予約し、
+  現在は何も実行しない。
+- 2個以上の選択中は左スティック左で横整列、上で縦整列、右で横均等配置、
+  下で縦均等配置をpreviewする。整列前の空間的な並び順を維持し、
+  均等配置は軸上で最も離れた2個を両端とする。`A`で確定するまで元配置を保持し、
+  別方向を入力すればpreviewだけを更新する。外形間隔は12 mm、重複判定の
+  追加marginは2 mmとする。
 - 整列・グループ移動が現在の共有Anchorから2.75 mを超える場合は、移動先近傍の
   Anchorを再利用するか新規Anchorを作成して自動的に付け替える。JSON保存に失敗した
   場合は親子関係、Anchor ID、surface、poseを編集前へ戻して新規Anchorをeraseする。
 - Anchor範囲内の編集は`localOffset`として保存し、再起動後に復元する。
-- 右コントローラーを壁・床・天井へ向ける。MRUKが認識した面では選択中オブジェクトの緑色previewと面種別が表示される。
-- 右スティックを左右へ倒すと、円形メーター、レバー、トグル、ロータリーノブ、
-  押しボタン、単色状態灯、窓枠サイズ大型メーター、大型宇宙船パネル、
-  多段階状態LED、スロットルレバー、パワースライダーを順に切り替える。
-  スロットルとパワースライダーを含む全11種類を配置できる。
-  大型2種類も壁・床・天井へ配置できる。
-- 右スティックを上下へ倒すと、Forge Brass、Orbital Analog、Kinetic Safetyを
-  順に切り替える。選択テーマはglobal設定として直ちに保存され、previewと
-  配置済みMockへ反映される。
+- EditモードではMRUKが認識したPlaneとVolumeをwireframe表示する。
+  右コントローラーのrayから最も近い有効面を安定化して選択し、任意面へ
+  previewを表示する。Mesh raycastは配置対象にしない。
+- 追加オブジェクトは機能別に `METERS → INDICATORS → SWITCHES → MOTION`
+  の順へ整理する。右スティック左右でカテゴリ内外をこの順に移動し、右スティック
+  上下で前後カテゴリの先頭へジャンプする。丸形メーター小・中・大を含む全13種類を
+  配置でき、HUD先頭に現在カテゴリを表示する。
+- 左スティック左右でForge Brass、Orbital Analog、Kinetic Safetyを順に切り替える。
+  選択テーマはglobal設定として直ちに保存され、previewと配置済みMockへ反映される。
 - `A`を押すと選択中のMockを配置し、種類、操作状態、ローカルSpatial Anchorを
-  schema v2 placement storeへ保存する。最大48個まで個別に保持する。既存schema v1は
-  起動時にv2へ移行する。約2.75 m以内の配置はSpatial Anchorを共有し、
+  schema v4 placement storeへRoom UUIDとともに保存する。最大48個まで個別に
+  Roomごとに保持し、全Room合計は192個を安全上限とする。既存schema v1/v2/v3は
+  起動時にv4へ移行する。約2.75 m以内の配置はSpatial Anchorを共有し、
   個別位置を`localOffset`で保持する。
-- 編集モードでTrigger選択後に`左Grip + A`を押すと移動状態へ入る。通常の配置
-  previewとAによる新規追加は停止し、照準中の壁・床・天井へ移動後の外形を
-  target markerで表示する。面適合と既存オブジェクトとの重複を事前判定し、
-  配置可能なら緑、不可なら赤とHUD理由を表示する。`A`で確定、`X`で取消する。
-  複数選択済みの場合は相対配置を保ったまま別の面へ回転・移動する。
-- レバーとロータリーノブは壁・床専用。天井を照準した場合は配置不可メッセージを表示する。
-- 右スティックを押し込むと配置済みMockと保存アンカーを削除する。global theme
-  設定は削除しない。
+- 実行中はMRUKの`GetCurrentRoom()`を0.5秒間隔で監視する。別Roomの判定が1秒
+  継続したら、旧Roomの表示とinteraction colliderをアンロードし、移動先Roomの
+  Plane／Volume wireframeと、そのRoom UUIDに属するSpatial Anchorを復元する。
+  Room UUIDを持たない旧recordは、最初にAnchorを復元できたRoomへ自動所属させる。
+- `X`はOperation → Edit → Connect → Operationの順に切り替える。Connectでは
+  入力装置をビーム＋TriggerでSource選択し、表示装置を同様にTarget選択する。
+  左スティック左右でDirect / Invert / Range / Thresholdを切り替え、`A`で確定、
+  `B`で取り消す。接続を編集する場合は、入力または出力オブジェクトを1個だけ
+  Triggerで選択し、`A`を押すたびにそのオブジェクトへ出入りする接続を順に選ぶ。
+  接続線はDirect=シアン、Invert=マゼンタ、Range=緑、Threshold=オレンジで表示し、
+  選択中はタイプ色を維持して太く明るくする。左スティック左右でその接続の
+  Direct / Invert / Range / Thresholdを仮選択し、左スティック押し込みで
+  変更を保存する。保存後は接続線だけを非選択にし、オブジェクト選択は維持する。
+  `B`で選択中の接続だけを削除する。第1オブジェクトだけを選択した段階では
+  `B`で選択をキャンセルする。Connectモードでは右スティックを使用しない。
+  接続線はConnect時のみ表示し、一つのSourceから複数Targetへ分岐できる。
+  複数Sourceから同じTargetへの入力はコンセプト確認版では平均合成する。
+- 編集モードでTrigger選択すると移動状態へ入り、通常の配置previewと新規追加を
+  停止する。照準中のPlane／Volume面へ移動後の外形をtarget markerで表示し、
+  面適合と既存オブジェクトとの重複を事前判定する。配置可能なら緑、不可なら赤と
+  HUD理由を表示し、`A`で確定、`B`で選択解除する。複数選択済みの場合は相対配置を
+  保ったまま別の面へ回転・移動する。
+- 全オブジェクトは上下を区別せず、Plane／Volumeのどの面にも配置できる。
 - アプリを終了して再起動すると、保存済みMockを同じ種類・同じテーマ・同じ
   実空間位置へ復元する。古い配置データにtheme IDがない場合も、global設定または
   Orbital Analog fallbackを使用する。
@@ -142,14 +173,20 @@ SRP Batcherを有効としている。
 - `control.throttle`は6ノッチ`CUTOFF / IDLE / LOW / CRUISE / HIGH / FULL`を持ち、
   保存値`0 / 0.2 / 0.4 / 0.6 / 0.8 / 1`へ対応する。Triggerで隣接ノッチへ移動し、
   両端で方向反転する。3テーマのPrefabは`throttle_pivot`をmotion targetとして使い、
-  local X軸回転と初期角offsetでmount面に垂直な片側sweepを行う。
+  local X軸回転と初期角offsetでmount面に垂直な片側sweepを行う。接触Grip時は
+  controller位置をpivot中心の回転面へ投影し、開始方向からの実アーク角を70°の
+  全可動域へ換算する。Grip開始判定は計器全体のColliderではなく、
+  pivotからlocal `(0, 0.225, 0.002)`にある幅160 × 高さ75 × 奥行85 mmの
+  palm grip専用boxへ限定し、可動中もpivot回転へ追従する。
+- 大型パネル、大型メーター、多段階警告LEDの配置previewは一律緑色へ
+  material propertyを上書きせず、選択中テーマのhousing、face、warning色を保持する。
 - `control.power_slider`は11ノッチ`OFF / 10% / ... / 90% / MAX`を持ち、
   保存値`0 / 0.1 / ... / 0.9 / 1`へ対応する。Triggerで10%ずつ移動し、両端で
   方向反転する。3テーマの可動ノードは`slider_travel`、travelはY方向0.18 mとする。
 - `ROOM ERROR: NoRoomsFound` の場合は Quest の Space Setup で部屋をスキャンして再起動する。
 - `ROOM TRACKING LOST / RUN SPACE SETUP` の場合は、保存済みの部屋は見つかっているが現在の実空間へ位置合わせできていない。Metaボタンでアプリを閉じ、Questの「設定 → 物理空間 → スペース設定」で現在の部屋を再スキャンしてからアプリを再起動する。
 - performance gateの`matsu_perf_count`は既存の12 / 24 / 40に加えて、
-  schema v2検証用の48 / 64を受け付ける。48は新しい合格点、64はstress用とする。
+  schema v4検証用の48 / 64を受け付ける。48は新しい合格点、64はstress用とする。
 
 ログと基本操作:
 
@@ -170,13 +207,14 @@ adb shell monkey -p com.DefaultCompany.MatsuMotoMeterAR 1
 - レバー、トグル、スロットル、パワースライダーについて全段階のRenderer実移動、
   軸一致、取付面後方への侵入を3テーマ分確認する。
 
-## Definition of done for the first vertical slice
+## Definition of done for v0.2.0-concept.1
 
 - パススルー背景で起動する。
-- 壁・床・天井を区別し、不適合面では配置を確定できない。
-- 配置可能な11種類からMockを選択して1個配置し、アニメーションが72 Hz目標を
+- Plane／Volumeの任意面へ配置でき、Meshを配置対象にしない。
+- 配置可能な13種類からMockを選択して配置し、アニメーションが72 Hz目標を
   妨げない。
 - アプリを終了・再起動して同じ種類を同じ実空間位置に復元する。
+- 接続と接続タイプを保存し、再起動後に復元する。
 - アンカー/権限/空間データがない場合にクラッシュせず、ユーザーへ次の操作を示す。
 
 ## Primary references

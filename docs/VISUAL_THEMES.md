@@ -59,13 +59,23 @@
   envelope、collider分離をUnity EditMode testで確認済み（29 / 29 PASS）。
 - Orbital AnalogはQuest 3で6種類の配置・復元と10分安定性を確認済み。
 - Quest 3S実機検証はプロジェクト判断で見送る。
-- global theme切り替えを右スティック上下へ実装済み。theme IDは独立した
+- global theme切り替えを左スティック左右へ実装済み。theme IDは独立した
   PlayerPrefs設定へ保存し、既存のanchor UUID／type ID schemaは変更しない。
 - 配置済みオブジェクトはSpatial Anchor rootを維持したまま`VisualSocket`だけを
   交換する。Unity EditModeでroot pose、socket、Collider、kind不変性を確認済み。
 - `concept.2`はQuest 3で3テーマ切り替え、配置済みvisual交換、Activity再起動後の
   Forge Brass／Spatial Anchor同時復元を確認済み。詳細は
   [Quest 3 theme switch and restore test](QUEST_THEME_SWITCH_TEST.md)を参照する。
+
+### 2026-07-30 V6 production status
+
+- 丸形メーター小・中・大を含む13種類×3テーマ、計39個のV6 Visual Prefabを導入済み。
+- 全39 prefabで共通root/socket、可動target、0 Collider、0 realtime Light、
+  種類別triangle上限、取付面クリアランスを検証済み。
+- テーマ切り替えは左スティック左右へ割り当て、Spatial Anchor、配置姿勢、
+  normalized value、接続を維持したまま`VisualSocket`だけを交換する。
+- 最終Blender原本は
+  `ArtSource/Blender/ThemeHardSurfaceV6/*/*_ProductionReady.blend`を正とする。
 
 ## Quest asset budget
 
@@ -77,7 +87,7 @@
 
 ## Acceptance criteria
 
-- 6種類のMock部品が3テーマすべてで表示できる。
+- 13種類の部品が3テーマすべてで表示できる。
 - runtime 切り替え後も配置位置と操作状態が変わらない。
 - theme prefab が欠落しても default theme へ復帰し、操作不能にならない。
 - テーマごとの collider と操作感が同等である。

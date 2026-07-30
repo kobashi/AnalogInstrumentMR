@@ -10,13 +10,16 @@ namespace MatsuMotoMeterAR.Tests
         public void TriggerPressAndRelease_UseDeterministicSemanticsForAllKinds()
         {
             var initialValues = new[] {
-                0.5f, 0.5f, 0.5f, 0f, 0f, 1f, 0.5f, 0.5f, 0f, 0f, 0f
+                0.5f, 0.5f, 0.5f, 0f, 0f, 1f, 0.5f,
+                0.5f, 0f, 0f, 0f, 0.5f, 0.5f
             };
             var pressedValues = new[] {
-                0.75f, 0.75f, 0f, 0.125f, 1f, 0f, 0.75f, 0.75f, 1f / 3f, 0.2f, 0.1f
+                0.5f, 0.75f, 0f, 0.125f, 1f, 0f, 0.5f,
+                0.5f, 1f / 3f, 0.2f, 0.1f, 0.5f, 0.5f
             };
             var releasedValues = new[] {
-                0.75f, 0.75f, 0f, 0.125f, 0f, 0f, 0.75f, 0.75f, 1f / 3f, 0.2f, 0.1f
+                0.5f, 0.75f, 0f, 0.125f, 0f, 0f, 0.5f,
+                0.5f, 1f / 3f, 0.2f, 0.1f, 0.5f, 0.5f
             };
 
             for (var index = 0; index < MockInstrumentCatalog.Count; index++)
@@ -99,7 +102,7 @@ namespace MatsuMotoMeterAR.Tests
         }
 
         [Test]
-        public void Lever_ExtremeDetentsStayParallelToMountPlane()
+        public void Lever_ExtremeDetentsRotateAroundMountPlaneAxis()
         {
             var root = MockInstrumentFactory.Create(
                 MockInstrumentKind.Lever,
@@ -112,7 +115,7 @@ namespace MatsuMotoMeterAR.Tests
                 var movingPart = interaction.Motion.MovingPart;
                 var neutralRotation = movingPart.localRotation;
                 var neutralPosition = movingPart.localPosition;
-                var neutralForward = neutralRotation * Vector3.forward;
+                var neutralAxis = neutralRotation * Vector3.right;
 
                 interaction.SetLeverDetentIndex(0);
 
@@ -127,10 +130,10 @@ namespace MatsuMotoMeterAR.Tests
                 Assert.That(movingPart.localPosition, Is.EqualTo(neutralPosition));
                 Assert.That(
                     Vector3.Dot(
-                        neutralForward,
-                        movingPart.localRotation * Vector3.forward),
+                        neutralAxis,
+                        movingPart.localRotation * Vector3.right),
                     Is.GreaterThan(0.9999f),
-                    "Lever must swing across the panel, not into its base.");
+                    "Lever rotation axis must stay in the mounting plane.");
             }
             finally
             {

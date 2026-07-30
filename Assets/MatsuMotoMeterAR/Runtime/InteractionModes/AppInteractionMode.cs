@@ -3,7 +3,8 @@ namespace MatsuMotoMeterAR.InteractionModes
     public enum AppInteractionMode
     {
         Operation = 0,
-        Edit = 1
+        Edit = 1,
+        Connect = 2
     }
 
     public static class AppInteractionModePolicy
@@ -20,11 +21,19 @@ namespace MatsuMotoMeterAR.InteractionModes
             return mode == AppInteractionMode.Operation;
         }
 
+        public static bool AllowsConnecting(AppInteractionMode mode)
+        {
+            return mode == AppInteractionMode.Connect;
+        }
+
         public static AppInteractionMode Toggle(AppInteractionMode mode)
         {
-            return mode == AppInteractionMode.Edit
-                ? AppInteractionMode.Operation
-                : AppInteractionMode.Edit;
+            return mode switch
+            {
+                AppInteractionMode.Operation => AppInteractionMode.Edit,
+                AppInteractionMode.Edit => AppInteractionMode.Connect,
+                _ => AppInteractionMode.Operation
+            };
         }
     }
 }

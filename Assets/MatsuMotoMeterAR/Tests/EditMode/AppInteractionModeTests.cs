@@ -29,11 +29,17 @@ namespace MatsuMotoMeterAR.Tests
         }
 
         [Test]
-        public void Toggle_AlternatesBetweenOperationAndEdit()
+        public void Toggle_CyclesOperationEditConnect()
         {
             var mode = AppInteractionModePolicy.Toggle(
                 AppInteractionMode.Operation);
             Assert.That(mode, Is.EqualTo(AppInteractionMode.Edit));
+
+            mode = AppInteractionModePolicy.Toggle(mode);
+            Assert.That(mode, Is.EqualTo(AppInteractionMode.Connect));
+            Assert.That(
+                AppInteractionModePolicy.AllowsConnecting(mode),
+                Is.True);
 
             mode = AppInteractionModePolicy.Toggle(mode);
             Assert.That(mode, Is.EqualTo(AppInteractionMode.Operation));
