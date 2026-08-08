@@ -16,6 +16,7 @@ import bpy
 import bmesh
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import blender_compat
 import generate_orbital_analog_meter as common
 
 
@@ -354,6 +355,7 @@ def export_one(project_root, theme, key):
         "material_slots": ["opaque", "emissive"],
         "atlas_quadrants": QUADRANTS,
         "production_integrated": False,
+        "authoring_environment": blender_compat.provenance(),
     }
     report_path = output_dir / f"SM_{key}_{theme}_V6_Material.json"
     report_path.write_text(
@@ -364,6 +366,7 @@ def export_one(project_root, theme, key):
 
 
 def main():
+    blender_compat.require_v6_pipeline()
     args = parse_args()
     project_root = Path(args.project_root).resolve()
     themes = (args.theme,) if args.theme else THEMES
