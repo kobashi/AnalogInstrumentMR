@@ -484,7 +484,7 @@ def create_preview(meshes, center_z, output_path):
 
     scene = bpy.context.scene
     scene.world.color = (0.012, 0.016, 0.022)
-    scene.render.engine = "BLENDER_EEVEE_NEXT"
+    scene.render.engine = "BLENDER_EEVEE"
     scene.render.resolution_x = 800
     scene.render.resolution_y = 800
     scene.render.resolution_percentage = 100

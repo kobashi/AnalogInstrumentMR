@@ -8,14 +8,16 @@ MEASUREMENT_SECONDS="${MEASUREMENT_SECONDS:-600}"
 DURATION_SECONDS="${DURATION_SECONDS:-$((MEASUREMENT_SECONDS + 30))}"
 INSTALL_APK="${INSTALL_APK:-1}"
 STARTUP_TIMEOUT_SECONDS="${STARTUP_TIMEOUT_SECONDS:-30}"
+DISTANCE_METERS="${DISTANCE_METERS:-1.35}"
+INSTRUMENT_KIND="${INSTRUMENT_KIND:-}"
 ADB="${ADB:-/Applications/Unity/Hub/Editor/6000.3.19f1/PlaybackEngines/AndroidPlayer/SDK/platform-tools/adb}"
-APK="${APK:-Builds/Release/MatsuMotoMeterAR-v0.1.0-concept.5-perfgate-quest3.apk}"
+APK="${APK:-Builds/Performance/AnalogInstrumentMR-v0.2.0-perfgate-quest3.apk}"
 PACKAGE="com.DefaultCompany.MatsuMotoMeterAR"
 ACTIVITY="com.unity3d.player.UnityPlayerGameActivity"
 
 case "$COUNT" in
-  12|24|40) ;;
-  *) echo "count must be 12, 24, or 40" >&2; exit 64 ;;
+  12|24|40|48|64) ;;
+  *) echo "count must be 12, 24, 40, 48, or 64" >&2; exit 64 ;;
 esac
 
 case "$THEME" in
@@ -31,6 +33,19 @@ esac
 case "$INSTALL_APK" in
   0|1) ;;
   *) echo "INSTALL_APK must be 0 or 1" >&2; exit 64 ;;
+esac
+
+if ! awk -v value="$DISTANCE_METERS" \
+  'BEGIN { exit !(value + 0 >= 0.5 && value + 0 <= 5.0) }'; then
+  echo "DISTANCE_METERS must be between 0.5 and 5.0" >&2
+  exit 64
+fi
+
+case "$INSTRUMENT_KIND" in
+  ""|RoundMeter|Lever|ToggleSwitch|RotaryKnob|PushButton|IndicatorLamp|\
+WindowMeter|WindowPanel|StatusIndicator|ThrottleLever|PowerSlider|\
+RoundMeterMedium|RoundMeterLarge) ;;
+  *) echo "INSTRUMENT_KIND is not a supported MockInstrumentKind" >&2; exit 64 ;;
 esac
 
 if [[ ! -x "$ADB" ]]; then
@@ -67,6 +82,7 @@ exec > >(tee -a "$REPORT") 2>&1
 echo "[host] report=$REPORT"
 echo "[host] apk=$APK"
 echo "[host] sha256=$(shasum -a 256 "$APK" | awk '{print $1}')"
+echo "[host] scenario=count:${COUNT} theme:${THEME} duration:${MEASUREMENT_SECONDS}s distance:${DISTANCE_METERS}m kind:${INSTRUMENT_KIND:-Baseline}"
 if [[ "$INSTALL_APK" == "1" ]]; then
   "$ADB" install -r "$APK"
 else
@@ -78,10 +94,17 @@ fi
 LOGCAT_PID=$!
 
 start_app() {
-  "$ADB" shell am start -S -n "$PACKAGE/$ACTIVITY" \
+  local command=(
+    "$ADB" shell am start -W -n "$PACKAGE/$ACTIVITY"
     --ei matsu_perf_count "$COUNT" \
     --ei matsu_perf_duration "$MEASUREMENT_SECONDS" \
-    --es matsu_perf_theme "$THEME"
+    --es matsu_perf_theme "$THEME" \
+    --ef matsu_perf_distance "$DISTANCE_METERS"
+  )
+  if [[ -n "$INSTRUMENT_KIND" ]]; then
+    command+=(--es matsu_perf_kind "$INSTRUMENT_KIND")
+  fi
+  "${command[@]}"
 }
 
 start_app

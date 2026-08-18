@@ -38,7 +38,7 @@ visual envelope。装飾はこの範囲内に収める。可動部のsweepは下
 
 | Type ID | X × Y × Z (m) | Motion | Surfaces |
 | --- | --- | --- | --- |
-| `meter.round` | 0.140 × 0.140 × 0.064 | needle ±55° | Wall / Floor / Ceiling |
+| `meter.round` | 0.140 × 0.140 × 0.064 | needle ±115° | Wall / Floor / Ceiling |
 | `control.lever` | 0.180 × 0.256 × 0.100 | handle ±24°、5 detents、面内回転 | Wall / Floor |
 | `control.toggle` | 0.120 × 0.170 × 0.064 | switch ±28° | Wall / Floor / Ceiling |
 | `control.rotary` | 0.150 × 0.150 × 0.102 | continuous rotation | Wall / Floor |

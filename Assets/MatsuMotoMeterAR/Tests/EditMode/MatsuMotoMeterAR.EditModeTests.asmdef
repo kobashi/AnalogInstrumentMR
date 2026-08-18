@@ -1,8 +1,10 @@
 {
   "name": "MatsuMotoMeterAR.EditModeTests",
   "rootNamespace": "MatsuMotoMeterAR.Tests",
-  "references": ["MatsuMotoMeterAR.Runtime"],
+  "references": [
+    "MatsuMotoMeterAR.Runtime",
+    "MatsuMotoMeterAR.Editor"
+  ],
   "optionalUnityReferences": ["TestAssemblies"],
   "includePlatforms": ["Editor"]
 }
-

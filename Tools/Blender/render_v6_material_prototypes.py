@@ -8,6 +8,7 @@ import bpy
 from mathutils import Vector
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import blender_compat
 import generate_orbital_analog_controls as controls
 import v6_theme_materials
 
@@ -94,6 +95,7 @@ def render_one(project_root, theme, key):
 
 
 def main():
+    blender_compat.require_v6_pipeline()
     args = parse_args()
     project_root = Path(args.project_root).resolve()
     objects = (args.object_key,) if args.object_key else OBJECTS

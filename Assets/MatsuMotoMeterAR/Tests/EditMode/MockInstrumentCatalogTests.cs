@@ -8,6 +8,14 @@ namespace MatsuMotoMeterAR.Tests
     public sealed class MockInstrumentCatalogTests
     {
         [Test]
+        public void MeterSweep_CoversFullDialScale()
+        {
+            Assert.That(
+                InstrumentGreyboxSpecification.MeterSweepDegrees,
+                Is.EqualTo(115f));
+        }
+
+        [Test]
         public void TypeIds_AreStableAndUnique()
         {
             var ids = new HashSet<string>();

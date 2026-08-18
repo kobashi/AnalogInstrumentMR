@@ -1,0 +1,348 @@
+{
+  "phase": "M2n8",
+  "note": "Scale rebuilt on one rule for Medium and Large; Round's blade and counterweight welded so no two faces share a front plane (alignment 219.1). M2n7 and canonical Blends are read-only.",
+  "design_rule": {
+    "tick_length_fraction_of_reach": 0.139,
+    "tick_width_fraction_of_reach": 0.031,
+    "major_every": 3,
+    "major_width_multiplier": 1.6,
+    "ring_clearance_m": 0.0005,
+    "angles_deg": [
+      -115.1705,
+      -94.6803,
+      -74.8485,
+      -55.598,
+      -36.8053,
+      -18.3241,
+      0.0,
+      18.3241,
+      36.8053,
+      55.598,
+      74.8485,
+      94.6803,
+      115.1705
+    ]
+  },
+  "models": {
+    "MeterRound": {
+      "source": {
+        "canonical_sha256": "4bc590d446a3cb70888956530a674013e50617ad00f14faa60d8f5767987219f",
+        "m2n7_sha256": "09eadcfbbe318118a9096096cf69d881f620cd3046eb417b2850646a75c24ac0"
+      },
+      "round_weld": {
+        "welded": [
+          "C2",
+          "C3"
+        ],
+        "recessed_mm": 0.2,
+        "recessed": [
+          "C0",
+          "C1"
+        ]
+      },
+      "objects": 31,
+      "triangles": 4640,
+      "ticks": 13,
+      "secondary_scale": 0,
+      "needle_reach_mm": 42.0043,
+      "needle_front_m": -0.0805,
+      "pivot_world": [
+        0.0,
+        -0.077,
+        -0.004
+      ],
+      "materials": [
+        "MAT_KineticSafety_V5_Body",
+        "MAT_KineticSafety_V5_Metal",
+        "MAT_KineticSafety_V5_Readout"
+      ],
+      "bounds": {
+        "min": [
+          -0.077,
+          -0.0805,
+          -0.077
+        ],
+        "max": [
+          0.077,
+          0.0,
+          0.077
+        ]
+      },
+      "needle_radial_span_signal": {
+        "front_depths": [
+          -0.0805,
+          -0.0803,
+          -0.0793
+        ],
+        "radial_span_overlap_candidates": 15,
+        "note": "not a coplanar-overlap count; adjacent triangles of one flat face are included. See component_front_depths."
+      },
+      "component_front_depths": {
+        "components": [
+          {
+            "component": "K0",
+            "vertices": 88,
+            "front_y_m": -0.0805,
+            "radius_mm": [
+              2.1,
+              42.004
+            ]
+          },
+          {
+            "component": "K1",
+            "vertices": 72,
+            "front_y_m": -0.0803,
+            "radius_mm": [
+              4.953,
+              5.305
+            ]
+          },
+          {
+            "component": "K2",
+            "vertices": 64,
+            "front_y_m": -0.0793,
+            "radius_mm": [
+              10.838,
+              11.8
+            ]
+          }
+        ],
+        "components_sharing_front_plane_and_radius": [],
+        "pass": true
+      },
+      "needle_tick_min_mm": 2.5,
+      "tick_dial_min_mm": 0.0,
+      "revision_blend": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/BL_MeterRound_KineticSafety_V6_Opus5_R3_D3_M2n8_Retopo.blend",
+      "revision_blend_sha256": "ebf29a81e9c566f5b1a5c78fd420710d3a6871416f322ccc0fc0622311ce0748"
+    },
+    "MeterMedium": {
+      "source": {
+        "canonical_sha256": "98bff1c03307cd97f4b1b9eeced801850f8c76cfcb8483c01ff57704ee9888c4",
+        "m2n7_sha256": "1fea56d14b221836941e736bb9f149a4f4a948b281fd2435895840904fa17412"
+      },
+      "scale_rebuild": {
+        "removed_ticks": 13,
+        "removed_secondary": 17,
+        "built": 13,
+        "needle_reach_mm": 79.8103,
+        "ring_inner_radius_mm": 78.698,
+        "tick_outer_mm": 78.1729,
+        "tick_inner_mm": 67.0793,
+        "tick_length_mm": 11.0936,
+        "tick_half_width_mm": 1.2371,
+        "major_every": 3,
+        "depth_y_m": [
+          -0.12245,
+          -0.1178
+        ],
+        "angles_deg": [
+          -115.1705,
+          -94.6803,
+          -74.8485,
+          -55.598,
+          -36.8053,
+          -18.3241,
+          0.0,
+          18.3241,
+          36.8053,
+          55.598,
+          74.8485,
+          94.6803,
+          115.1705
+        ]
+      },
+      "ring_forward": {
+        "moved_mm": 2.4697,
+        "needle_ring_min_mm": 2.9522
+      },
+      "objects": 51,
+      "triangles": 6096,
+      "ticks": 13,
+      "secondary_scale": 0,
+      "needle_reach_mm": 79.8103,
+      "needle_front_m": -0.130081,
+      "pivot_world": [
+        0.0,
+        -0.11935,
+        -0.008
+      ],
+      "materials": [
+        "MAT_KineticSafety_V5_Body",
+        "MAT_KineticSafety_V5_Metal",
+        "MAT_KineticSafety_V5_Readout",
+        "MAT_KineticSafety_V6_Gasket"
+      ],
+      "bounds": {
+        "min": [
+          -0.175,
+          -0.131675,
+          -0.175
+        ],
+        "max": [
+          0.175,
+          0.0,
+          0.175
+        ]
+      },
+      "needle_radial_span_signal": {
+        "front_depths": [
+          -0.130081,
+          -0.129306
+        ],
+        "radial_span_overlap_candidates": 7,
+        "note": "not a coplanar-overlap count; adjacent triangles of one flat face are included. See component_front_depths."
+      },
+      "component_front_depths": {
+        "components": [
+          {
+            "component": "K0",
+            "vertices": 64,
+            "front_y_m": -0.129306,
+            "radius_mm": [
+              18.516,
+              20.16
+            ]
+          },
+          {
+            "component": "K1",
+            "vertices": 50,
+            "front_y_m": -0.130081,
+            "radius_mm": [
+              3.952,
+              79.81
+            ]
+          }
+        ],
+        "components_sharing_front_plane_and_radius": [],
+        "pass": true
+      },
+      "needle_tick_min_mm": 1.4312,
+      "tick_ring_min_mm": 4.1695,
+      "tick_ring_radial_clearance_mm": 0.5,
+      "needle_front_minus_ring_front_mm": 3.1617,
+      "tick_dial_min_mm": 0.0,
+      "revision_blend": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/BL_MeterMedium_KineticSafety_V6_Opus5_B2P_D3P_M2n8_Retopo.blend",
+      "revision_blend_sha256": "6710ce44586f2fa8df51ad52d265d4649e0e3ff3b69b23cfd51c97332ce364ec"
+    },
+    "MeterLarge": {
+      "source": {
+        "canonical_sha256": "965336a40bb28b8b19672b15fdba60d5f08de94935cecac8ffce2c6f8e28e266",
+        "m2n7_sha256": "9f7de5efac92c5f25fd70cee3b29c066de361214e729c0855be14eded8d0df6f"
+      },
+      "scale_rebuild": {
+        "removed_ticks": 13,
+        "removed_secondary": 25,
+        "built": 13,
+        "needle_reach_mm": 119.7155,
+        "ring_inner_radius_mm": 118.0469,
+        "tick_outer_mm": 117.5094,
+        "tick_inner_mm": 100.869,
+        "tick_length_mm": 16.6405,
+        "tick_half_width_mm": 1.8556,
+        "major_every": 3,
+        "depth_y_m": [
+          -0.16195,
+          -0.1558
+        ],
+        "angles_deg": [
+          -115.1705,
+          -94.6803,
+          -74.8485,
+          -55.598,
+          -36.8053,
+          -18.3241,
+          0.0,
+          18.3241,
+          36.8053,
+          55.598,
+          74.8485,
+          94.6803,
+          115.1705
+        ]
+      },
+      "ring_forward": {
+        "moved_mm": 3.9748,
+        "needle_ring_min_mm": 4.4283
+      },
+      "objects": 57,
+      "triangles": 6880,
+      "ticks": 13,
+      "secondary_scale": 0,
+      "needle_reach_mm": 119.7155,
+      "needle_front_m": -0.172261,
+      "pivot_world": [
+        0.0,
+        -0.15785,
+        -0.012
+      ],
+      "materials": [
+        "MAT_KineticSafety_V5_Body",
+        "MAT_KineticSafety_V5_Metal",
+        "MAT_KineticSafety_V5_Readout",
+        "MAT_KineticSafety_V6_Gasket"
+      ],
+      "bounds": {
+        "min": [
+          -0.2625,
+          -0.173925,
+          -0.2625
+        ],
+        "max": [
+          0.2625,
+          0.0,
+          0.2625
+        ]
+      },
+      "needle_radial_span_signal": {
+        "front_depths": [
+          -0.172261,
+          -0.171236
+        ],
+        "radial_span_overlap_candidates": 7,
+        "note": "not a coplanar-overlap count; adjacent triangles of one flat face are included. See component_front_depths."
+      },
+      "component_front_depths": {
+        "components": [
+          {
+            "component": "K0",
+            "vertices": 64,
+            "front_y_m": -0.171236,
+            "radius_mm": [
+              27.773,
+              30.24
+            ]
+          },
+          {
+            "component": "K1",
+            "vertices": 50,
+            "front_y_m": -0.172261,
+            "radius_mm": [
+              5.928,
+              119.715
+            ]
+          }
+        ],
+        "components_sharing_front_plane_and_radius": [],
+        "pass": true
+      },
+      "needle_tick_min_mm": 2.1109,
+      "tick_ring_min_mm": 6.019,
+      "tick_ring_radial_clearance_mm": 0.5,
+      "needle_front_minus_ring_front_mm": 3.6911,
+      "tick_dial_min_mm": 0.0,
+      "revision_blend": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/BL_MeterLarge_KineticSafety_V6_Opus5_B2P_D3P_M2n8_Retopo.blend",
+      "revision_blend_sha256": "39bb9c9d6230aa17f36c930918576161a2f0346106d56d8d52169af2ebf2d51a"
+    }
+  },
+  "sources_unchanged": true,
+  "status": "revision_built",
+  "elapsed_seconds": 9.743,
+  "authoring_environment": {
+    "blender_version": "5.2.0 LTS",
+    "blender_build_hash": "fbe6228777e7",
+    "python_version": "3.13.13",
+    "fbx_exporter": "bpy.ops.export_scene.fbx (Legacy FBX)",
+    "preview_render_engine": "BLENDER_EEVEE",
+    "pipeline_version": "AnalogInstrumentMR Blender 5.2 migration v1"
+  }
+}

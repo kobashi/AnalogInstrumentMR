@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "Meter_M2n5",
+  "integrationStage": "GateB",
+  "entries": [
+    {
+      "theme": "KineticSafety",
+      "model": "MeterRound",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/staging/fbx/SM_MeterRound_KineticSafety_V6_Opus5_R3_D3_Merged_Slots.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/reports/MeterRound_KineticSafety_V6_Opus5_R3_D3_Merged_Slots_m2n5_candidate.json",
+      "revision": "R3_D3_M2n5",
+      "includedRevisions": ["R2", "R3", "D3", "M2n5"],
+      "requiredRevisions": ["R2", "D3"]
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "MeterMedium",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/staging/fbx/SM_MeterMedium_KineticSafety_V6_Opus5_B2P_D3P_Merged_Slots.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/reports/MeterMedium_KineticSafety_V6_Opus5_B2P_D3P_Merged_Slots_m2n5_candidate.json",
+      "revision": "B2P_D3P_M2n5",
+      "includedRevisions": ["B2", "B2P", "D3", "D3P", "M2n5"],
+      "requiredRevisions": ["B2", "D3"]
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "MeterLarge",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/staging/fbx/SM_MeterLarge_KineticSafety_V6_Opus5_B2P_D3P_Merged_Slots.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/reports/MeterLarge_KineticSafety_V6_Opus5_B2P_D3P_Merged_Slots_m2n5_candidate.json",
+      "revision": "B2P_D3P_M2n5",
+      "includedRevisions": ["B2", "B2P", "D3", "D3P", "M2n5"],
+      "requiredRevisions": ["B2", "D3"]
+    }
+  ]
+}

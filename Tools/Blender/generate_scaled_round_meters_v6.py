@@ -14,6 +14,7 @@ import bpy
 from mathutils import Matrix, Vector
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import blender_compat
 import generate_hardsurface_kinetic_set_v4 as v4
 import generate_orbital_analog_controls as controls
 import generate_orbital_analog_meter as common
@@ -389,6 +390,7 @@ def generate_one(project_root, theme, size_key):
 
 
 def main():
+    blender_compat.require_v6_pipeline()
     args = parse_args()
     project_root = Path(args.project_root).resolve()
     themes = (args.theme,) if args.theme else THEMES

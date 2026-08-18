@@ -10,6 +10,7 @@ from pathlib import Path
 import bpy
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import blender_compat
 import generate_hardsurface_kinetic_set_v4 as v4
 import generate_hardsurface_lever_retopo_v3 as retopo
 import generate_orbital_analog_controls as controls
@@ -1003,6 +1004,7 @@ def generate_one(project_root, theme, key, skip_topology):
             "local_axis": list(local_axis),
         },
         "production_integrated": False,
+        "authoring_environment": blender_compat.provenance(),
     }
     (
         source_dir / f"{key}_{theme}_V6.report.json"
@@ -1014,6 +1016,7 @@ def generate_one(project_root, theme, key, skip_topology):
 
 
 def main():
+    blender_compat.require_v6_pipeline()
     args = parse_args()
     project_root = Path(args.project_root).resolve()
     only = set(args.only or ())

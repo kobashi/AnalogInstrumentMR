@@ -6,6 +6,13 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Blender authoring pipelineを`5.2.x`へ移行。プロジェクト専用launcher、V6生成前の
+  Python API／EEVEE／Legacy FBX preflight、非破壊smoke test、生成reportの
+  Blender／Python／FBX exporter provenanceを追加。Blender 5.2のEEVEE engine ID
+  `BLENDER_EEVEE`へpreview生成を更新
+
 ## [0.2.0-concept.1] - 2026-07-30
 
 ### Added

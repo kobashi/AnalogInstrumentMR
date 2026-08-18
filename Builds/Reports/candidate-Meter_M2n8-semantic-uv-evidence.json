@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "candidateId": "Meter_M2n8",
+  "status": "pass",
+  "scope": "39-model baseline semantic UV audit plus M2n8 candidate FBX round-trip audits",
+  "baselineAudit": {
+    "path": "ArtSource/Blender/BrushUp/Opus5/audit_39_with_r3_d3_b2p_d3p.json",
+    "sha256": "5317572b2872721b0dca062087d88dea326b4b37f8fa87543e9ea5e1d45ae640",
+    "modelsAudited": 39,
+    "failures": 0
+  },
+  "candidateAudits": [
+    {
+      "model": "MeterRound",
+      "path": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/reports/MeterRound_KineticSafety_V6_Opus5_R3_D3_M2n8_Merged_Slots_m2n8_candidate.json",
+      "sha256": "1f2cc2b324ccd33885cb1a2c1cfcaed6293c520af214bc9abf67450d4b562b53",
+      "status": "candidate_handoff_approved",
+      "geometryUvNormalsUnchanged": true
+    },
+    {
+      "model": "MeterMedium",
+      "path": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/reports/MeterMedium_KineticSafety_V6_Opus5_B2P_D3P_M2n8_Merged_Slots_m2n8_candidate.json",
+      "sha256": "5a74922e22ed2691ff2606be6496edacc179a93770dbff807d582b53f017045d",
+      "status": "candidate_handoff_approved",
+      "geometryUvNormalsUnchanged": true
+    },
+    {
+      "model": "MeterLarge",
+      "path": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/reports/MeterLarge_KineticSafety_V6_Opus5_B2P_D3P_M2n8_Merged_Slots_m2n8_candidate.json",
+      "sha256": "0a20c0caaaf503ddf7d34bee499ca2fe21f9ff166efd5fde8939db21d381be8b",
+      "status": "candidate_handoff_approved",
+      "geometryUvNormalsUnchanged": true
+    }
+  ],
+  "notes": [
+    "The 36 non-M2n8 assets are unchanged from the 39-model baseline audit.",
+    "The three substituted M2n8 FBXs are covered by their candidate round-trip geometry, UV, and normal gates."
+  ]
+}

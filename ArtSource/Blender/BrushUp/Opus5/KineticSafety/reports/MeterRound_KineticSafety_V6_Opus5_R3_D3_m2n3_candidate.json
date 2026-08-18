@@ -1,0 +1,202 @@
+{
+  "phase": "M2n3",
+  "model": "MeterRound",
+  "revision": "R3_D3",
+  "status": "candidate_handoff_approved",
+  "production_approval": false,
+  "source": {
+    "blend": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/BL_MeterRound_KineticSafety_V6_Opus5_R3_D3_Retopo.blend",
+    "blend_sha256": "4bc590d446a3cb70888956530a674013e50617ad00f14faa60d8f5767987219f",
+    "blend_matches_alignment_140": true,
+    "report": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/reports/MeterRound_KineticSafety_V6_Opus5_R3_D3.json",
+    "report_sha256": "1aeaad4e17369f414ca63e32fb45ff61fa9a00b0846990fa12df536878bd33ec"
+  },
+  "settings": {
+    "mesh_smooth_type": "EDGE",
+    "use_triangles": false,
+    "export_path": "export-normalized copy, FIXED / EAR_CLIP triangulation",
+    "custom_properties": "copied onto the export root"
+  },
+  "fbx": "SM_MeterRound_KineticSafety_V6_Opus5_R3_D3.fbx",
+  "staged_sha256": "87b1ab702a6c45c91b2b812f361c42130750ded4d19eb982a800eb8599356bb5",
+  "gates": {
+    "inventory_identical": {
+      "missing": [],
+      "extra": [],
+      "changed": {},
+      "pass": true
+    },
+    "custom_properties_restored": {
+      "differences": {},
+      "pass": true
+    },
+    "triangles": {
+      "expected": 4636,
+      "measured": 4636,
+      "pass": true
+    },
+    "materials": {
+      "source": [
+        "MAT_KineticSafety_V5_Body",
+        "MAT_KineticSafety_V5_Metal",
+        "MAT_KineticSafety_V5_Readout"
+      ],
+      "reimported": [
+        "MAT_KineticSafety_V5_Body",
+        "MAT_KineticSafety_V5_Metal",
+        "MAT_KineticSafety_V5_Readout"
+      ],
+      "pass": true
+    },
+    "motion_contract": {
+      "pivot_world": [
+        [
+          0.0,
+          -0.077,
+          -0.004
+        ],
+        [
+          0.0,
+          -0.077,
+          -0.004
+        ]
+      ],
+      "movable": [
+        [
+          "needle"
+        ],
+        [
+          "needle"
+        ]
+      ],
+      "poses": 23,
+      "pass": true
+    },
+    "envelope": {
+      "source": {
+        "blender_min_y_m": -0.0805,
+        "unity_depth_m": 0.0805,
+        "envelope_depth_m": 0.082,
+        "margin_mm": 1.5,
+        "within_envelope": true
+      },
+      "reimported": {
+        "blender_min_y_m": -0.0805,
+        "unity_depth_m": 0.0805,
+        "envelope_depth_m": 0.082,
+        "margin_mm": 1.5,
+        "within_envelope": true
+      },
+      "pass": true
+    },
+    "tick_clearance": {
+      "floor_mm": 0.7,
+      "source_mm": 2.499998,
+      "reimported_mm": 2.49999,
+      "difference_from_source_mm": -8e-06,
+      "pair": "needle x kinetic_tick_3",
+      "pose_deg": -55.0,
+      "feature": "vertex_a0_face_b",
+      "pass": true
+    },
+    "no_new_contact": {
+      "new_contacts": [],
+      "pass": true
+    },
+    "polygon_surface": {
+      "objects": 31,
+      "failing": [],
+      "worst_surface_area_gap": 2.596509465768726e-10,
+      "pass": true
+    },
+    "export_copy_measures_as_source": {
+      "triangles": [
+        4636,
+        4636
+      ],
+      "clearance_mm": [
+        2.499998,
+        2.499998
+      ],
+      "bounds": [
+        {
+          "min": [
+            -0.077,
+            -0.0805,
+            -0.077
+          ],
+          "max": [
+            0.077,
+            0.0,
+            0.077
+          ]
+        },
+        {
+          "min": [
+            -0.077,
+            -0.0805,
+            -0.077
+          ],
+          "max": [
+            0.077,
+            0.0,
+            0.077
+          ]
+        }
+      ],
+      "pass": true
+    },
+    "position_normal_uv_evidence": {
+      "objects": 31,
+      "failing": [],
+      "pass": true
+    },
+    "primary_uv_is_first_layer": {
+      "objects_with_uv": 6,
+      "findings": [],
+      "pass": true
+    }
+  },
+  "failing_gates": [],
+  "inventory_identical_note": "alignment 184.1.4: the rounding-boundary difference is 0.000022 mm unrounded and is a practical pass",
+  "bounds_full_precision": {
+    "worst_difference_m": 1.1175870895385742e-08,
+    "worst_difference_mm": 1.1175870895385742e-05,
+    "worst_at": "kinetic_v6_dial_pan",
+    "objects": 31,
+    "note": "root-relative bounds from the snapshots, no rounding applied"
+  },
+  "uv_selection_metadata": {
+    "changed": {
+      "needle": {
+        "active": [
+          null,
+          "UVMap"
+        ],
+        "render": [
+          null,
+          "UVMap"
+        ]
+      }
+    },
+    "observed_behavior": "reset_to_first_layer",
+    "counted_in_transport_gate": false
+  },
+  "authoring_environment": {
+    "blender_version": "5.2.0 LTS",
+    "blender_build_hash": "fbe6228777e7",
+    "python_version": "3.13.13",
+    "fbx_exporter": "bpy.ops.export_scene.fbx (Legacy FBX)",
+    "preview_render_engine": "BLENDER_EEVEE",
+    "pipeline_version": "AnalogInstrumentMR Blender 5.2 migration v1"
+  },
+  "published_blend_sha256": "87b1ab702a6c45c91b2b812f361c42130750ded4d19eb982a800eb8599356bb5",
+  "publish": {
+    "mode": "canonical",
+    "may_write_report": true,
+    "may_write_blend": true,
+    "reason": "all checks passed; publishing blend and report together",
+    "blend_sha256": "87b1ab702a6c45c91b2b812f361c42130750ded4d19eb982a800eb8599356bb5",
+    "blend_bytes": 204940
+  }
+}

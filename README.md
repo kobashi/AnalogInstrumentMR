@@ -66,7 +66,7 @@ LFS objects included. No APK is included in that archive.
 - Unity Android Build Support
 - Android SDK & NDK Tools and OpenJDK installed through Unity Hub
 - Git LFS
-- Blender for regenerating or validating art source
+- Blender `5.2.x` for regenerating or validating art source
 - A developer-enabled Quest and USB debugging only for device testing
 
 Unity Package Manager restores the pinned Unity and Meta XR dependencies from

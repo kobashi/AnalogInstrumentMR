@@ -1,0 +1,338 @@
+{
+  "phase": "M2n3",
+  "model": "MeterMedium",
+  "revision": "B2P_D3P",
+  "status": "candidate_handoff_approved",
+  "production_approval": false,
+  "source": {
+    "blend": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/BL_MeterMedium_KineticSafety_V6_Opus5_B2P_D3P_Retopo.blend",
+    "blend_sha256": "98bff1c03307cd97f4b1b9eeced801850f8c76cfcb8483c01ff57704ee9888c4",
+    "blend_matches_alignment_140": true,
+    "report": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/reports/MeterMedium_KineticSafety_V6_Opus5_B2P_D3P.json",
+    "report_sha256": "9639b6f3f424a7ab3c159a59e7c81af3dfffbbc1c36446cc3bee825dfdb4deee"
+  },
+  "settings": {
+    "mesh_smooth_type": "EDGE",
+    "use_triangles": false,
+    "export_path": "export-normalized copy, FIXED / EAR_CLIP triangulation",
+    "custom_properties": "copied onto the export root"
+  },
+  "fbx": "SM_MeterMedium_KineticSafety_V6_Opus5_B2P_D3P.fbx",
+  "staged_sha256": "a63ca496a99f64584180b00ed42ab93ea0b4ebb5130f6236f758d91db86f7f07",
+  "gates": {
+    "inventory_identical": {
+      "missing": [],
+      "extra": [],
+      "changed": {
+        "kinetic_tick_3": {
+          "bounds_min": [
+            [
+              -0.086343,
+              -0.12245,
+              0.03661
+            ],
+            [
+              -0.086343,
+              -0.12245,
+              0.036611
+            ]
+          ]
+        },
+        "kinetic_tick_9": {
+          "bounds_min": [
+            [
+              0.065053,
+              -0.12245,
+              0.03661
+            ],
+            [
+              0.065053,
+              -0.12245,
+              0.036611
+            ]
+          ]
+        },
+        "scale_fastener_00": {
+          "bounds_max": [
+            [
+              0.052881,
+              -0.073538,
+              0.121721
+            ],
+            [
+              0.052881,
+              -0.073537,
+              0.121721
+            ]
+          ]
+        },
+        "scale_fastener_01": {
+          "bounds_max": [
+            [
+              0.121612,
+              -0.073538,
+              0.05299
+            ],
+            [
+              0.121612,
+              -0.073537,
+              0.05299
+            ]
+          ]
+        },
+        "scale_fastener_02": {
+          "bounds_min": [
+            [
+              0.113053,
+              -0.076462,
+              -0.05299
+            ],
+            [
+              0.113053,
+              -0.076463,
+              -0.05299
+            ]
+          ]
+        },
+        "scale_fastener_03": {
+          "bounds_min": [
+            [
+              0.044321,
+              -0.076462,
+              -0.121721
+            ],
+            [
+              0.044321,
+              -0.076463,
+              -0.121721
+            ]
+          ]
+        },
+        "scale_fastener_04": {
+          "bounds_min": [
+            [
+              -0.052881,
+              -0.076462,
+              -0.121721
+            ],
+            [
+              -0.052881,
+              -0.076463,
+              -0.121721
+            ]
+          ]
+        },
+        "scale_fastener_05": {
+          "bounds_min": [
+            [
+              -0.121612,
+              -0.076462,
+              -0.05299
+            ],
+            [
+              -0.121612,
+              -0.076463,
+              -0.05299
+            ]
+          ]
+        },
+        "scale_fastener_06": {
+          "bounds_max": [
+            [
+              -0.113053,
+              -0.073538,
+              0.05299
+            ],
+            [
+              -0.113053,
+              -0.073537,
+              0.05299
+            ]
+          ]
+        },
+        "scale_fastener_07": {
+          "bounds_max": [
+            [
+              -0.044321,
+              -0.073538,
+              0.121721
+            ],
+            [
+              -0.044321,
+              -0.073537,
+              0.121721
+            ]
+          ]
+        }
+      },
+      "pass": false
+    },
+    "custom_properties_restored": {
+      "differences": {},
+      "pass": true
+    },
+    "triangles": {
+      "expected": 8920,
+      "measured": 8920,
+      "pass": true
+    },
+    "materials": {
+      "source": [
+        "MAT_KineticSafety_V5_Body",
+        "MAT_KineticSafety_V5_Metal",
+        "MAT_KineticSafety_V5_Readout",
+        "MAT_KineticSafety_V6_Gasket"
+      ],
+      "reimported": [
+        "MAT_KineticSafety_V5_Body",
+        "MAT_KineticSafety_V5_Metal",
+        "MAT_KineticSafety_V5_Readout",
+        "MAT_KineticSafety_V6_Gasket"
+      ],
+      "pass": true
+    },
+    "motion_contract": {
+      "pivot_world": [
+        [
+          0.0,
+          -0.11935,
+          -0.008
+        ],
+        [
+          0.0,
+          -0.11935,
+          -0.008
+        ]
+      ],
+      "movable": [
+        [
+          "kinetic_v6_needle_counterweight",
+          "needle"
+        ],
+        [
+          "kinetic_v6_needle_counterweight",
+          "needle"
+        ]
+      ],
+      "poses": 23,
+      "pass": true
+    },
+    "envelope": {
+      "source": {
+        "blender_min_y_m": -0.131675,
+        "unity_depth_m": 0.131675,
+        "envelope_depth_m": 0.145,
+        "margin_mm": 13.325,
+        "within_envelope": true
+      },
+      "reimported": {
+        "blender_min_y_m": -0.131675,
+        "unity_depth_m": 0.131675,
+        "envelope_depth_m": 0.145,
+        "margin_mm": 13.325,
+        "within_envelope": true
+      },
+      "pass": true
+    },
+    "tick_clearance": {
+      "floor_mm": 1.41,
+      "source_mm": 1.420018,
+      "reimported_mm": 1.420027,
+      "difference_from_source_mm": 9e-06,
+      "pair": "needle x kinetic_tick_3",
+      "pose_deg": -55.0,
+      "feature": "edge_a2_edge_b1",
+      "pass": true
+    },
+    "no_new_contact": {
+      "new_contacts": [],
+      "pass": true
+    },
+    "polygon_surface": {
+      "objects": 69,
+      "failing": [],
+      "worst_surface_area_gap": 3.5357513687717113e-09,
+      "pass": true
+    },
+    "export_copy_measures_as_source": {
+      "triangles": [
+        8920,
+        8920
+      ],
+      "clearance_mm": [
+        1.420018,
+        1.420027
+      ],
+      "bounds": [
+        {
+          "min": [
+            -0.175,
+            -0.131675,
+            -0.175
+          ],
+          "max": [
+            0.175,
+            0.0,
+            0.175
+          ]
+        },
+        {
+          "min": [
+            -0.175,
+            -0.131675,
+            -0.175
+          ],
+          "max": [
+            0.175,
+            0.0,
+            0.175
+          ]
+        }
+      ],
+      "pass": true
+    },
+    "position_normal_uv_evidence": {
+      "objects": 69,
+      "failing": [],
+      "pass": true
+    },
+    "primary_uv_is_first_layer": {
+      "objects_with_uv": 19,
+      "findings": [],
+      "pass": true
+    }
+  },
+  "failing_gates": [
+    "inventory_identical"
+  ],
+  "inventory_identical_note": "alignment 184.1.4: the rounding-boundary difference is 0.000022 mm unrounded and is a practical pass",
+  "bounds_full_precision": {
+    "worst_difference_m": 2.2351741790771484e-08,
+    "worst_difference_mm": 2.2351741790771484e-05,
+    "worst_at": "kinetic_polygon_bezel",
+    "objects": 69,
+    "note": "root-relative bounds from the snapshots, no rounding applied"
+  },
+  "uv_selection_metadata": {
+    "changed": {},
+    "observed_behavior": "reset_to_first_layer",
+    "counted_in_transport_gate": false
+  },
+  "authoring_environment": {
+    "blender_version": "5.2.0 LTS",
+    "blender_build_hash": "fbe6228777e7",
+    "python_version": "3.13.13",
+    "fbx_exporter": "bpy.ops.export_scene.fbx (Legacy FBX)",
+    "preview_render_engine": "BLENDER_EEVEE",
+    "pipeline_version": "AnalogInstrumentMR Blender 5.2 migration v1"
+  },
+  "published_blend_sha256": "a63ca496a99f64584180b00ed42ab93ea0b4ebb5130f6236f758d91db86f7f07",
+  "publish": {
+    "mode": "canonical",
+    "may_write_report": true,
+    "may_write_blend": true,
+    "reason": "all checks passed; publishing blend and report together",
+    "blend_sha256": "a63ca496a99f64584180b00ed42ab93ea0b4ebb5130f6236f758d91db86f7f07",
+    "blend_bytes": 429628
+  }
+}

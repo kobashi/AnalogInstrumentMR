@@ -8,11 +8,16 @@ namespace MatsuMotoMeterAR.PerformanceGate
         public const string CountExtra = "matsu_perf_count";
         public const string ThemeExtra = "matsu_perf_theme";
         public const string DurationExtra = "matsu_perf_duration";
+        public const string DistanceExtra = "matsu_perf_distance";
+        public const string KindExtra = "matsu_perf_kind";
+        public const float DefaultDistanceMeters = 1.35f;
 
         private static bool loaded;
         private static int instrumentCount;
         private static MockInstrumentTheme theme;
         private static int durationSeconds = 600;
+        private static float distanceMeters = DefaultDistanceMeters;
+        private static MockInstrumentKind? instrumentKind;
 
         public static bool IsEnabled
         {
@@ -50,9 +55,28 @@ namespace MatsuMotoMeterAR.PerformanceGate
             }
         }
 
+        public static float DistanceMeters
+        {
+            get
+            {
+                EnsureLoaded();
+                return distanceMeters;
+            }
+        }
+
+        public static MockInstrumentKind? InstrumentKind
+        {
+            get
+            {
+                EnsureLoaded();
+                return instrumentKind;
+            }
+        }
+
         public static int NormalizeCount(int requestedCount)
         {
-            return requestedCount == 12 ||
+            return requestedCount == 1 ||
+                   requestedCount == 12 ||
                    requestedCount == 24 ||
                    requestedCount == 40 ||
                    requestedCount == 48 ||
@@ -77,6 +101,30 @@ namespace MatsuMotoMeterAR.PerformanceGate
             return requestedSeconds == 60 ? 60 : 600;
         }
 
+        public static float NormalizeDistance(float requestedMeters)
+        {
+            return !float.IsNaN(requestedMeters) &&
+                   !float.IsInfinity(requestedMeters) &&
+                   requestedMeters >= 0.5f &&
+                   requestedMeters <= 5f
+                ? requestedMeters
+                : DefaultDistanceMeters;
+        }
+
+        public static MockInstrumentKind? ParseKind(string value)
+        {
+            if (!string.IsNullOrWhiteSpace(value) &&
+                System.Enum.TryParse(
+                    value,
+                    true,
+                    out MockInstrumentKind parsed) &&
+                System.Enum.IsDefined(typeof(MockInstrumentKind), parsed))
+            {
+                return parsed;
+            }
+            return null;
+        }
+
         private static void EnsureLoaded()
         {
             if (loaded)
@@ -86,6 +134,8 @@ namespace MatsuMotoMeterAR.PerformanceGate
             instrumentCount = 0;
             theme = MockInstrumentThemeCatalog.DefaultTheme;
             durationSeconds = 600;
+            distanceMeters = DefaultDistanceMeters;
+            instrumentKind = null;
 
 #if UNITY_ANDROID && !UNITY_EDITOR
             try
@@ -101,6 +151,13 @@ namespace MatsuMotoMeterAR.PerformanceGate
                 theme = ParseTheme(intent.Call<string>("getStringExtra", ThemeExtra));
                 durationSeconds = NormalizeDuration(
                     intent.Call<int>("getIntExtra", DurationExtra, 600));
+                distanceMeters = NormalizeDistance(
+                    intent.Call<float>(
+                        "getFloatExtra",
+                        DistanceExtra,
+                        DefaultDistanceMeters));
+                instrumentKind = ParseKind(
+                    intent.Call<string>("getStringExtra", KindExtra));
             }
             catch (AndroidJavaException exception)
             {
