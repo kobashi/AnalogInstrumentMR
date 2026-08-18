@@ -1,0 +1,78 @@
+{
+  "phase": "before-after",
+  "sheets": {
+    "MeterRound": {
+      "path": "/Users/kblab/Documents/AnalogInstrumentMR/ArtSource/Blender/BrushUp/Opus5/KineticSafety/contact_sheets/ContactSheet_MeterRound_Baseline_vs_M2n8.png",
+      "sha256": "0aba61b8498af00817140f2efba1ff5091fe5facc275a486fae2eea2ad914ef9",
+      "baseline_blend": "ArtSource/Blender/ThemeHardSurfaceV6/KineticSafety/BL_MeterRound_KineticSafety_V6_ProductionReady.blend",
+      "refined_blend": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/BL_MeterRound_KineticSafety_V6_Opus5_R3_D3_M2n8_Retopo.blend",
+      "baseline": {
+        "authored_materials": [
+          "MAT_KineticSafety_V6_Atlas",
+          "MAT_KineticSafety_V6_Emissive"
+        ],
+        "meshes": 2
+      },
+      "refined": {
+        "authored_materials": [
+          "MAT_KineticSafety_V5_Body",
+          "MAT_KineticSafety_V5_Metal",
+          "MAT_KineticSafety_V5_Readout"
+        ],
+        "meshes": 31
+      }
+    },
+    "MeterMedium": {
+      "path": "/Users/kblab/Documents/AnalogInstrumentMR/ArtSource/Blender/BrushUp/Opus5/KineticSafety/contact_sheets/ContactSheet_MeterMedium_Baseline_vs_M2n8.png",
+      "sha256": "2a644472888eeef0ef5e4fca81660a4a990d5fd8414d4055419e955dff55b53d",
+      "baseline_blend": "ArtSource/Blender/ThemeHardSurfaceV6/KineticSafety/BL_MeterMedium_KineticSafety_V6_ProductionReady.blend",
+      "refined_blend": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/BL_MeterMedium_KineticSafety_V6_Opus5_B2P_D3P_M2n8_Retopo.blend",
+      "baseline": {
+        "authored_materials": [
+          "MAT_KineticSafety_V6_Atlas",
+          "MAT_KineticSafety_V6_Emissive"
+        ],
+        "meshes": 2
+      },
+      "refined": {
+        "authored_materials": [
+          "MAT_KineticSafety_V5_Body",
+          "MAT_KineticSafety_V5_Metal",
+          "MAT_KineticSafety_V5_Readout",
+          "MAT_KineticSafety_V6_Gasket"
+        ],
+        "meshes": 51
+      }
+    },
+    "MeterLarge": {
+      "path": "/Users/kblab/Documents/AnalogInstrumentMR/ArtSource/Blender/BrushUp/Opus5/KineticSafety/contact_sheets/ContactSheet_MeterLarge_Baseline_vs_M2n8.png",
+      "sha256": "fc50ec71359eda43679f1366d8acefdd994c50f88fed36b2f7c932a7c2382958",
+      "baseline_blend": "ArtSource/Blender/ThemeHardSurfaceV6/KineticSafety/BL_MeterLarge_KineticSafety_V6_ProductionReady.blend",
+      "refined_blend": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/BL_MeterLarge_KineticSafety_V6_Opus5_B2P_D3P_M2n8_Retopo.blend",
+      "baseline": {
+        "authored_materials": [
+          "MAT_KineticSafety_V6_Atlas",
+          "MAT_KineticSafety_V6_Emissive"
+        ],
+        "meshes": 2
+      },
+      "refined": {
+        "authored_materials": [
+          "MAT_KineticSafety_V5_Body",
+          "MAT_KineticSafety_V5_Metal",
+          "MAT_KineticSafety_V5_Readout",
+          "MAT_KineticSafety_V6_Gasket"
+        ],
+        "meshes": 57
+      }
+    }
+  },
+  "authoring_environment": {
+    "blender_version": "5.2.0 LTS",
+    "blender_build_hash": "fbe6228777e7",
+    "python_version": "3.13.13",
+    "fbx_exporter": "bpy.ops.export_scene.fbx (Legacy FBX)",
+    "preview_render_engine": "BLENDER_EEVEE",
+    "pipeline_version": "AnalogInstrumentMR Blender 5.2 migration v1"
+  }
+}

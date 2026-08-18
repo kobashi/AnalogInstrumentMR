@@ -1,0 +1,245 @@
+{
+  "phase": "M2n8",
+  "note": "M2n5 delivery path, M2n8 shapes (alignment 205.1). No new validator; the extra checks are read off the re-imported snapshot the same path already writes.",
+  "revision_blends": {
+    "MeterRound": {
+      "blend": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/BL_MeterRound_KineticSafety_V6_Opus5_R3_D3_M2n8_Retopo.blend",
+      "sha256": "ebf29a81e9c566f5b1a5c78fd420710d3a6871416f322ccc0fc0622311ce0748"
+    },
+    "MeterMedium": {
+      "blend": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/BL_MeterMedium_KineticSafety_V6_Opus5_B2P_D3P_M2n8_Retopo.blend",
+      "sha256": "6710ce44586f2fa8df51ad52d265d4649e0e3ff3b69b23cfd51c97332ce364ec"
+    },
+    "MeterLarge": {
+      "blend": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/BL_MeterLarge_KineticSafety_V6_Opus5_B2P_D3P_M2n8_Retopo.blend",
+      "sha256": "39bb9c9d6230aa17f36c930918576161a2f0346106d56d8d52169af2ebf2d51a"
+    }
+  },
+  "canonical_blend_sha256_before": {
+    "MeterRound": "4bc590d446a3cb70888956530a674013e50617ad00f14faa60d8f5767987219f",
+    "MeterMedium": "98bff1c03307cd97f4b1b9eeced801850f8c76cfcb8483c01ff57704ee9888c4",
+    "MeterLarge": "965336a40bb28b8b19672b15fdba60d5f08de94935cecac8ffce2c6f8e28e266"
+  },
+  "canonical_blend_sha256_after": {
+    "MeterRound": "4bc590d446a3cb70888956530a674013e50617ad00f14faa60d8f5767987219f",
+    "MeterMedium": "98bff1c03307cd97f4b1b9eeced801850f8c76cfcb8483c01ff57704ee9888c4",
+    "MeterLarge": "965336a40bb28b8b19672b15fdba60d5f08de94935cecac8ffce2c6f8e28e266"
+  },
+  "delivery_report": "ArtSource/Blender/BrushUp/Opus5/meter_m2n8_delivery_report.json",
+  "delivery_status": "candidate_handoff_published",
+  "models": {
+    "MeterRound": {
+      "fbx": "SM_MeterRound_KineticSafety_V6_Opus5_R3_D3_M2n8_Merged_Slots.fbx",
+      "staged_sha256": "9f32dd5e72a1e0f9ee0c2a2c91c9ba5abb08fba5858a7016bef456f340e2d916",
+      "published": {
+        "fbx": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/staging/fbx/SM_MeterRound_KineticSafety_V6_Opus5_R3_D3_M2n8_Merged_Slots.fbx",
+        "fbx_sha256": "9f32dd5e72a1e0f9ee0c2a2c91c9ba5abb08fba5858a7016bef456f340e2d916",
+        "fbx_bytes": 141436,
+        "report": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/reports/MeterRound_KineticSafety_V6_Opus5_R3_D3_M2n8_Merged_Slots_m2n8_candidate.json",
+        "report_sha256": "1f2cc2b324ccd33885cb1a2c1cfcaed6293c520af214bc9abf67450d4b562b53",
+        "publish": {
+          "mode": "canonical",
+          "may_write_report": true,
+          "may_write_blend": true,
+          "reason": "all checks passed; publishing blend and report together",
+          "blend_sha256": "9f32dd5e72a1e0f9ee0c2a2c91c9ba5abb08fba5858a7016bef456f340e2d916",
+          "blend_bytes": 141436,
+          "report_sha256": "1f2cc2b324ccd33885cb1a2c1cfcaed6293c520af214bc9abf67450d4b562b53",
+          "promoted": true
+        }
+      },
+      "renderers": [
+        "needle",
+        "static_opaque",
+        "static_readout"
+      ],
+      "submeshes": {
+        "needle": 2,
+        "static_opaque": 1,
+        "static_readout": 1
+      },
+      "submesh_total": 4,
+      "triangles": 4640,
+      "expected_triangles": 4640,
+      "bounds": {
+        "min": [
+          -0.07699999958276749,
+          -0.08049999922513962,
+          -0.07699999958276749
+        ],
+        "max": [
+          0.07699999958276749,
+          0.0,
+          0.07699999958276749
+        ]
+      },
+      "failing_gates": [],
+      "snapshot_health": {
+        "triangles": 4640,
+        "non_finite_values": 0,
+        "degenerate_triangles": 0,
+        "uv_min": -1.862645149230957e-07,
+        "uv_max": 1.0,
+        "uv_finite": true
+      },
+      "negative_scale_objects": [],
+      "needle_after_round_trip": {
+        "present": true,
+        "measured_from": "needle_pivot",
+        "pivot_xz": [
+          0.0,
+          -0.004
+        ],
+        "reach_mm": 42.0043,
+        "front_m": -0.0805
+      },
+      "zone_band_absent": true
+    },
+    "MeterMedium": {
+      "fbx": "SM_MeterMedium_KineticSafety_V6_Opus5_B2P_D3P_M2n8_Merged_Slots.fbx",
+      "staged_sha256": "c7707591299ea9675746f7819f2b6fe5e28e4b71fa6b4d30803f30c992a47f57",
+      "published": {
+        "fbx": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/staging/fbx/SM_MeterMedium_KineticSafety_V6_Opus5_B2P_D3P_M2n8_Merged_Slots.fbx",
+        "fbx_sha256": "c7707591299ea9675746f7819f2b6fe5e28e4b71fa6b4d30803f30c992a47f57",
+        "fbx_bytes": 197788,
+        "report": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/reports/MeterMedium_KineticSafety_V6_Opus5_B2P_D3P_M2n8_Merged_Slots_m2n8_candidate.json",
+        "report_sha256": "5a74922e22ed2691ff2606be6496edacc179a93770dbff807d582b53f017045d",
+        "publish": {
+          "mode": "canonical",
+          "may_write_report": true,
+          "may_write_blend": true,
+          "reason": "all checks passed; publishing blend and report together",
+          "blend_sha256": "c7707591299ea9675746f7819f2b6fe5e28e4b71fa6b4d30803f30c992a47f57",
+          "blend_bytes": 197788,
+          "report_sha256": "5a74922e22ed2691ff2606be6496edacc179a93770dbff807d582b53f017045d",
+          "promoted": true
+        }
+      },
+      "renderers": [
+        "needle",
+        "static_opaque",
+        "static_readout"
+      ],
+      "submeshes": {
+        "needle": 2,
+        "static_opaque": 1,
+        "static_readout": 1
+      },
+      "submesh_total": 4,
+      "triangles": 6096,
+      "expected_triangles": 6096,
+      "bounds": {
+        "min": [
+          -0.17499999701976776,
+          -0.13167500495910645,
+          -0.17499999701976776
+        ],
+        "max": [
+          0.17499999701976776,
+          0.0,
+          0.17499999701976776
+        ]
+      },
+      "failing_gates": [],
+      "snapshot_health": {
+        "triangles": 6096,
+        "non_finite_values": 0,
+        "degenerate_triangles": 0,
+        "uv_min": -0.0024397671222686768,
+        "uv_max": 1.0024397373199463,
+        "uv_finite": true
+      },
+      "negative_scale_objects": [],
+      "needle_after_round_trip": {
+        "present": true,
+        "measured_from": "needle_pivot",
+        "pivot_xz": [
+          0.0,
+          -0.008
+        ],
+        "reach_mm": 79.8103,
+        "front_m": -0.131675
+      },
+      "zone_band_absent": true
+    },
+    "MeterLarge": {
+      "fbx": "SM_MeterLarge_KineticSafety_V6_Opus5_B2P_D3P_M2n8_Merged_Slots.fbx",
+      "staged_sha256": "a4e81579fba1d31e4723ae25c95ea91ac323e6ffe77323ff76b7cc192e0249e6",
+      "published": {
+        "fbx": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/staging/fbx/SM_MeterLarge_KineticSafety_V6_Opus5_B2P_D3P_M2n8_Merged_Slots.fbx",
+        "fbx_sha256": "a4e81579fba1d31e4723ae25c95ea91ac323e6ffe77323ff76b7cc192e0249e6",
+        "fbx_bytes": 222940,
+        "report": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/reports/MeterLarge_KineticSafety_V6_Opus5_B2P_D3P_M2n8_Merged_Slots_m2n8_candidate.json",
+        "report_sha256": "0a20c0caaaf503ddf7d34bee499ca2fe21f9ff166efd5fde8939db21d381be8b",
+        "publish": {
+          "mode": "canonical",
+          "may_write_report": true,
+          "may_write_blend": true,
+          "reason": "all checks passed; publishing blend and report together",
+          "blend_sha256": "a4e81579fba1d31e4723ae25c95ea91ac323e6ffe77323ff76b7cc192e0249e6",
+          "blend_bytes": 222940,
+          "report_sha256": "0a20c0caaaf503ddf7d34bee499ca2fe21f9ff166efd5fde8939db21d381be8b",
+          "promoted": true
+        }
+      },
+      "renderers": [
+        "needle",
+        "static_opaque",
+        "static_readout"
+      ],
+      "submeshes": {
+        "needle": 2,
+        "static_opaque": 1,
+        "static_readout": 1
+      },
+      "submesh_total": 4,
+      "triangles": 6880,
+      "expected_triangles": 6880,
+      "bounds": {
+        "min": [
+          -0.26249998807907104,
+          -0.17392495274543762,
+          -0.26249998807907104
+        ],
+        "max": [
+          0.26249998807907104,
+          0.0,
+          0.26249998807907104
+        ]
+      },
+      "failing_gates": [],
+      "snapshot_health": {
+        "triangles": 6880,
+        "non_finite_values": 0,
+        "degenerate_triangles": 0,
+        "uv_min": -0.0024397671222686768,
+        "uv_max": 1.0024397373199463,
+        "uv_finite": true
+      },
+      "negative_scale_objects": [],
+      "needle_after_round_trip": {
+        "present": true,
+        "measured_from": "needle_pivot",
+        "pivot_xz": [
+          0.0,
+          -0.012
+        ],
+        "reach_mm": 119.7155,
+        "front_m": -0.173925
+      },
+      "zone_band_absent": true
+    }
+  },
+  "canonical_unchanged": true,
+  "all_passed": true,
+  "status": "candidate_handoff_published",
+  "elapsed_seconds": 6.397,
+  "authoring_environment": {
+    "blender_version": "5.2.0 LTS",
+    "blender_build_hash": "fbe6228777e7",
+    "python_version": "3.13.13",
+    "fbx_exporter": "bpy.ops.export_scene.fbx (Legacy FBX)",
+    "preview_render_engine": "BLENDER_EEVEE",
+    "pipeline_version": "AnalogInstrumentMR Blender 5.2 migration v1"
+  }
+}
