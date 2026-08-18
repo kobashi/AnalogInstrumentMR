@@ -1,0 +1,451 @@
+{
+  "phase": "M2n5",
+  "model": "MeterLarge",
+  "revision": "B2P_D3P",
+  "delivery": "three renderers, one slot per role",
+  "status": "candidate_handoff_approved",
+  "production_approval": false,
+  "supersedes_delivery_of": "M2n4 (same geometry, 7/9/9 submeshes)",
+  "source": {
+    "blend": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/BL_MeterLarge_KineticSafety_V6_Opus5_B2P_D3P_Retopo.blend",
+    "blend_sha256": "965336a40bb28b8b19672b15fdba60d5f08de94935cecac8ffce2c6f8e28e266",
+    "blend_matches_alignment_140": true,
+    "report": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/reports/MeterLarge_KineticSafety_V6_Opus5_B2P_D3P.json",
+    "report_sha256": "a13eb9e66ee9c5616b0e5e1956f38a6fb4265a3681d4b0d4efc3680338afcaa1"
+  },
+  "settings": {
+    "use_selection": true,
+    "object_types": [
+      "EMPTY",
+      "MESH"
+    ],
+    "apply_unit_scale": true,
+    "apply_scale_options": "FBX_SCALE_UNITS",
+    "use_space_transform": true,
+    "bake_space_transform": false,
+    "axis_forward": "-Z",
+    "axis_up": "Y",
+    "use_mesh_modifiers": true,
+    "mesh_smooth_type": "EDGE",
+    "use_triangles": false,
+    "add_leaf_bones": false,
+    "bake_anim": false,
+    "path_mode": "STRIP",
+    "embed_textures": false,
+    "use_custom_props": true
+  },
+  "membership": {
+    "needle": [
+      "kinetic_v6_needle_counterweight",
+      "needle"
+    ],
+    "static_readout": [
+      "kinetic_tick_0",
+      "kinetic_tick_1",
+      "kinetic_tick_10",
+      "kinetic_tick_11",
+      "kinetic_tick_12",
+      "kinetic_tick_2",
+      "kinetic_tick_3",
+      "kinetic_tick_4",
+      "kinetic_tick_5",
+      "kinetic_tick_6",
+      "kinetic_tick_7",
+      "kinetic_tick_8",
+      "kinetic_tick_9",
+      "kinetic_v6_zone_band",
+      "secondary_scale_00",
+      "secondary_scale_01",
+      "secondary_scale_02",
+      "secondary_scale_03",
+      "secondary_scale_04",
+      "secondary_scale_05",
+      "secondary_scale_06",
+      "secondary_scale_07",
+      "secondary_scale_08",
+      "secondary_scale_09",
+      "secondary_scale_10",
+      "secondary_scale_11",
+      "secondary_scale_12",
+      "secondary_scale_13",
+      "secondary_scale_14",
+      "secondary_scale_15",
+      "secondary_scale_16",
+      "secondary_scale_17",
+      "secondary_scale_18",
+      "secondary_scale_19",
+      "secondary_scale_20",
+      "secondary_scale_21",
+      "secondary_scale_22",
+      "secondary_scale_23",
+      "secondary_scale_24"
+    ],
+    "static_opaque": [
+      "MeterLarge_glass_gasket",
+      "MeterLarge_secondary_bezel",
+      "housing",
+      "kinetic_MeterLarge_armor_frame",
+      "kinetic_MeterLarge_corner_bumper_0",
+      "kinetic_MeterLarge_corner_bumper_1",
+      "kinetic_MeterLarge_corner_bumper_2",
+      "kinetic_MeterLarge_corner_bumper_3",
+      "kinetic_MeterLarge_lower_vent_0",
+      "kinetic_MeterLarge_lower_vent_1",
+      "kinetic_MeterLarge_lower_vent_2",
+      "kinetic_MeterLarge_lower_vent_3",
+      "kinetic_MeterLarge_lower_vent_4",
+      "kinetic_MeterLarge_lower_vent_5",
+      "kinetic_MeterLarge_lower_vent_6",
+      "kinetic_polygon_bezel",
+      "kinetic_v6_clamp_bolt_0",
+      "kinetic_v6_clamp_bolt_1",
+      "kinetic_v6_clamp_bolt_2",
+      "kinetic_v6_clamp_bolt_3",
+      "kinetic_v6_corner_clamp_0",
+      "kinetic_v6_corner_clamp_1",
+      "kinetic_v6_corner_clamp_2",
+      "kinetic_v6_corner_clamp_3",
+      "kinetic_v6_glass_gasket",
+      "kinetic_v6_inner_armor_ring",
+      "kinetic_v6_lower_vent_0",
+      "kinetic_v6_lower_vent_1",
+      "kinetic_v6_lower_vent_2",
+      "kinetic_v6_needle_boss",
+      "scale_fastener_00",
+      "scale_fastener_01",
+      "scale_fastener_02",
+      "scale_fastener_03",
+      "scale_fastener_04",
+      "scale_fastener_05",
+      "scale_fastener_06",
+      "scale_fastener_07",
+      "scale_fastener_08",
+      "scale_fastener_09",
+      "scale_fastener_10",
+      "scale_fastener_11"
+    ]
+  },
+  "fbx": "SM_MeterLarge_KineticSafety_V6_Opus5_B2P_D3P_Merged_Slots.fbx",
+  "fbx_candidate_path": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/staging/fbx/SM_MeterLarge_KineticSafety_V6_Opus5_B2P_D3P_Merged_Slots.fbx",
+  "staged_sha256": "d42be2acc490a7bdce2330dc6a4f8c4e871ccfdeabc6781040f9503a33501780",
+  "gates": {
+    "renderer_budget": {
+      "renderers": 3,
+      "budget": 4,
+      "names": [
+        "needle",
+        "static_opaque",
+        "static_readout"
+      ],
+      "pass": true
+    },
+    "submesh_budget": {
+      "measured": 4,
+      "budget": 4,
+      "per_renderer": {
+        "needle": 2,
+        "static_opaque": 1,
+        "static_readout": 1
+      },
+      "slots": {
+        "needle": [
+          "MAT_KineticSafety_V5_Readout",
+          "MAT_KineticSafety_V5_Metal"
+        ],
+        "static_opaque": [
+          "MAT_KineticSafety_V5_Body"
+        ],
+        "static_readout": [
+          "MAT_KineticSafety_V5_Readout"
+        ]
+      },
+      "pass": true
+    },
+    "triangles": {
+      "measured": 10472,
+      "expected": 10472,
+      "pass": true
+    },
+    "triangles_unchanged": {
+      "unmerged": 10472,
+      "expected": 10472,
+      "merged": 10472,
+      "pass": true
+    },
+    "geometry_uv_normals_unchanged": {
+      "roles": {
+        "static_opaque": true,
+        "static_readout": true,
+        "needle": true
+      },
+      "detail": {
+        "static_opaque": {
+          "expected_triangles": 6472,
+          "matched_triangles": 6472,
+          "unmatched_source": 0,
+          "unconsumed_reimport": 0,
+          "ambiguity_evaluated": true,
+          "assignment_pass": true,
+          "measurements": {
+            "geometry": {
+              "expected": 19416,
+              "matched": 19416,
+              "coverage": 1.0,
+              "scalar_count": 19416,
+              "measurement_valid": true,
+              "max": 1.4901161193847656e-08,
+              "rms": 6.361740075302702e-10,
+              "bound": 1e-05,
+              "unit": "m",
+              "pass": true
+            },
+            "face_normal": {
+              "expected": 6472,
+              "matched": 6472,
+              "coverage": 1.0,
+              "scalar_count": 6472,
+              "measurement_valid": true,
+              "max": 0.0011768508959334465,
+              "rms": 0.00015077648546235636,
+              "bound": 0.5,
+              "unit": "deg",
+              "pass": true
+            },
+            "split_normal": {
+              "expected": 19416,
+              "matched": 19416,
+              "coverage": 1.0,
+              "scalar_count": 19416,
+              "measurement_valid": true,
+              "max": 0.04479973211475298,
+              "rms": 0.003322628880337398,
+              "bound": 0.5,
+              "unit": "deg",
+              "pass": true
+            }
+          },
+          "uv": {
+            "UVMap": {
+              "coverage": 1.0,
+              "over_bound": 0,
+              "pass": true
+            }
+          },
+          "uv_layers": [
+            [
+              "UVMap"
+            ],
+            [
+              "UVMap"
+            ]
+          ],
+          "pass": true
+        },
+        "static_readout": {
+          "expected_triangles": 3748,
+          "matched_triangles": 3748,
+          "unmatched_source": 0,
+          "unconsumed_reimport": 0,
+          "ambiguity_evaluated": true,
+          "assignment_pass": true,
+          "measurements": {
+            "geometry": {
+              "expected": 11244,
+              "matched": 11244,
+              "coverage": 1.0,
+              "scalar_count": 11244,
+              "measurement_valid": true,
+              "max": 1.4901161193847656e-08,
+              "rms": 1.5814772945298877e-09,
+              "bound": 1e-05,
+              "unit": "m",
+              "pass": true
+            },
+            "face_normal": {
+              "expected": 3748,
+              "matched": 3748,
+              "coverage": 1.0,
+              "scalar_count": 3748,
+              "measurement_valid": true,
+              "max": 0.006035346091581091,
+              "rms": 0.001309453233932747,
+              "bound": 0.5,
+              "unit": "deg",
+              "pass": true
+            },
+            "split_normal": {
+              "expected": 11244,
+              "matched": 11244,
+              "coverage": 1.0,
+              "scalar_count": 11244,
+              "measurement_valid": true,
+              "max": 0.026716986792118067,
+              "rms": 0.0034302739736478825,
+              "bound": 0.5,
+              "unit": "deg",
+              "pass": true
+            }
+          },
+          "uv": {},
+          "uv_layers": [
+            [],
+            []
+          ],
+          "pass": true
+        },
+        "needle": {
+          "expected_triangles": 252,
+          "matched_triangles": 252,
+          "unmatched_source": 0,
+          "unconsumed_reimport": 0,
+          "ambiguity_evaluated": true,
+          "assignment_pass": true,
+          "measurements": {
+            "geometry": {
+              "expected": 756,
+              "matched": 756,
+              "coverage": 1.0,
+              "scalar_count": 756,
+              "measurement_valid": true,
+              "max": 3.003425057343598e-08,
+              "rms": 1.626894026472731e-08,
+              "bound": 1e-05,
+              "unit": "m",
+              "pass": true
+            },
+            "face_normal": {
+              "expected": 252,
+              "matched": 252,
+              "coverage": 1.0,
+              "scalar_count": 252,
+              "measurement_valid": true,
+              "max": 1.6903855353012707e-05,
+              "rms": 3.011830249836106e-06,
+              "bound": 0.5,
+              "unit": "deg",
+              "pass": true
+            },
+            "split_normal": {
+              "expected": 756,
+              "matched": 756,
+              "coverage": 1.0,
+              "scalar_count": 756,
+              "measurement_valid": true,
+              "max": 0.00012119752505626625,
+              "rms": 1.99658050629449e-05,
+              "bound": 0.5,
+              "unit": "deg",
+              "pass": true
+            }
+          },
+          "uv": {
+            "UVMap": {
+              "coverage": 1.0,
+              "over_bound": 0,
+              "pass": true
+            }
+          },
+          "uv_layers": [
+            [
+              "UVMap"
+            ],
+            [
+              "UVMap"
+            ]
+          ],
+          "pass": true
+        }
+      },
+      "pass": true
+    },
+    "bounds_unchanged": {
+      "unmerged": {
+        "min": [
+          -0.2625,
+          -0.173925,
+          -0.2625
+        ],
+        "max": [
+          0.2625,
+          0.0,
+          0.2625
+        ]
+      },
+      "merged": {
+        "min": [
+          -0.26249998807907104,
+          -0.17392495274543762,
+          -0.26249998807907104
+        ],
+        "max": [
+          0.26249998807907104,
+          0.0,
+          0.26249998807907104
+        ]
+      },
+      "worst_difference_m": 4.725456237419934e-08,
+      "pass": true
+    },
+    "motion_contract": {
+      "pivot": "needle_pivot",
+      "movable_renderer": "needle",
+      "range_deg": [
+        -55.0,
+        55.0
+      ],
+      "unmerged_movable_meshes": [
+        "kinetic_v6_needle_counterweight",
+        "needle"
+      ],
+      "pass": true
+    },
+    "custom_properties_restored": {
+      "differences": {},
+      "pass": true
+    },
+    "material_roles": {
+      "slots": {
+        "needle": [
+          "MAT_KineticSafety_V5_Readout",
+          "MAT_KineticSafety_V5_Metal"
+        ],
+        "static_opaque": [
+          "MAT_KineticSafety_V5_Body"
+        ],
+        "static_readout": [
+          "MAT_KineticSafety_V5_Readout"
+        ]
+      },
+      "collapsed": {
+        "static_opaque": [
+          "MAT_KineticSafety_V5_Metal",
+          "MAT_KineticSafety_V6_Gasket"
+        ],
+        "static_readout": [],
+        "needle": []
+      },
+      "needle_keeps_both_roles": true,
+      "pass": true
+    },
+    "unmerged_surface_gate": {
+      "pass": true
+    }
+  },
+  "authoring_environment": {
+    "blender_version": "5.2.0 LTS",
+    "blender_build_hash": "fbe6228777e7",
+    "python_version": "3.13.13",
+    "fbx_exporter": "bpy.ops.export_scene.fbx (Legacy FBX)",
+    "preview_render_engine": "BLENDER_EEVEE",
+    "pipeline_version": "AnalogInstrumentMR Blender 5.2 migration v1"
+  },
+  "published_blend_sha256": "d42be2acc490a7bdce2330dc6a4f8c4e871ccfdeabc6781040f9503a33501780",
+  "publish": {
+    "mode": "canonical",
+    "may_write_report": true,
+    "may_write_blend": true,
+    "reason": "all checks passed; publishing blend and report together",
+    "blend_sha256": "d42be2acc490a7bdce2330dc6a4f8c4e871ccfdeabc6781040f9503a33501780",
+    "blend_bytes": 317852
+  }
+}
