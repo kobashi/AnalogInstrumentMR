@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "candidateId": "Opus5_R2_Manifest",
+  "entries": [
+    {
+      "theme": "KineticSafety",
+      "model": "MeterRound",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/staging/fbx/SM_MeterRound_KineticSafety_V6_Opus5_R2_Material.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/staging/fbx/SM_MeterRound_KineticSafety_V6_Opus5_R2_Material.json"
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "Lever",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/staging/fbx/SM_Lever_KineticSafety_V6_Opus5_R2_Material.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/staging/fbx/SM_Lever_KineticSafety_V6_Opus5_R2_Material.json"
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "Throttle",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/staging/fbx/SM_Throttle_KineticSafety_V6_Opus5_R2_Material.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/staging/fbx/SM_Throttle_KineticSafety_V6_Opus5_R2_Material.json"
+    }
+  ]
+}

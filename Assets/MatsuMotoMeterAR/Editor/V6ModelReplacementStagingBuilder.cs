@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using MatsuMotoMeterAR.Instruments;
 using UnityEditor;
@@ -12,6 +13,40 @@ namespace MatsuMotoMeterAR.Editor
             "Assets/MatsuMotoMeterAR/Content/RefinedCandidates";
         private const string StagingRoot =
             CandidateRoot + "/V6ReplacementStaging";
+        private const string Opus5R2CandidateId = "Opus5_R2";
+        private const string Opus5R2SourceRoot =
+            "ArtSource/Blender/BrushUp/Opus5/KineticSafety/staging/fbx";
+        private const string Opus5R2StagingRoot =
+            CandidateRoot + "/CandidateStaging/" + Opus5R2CandidateId;
+        private const string Opus5LargeCandidateId = "Opus5_Large";
+        private const string Opus5LargeSourceRoot =
+            "ArtSource/Blender/BrushUp/Opus5/KineticSafety/staging/large_fbx";
+        private const string Opus5LargeTextureRoot =
+            "ArtSource/Blender/BrushUp/Opus5/KineticSafety/textures";
+        private const string Opus5LargeStagingRoot =
+            CandidateRoot + "/CandidateStaging/" + Opus5LargeCandidateId;
+        private const string Opus5MediumCandidateId = "Opus5_Medium";
+        private const string Opus5MediumSourceRoot =
+            "ArtSource/Blender/BrushUp/Opus5/KineticSafety/staging/medium_fbx";
+        private const string Opus5MediumTextureRoot =
+            "ArtSource/Blender/BrushUp/Opus5/KineticSafety/textures";
+        private const string Opus5MediumStagingRoot =
+            CandidateRoot + "/CandidateStaging/" + Opus5MediumCandidateId;
+        private const string Opus5R2ManifestPath =
+            "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
+            "Opus5_R2.json";
+        private const string MeterM2n3ManifestPath =
+            "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
+            "Meter_M2n3.json";
+        private const string MeterM2n5ManifestPath =
+            "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
+            "Meter_M2n5.json";
+        private const string MeterM2n7ManifestPath =
+            "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
+            "Meter_M2n7.json";
+        private const string MeterM2n8ManifestPath =
+            "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
+            "Meter_M2n8.json";
 
         private static readonly ThemeEntry[] Themes =
         {
@@ -46,6 +81,25 @@ namespace MatsuMotoMeterAR.Editor
             new("WindowPanel", "vane_pivot")
         };
 
+        private static readonly ModelEntry[] Opus5R2Models =
+        {
+            new("MeterRound", "needle_pivot"),
+            new("Lever", "handle_pivot"),
+            new("Throttle", "throttle_pivot")
+        };
+
+        private static readonly ModelEntry[] Opus5LargeModels =
+        {
+            new("MeterLarge", "needle_pivot"),
+            new("WindowMeter", "needle_pivot"),
+            new("WindowPanel", "vane_pivot")
+        };
+
+        private static readonly ModelEntry[] Opus5MediumModels =
+        {
+            new("MeterMedium", "needle_pivot")
+        };
+
         private const float StandardBumpScale = 0.32f;
         private const float MediumBumpScale = 0.28f;
         private const float LargeBumpScale = 0.24f;
@@ -64,6 +118,442 @@ namespace MatsuMotoMeterAR.Editor
             Debug.Log(
                 "V6 replacement staging is ready. Active models and " +
                 "prefabs were not modified.");
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Build Selected Candidate Manifest")]
+        public static void BuildSelectedCandidateManifest()
+        {
+            BuildCandidateManifest(SelectedManifestPath());
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Build Opus 5 R2 Manifest Candidate Staging")]
+        public static void BuildOpus5R2ManifestCandidate()
+        {
+            BuildCandidateManifest(Opus5R2ManifestPath);
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Build Meter M2n3 Manifest Candidate Staging")]
+        public static void BuildMeterM2n3ManifestCandidate()
+        {
+            BuildCandidateManifest(MeterM2n3ManifestPath);
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Build Meter M2n5 Manifest Candidate Staging")]
+        public static void BuildMeterM2n5ManifestCandidate()
+        {
+            BuildCandidateManifest(MeterM2n5ManifestPath);
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Build Meter M2n7 Manifest Candidate Staging")]
+        public static void BuildMeterM2n7ManifestCandidate()
+        {
+            BuildCandidateManifest(MeterM2n7ManifestPath);
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Build Meter M2n8 Manifest Candidate Staging")]
+        public static void BuildMeterM2n8ManifestCandidate()
+        {
+            BuildCandidateManifest(MeterM2n8ManifestPath);
+        }
+
+        internal static string BuildCandidateManifest(string manifestPath)
+        {
+            var manifest = CandidateStagingManifest.Load(manifestPath);
+            var resolved = ResolveManifestEntries(manifest);
+            var stagingRoot =
+                $"{CandidateRoot}/CandidateStaging/{manifest.candidateId}";
+            var resourceRoot =
+                $"{stagingRoot}/Resources/{manifest.candidateId}";
+            var modelsByTheme =
+                new Dictionary<string, List<ModelEntry>>(StringComparer.Ordinal);
+
+            foreach (var candidate in resolved)
+            {
+                var modelRoot =
+                    $"{stagingRoot}/Models/{candidate.Theme.Folder}";
+                var destinationStem =
+                    $"SM_{candidate.Model.Key}_{candidate.Theme.Folder}_" +
+                    "V6_Material";
+                CopyRequired(
+                    candidate.Entry.sourceFbx,
+                    $"{modelRoot}/{destinationStem}.fbx");
+                if (!string.IsNullOrWhiteSpace(candidate.Entry.sourceReport))
+                {
+                    CopyRequired(
+                        candidate.Entry.sourceReport,
+                        $"{modelRoot}/{destinationStem}.json");
+                }
+
+                if (!modelsByTheme.TryGetValue(
+                        candidate.Theme.Folder,
+                        out var models))
+                {
+                    models = new List<ModelEntry>();
+                    modelsByTheme.Add(candidate.Theme.Folder, models);
+                }
+                models.Add(candidate.Model);
+            }
+
+            Directory.CreateDirectory(stagingRoot);
+            File.Copy(
+                manifestPath,
+                $"{stagingRoot}/candidate-manifest.json",
+                true);
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            foreach (var theme in Themes)
+            {
+                if (!modelsByTheme.TryGetValue(theme.Folder, out var models))
+                    continue;
+                BuildTheme(
+                    theme,
+                    models,
+                    $"{stagingRoot}/Models/{theme.Folder}",
+                    resourceRoot,
+                    configureTextureImporters: false,
+                    useSolidRoleMaterials:
+                        manifest.candidateId == "Meter_M2n5" ||
+                        manifest.candidateId == "Meter_M2n7" ||
+                        manifest.candidateId == "Meter_M2n8");
+            }
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            Debug.Log(
+                $"Candidate {manifest.candidateId} staging is ready at " +
+                $"{stagingRoot}. Active assets were not modified.");
+            return stagingRoot;
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Build Opus 5 R2 Candidate Staging")]
+        public static void BuildOpus5R2Candidate()
+        {
+            var theme = Themes[2];
+            var modelRoot = $"{Opus5R2StagingRoot}/Models";
+            Directory.CreateDirectory(modelRoot);
+            foreach (var model in Opus5R2Models)
+            {
+                var sourceStem =
+                    $"SM_{model.Key}_{theme.Folder}_V6_" +
+                    $"{Opus5R2CandidateId}_Material";
+                var destinationStem =
+                    $"SM_{model.Key}_{theme.Folder}_V6_Material";
+                CopyRequired(
+                    $"{Opus5R2SourceRoot}/{sourceStem}.fbx",
+                    $"{modelRoot}/{destinationStem}.fbx");
+                CopyRequired(
+                    $"{Opus5R2SourceRoot}/{sourceStem}.json",
+                    $"{modelRoot}/{destinationStem}.json");
+            }
+
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            BuildTheme(
+                theme,
+                Opus5R2Models,
+                modelRoot,
+                $"{Opus5R2StagingRoot}/Resources/{Opus5R2CandidateId}",
+                configureTextureImporters: false);
+            BuildOpus5R2AtlasProfiles(theme);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            Debug.Log(
+                $"Candidate {Opus5R2CandidateId} staging is ready at " +
+                $"{Opus5R2StagingRoot}. Existing V6 staging and active " +
+                "assets were not modified.");
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Build Opus 5 Large Atlas Candidate Staging")]
+        public static void BuildOpus5LargeCandidate()
+        {
+            var theme = Themes[2];
+            var modelRoot = $"{Opus5LargeStagingRoot}/Models";
+            Directory.CreateDirectory(modelRoot);
+            foreach (var model in Opus5LargeModels)
+            {
+                CopyRequired(
+                    $"{Opus5LargeSourceRoot}/" +
+                    $"SM_{model.Key}_{theme.Folder}_V6_Opus5_LargeUV.fbx",
+                    $"{modelRoot}/" +
+                    $"SM_{model.Key}_{theme.Folder}_V6_Material.fbx");
+            }
+
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            BuildTheme(
+                theme,
+                Opus5LargeModels,
+                modelRoot,
+                $"{Opus5LargeStagingRoot}/Resources/" +
+                Opus5LargeCandidateId,
+                configureTextureImporters: false);
+            BuildOpus5LargeAtlasProfiles(theme);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            Debug.Log(
+                $"Candidate {Opus5LargeCandidateId} staging is ready at " +
+                $"{Opus5LargeStagingRoot}. Active assets were not modified.");
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Build Opus 5 Medium Atlas Candidate Staging")]
+        public static void BuildOpus5MediumCandidate()
+        {
+            var theme = Themes[2];
+            var modelRoot = $"{Opus5MediumStagingRoot}/Models";
+            Directory.CreateDirectory(modelRoot);
+            foreach (var model in Opus5MediumModels)
+            {
+                CopyRequired(
+                    $"{Opus5MediumSourceRoot}/" +
+                    $"SM_{model.Key}_{theme.Folder}_V6_Opus5_MediumUV.fbx",
+                    $"{modelRoot}/" +
+                    $"SM_{model.Key}_{theme.Folder}_V6_Material.fbx");
+            }
+
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            BuildTheme(
+                theme,
+                Opus5MediumModels,
+                modelRoot,
+                $"{Opus5MediumStagingRoot}/Resources/" +
+                Opus5MediumCandidateId,
+                configureTextureImporters: false);
+            BuildOpus5MediumAtlasProfiles(theme);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            Debug.Log(
+                $"Candidate {Opus5MediumCandidateId} staging is ready at " +
+                $"{Opus5MediumStagingRoot}. Active assets were not modified.");
+        }
+
+        private static void BuildOpus5MediumAtlasProfiles(ThemeEntry theme)
+        {
+            var resourceRoot =
+                $"{Opus5MediumStagingRoot}/Resources/" +
+                $"{Opus5MediumCandidateId}/{theme.Folder}/AtlasProfiles";
+            var profiles = new[]
+            {
+                new LargeAtlasProfile("Control", "Medium_Control"),
+                new LargeAtlasProfile("Fine", "Medium_Fine")
+            };
+            foreach (var profile in profiles)
+            {
+                var source =
+                    $"{Opus5MediumTextureRoot}/{profile.SourceFolder}/" +
+                    theme.Folder;
+                var destination = $"{resourceRoot}/{profile.ResourceName}";
+                Directory.CreateDirectory(destination);
+                foreach (var suffix in new[]
+                         {
+                             "BaseColor",
+                             "Normal",
+                             "MetallicSmoothness",
+                             "Emission"
+                         })
+                {
+                    CopyRequired(
+                        $"{source}/T_{theme.Folder}_V6_Atlas_Medium_" +
+                        $"{suffix}.png",
+                        $"{destination}/T_{theme.Folder}_V6_Atlas_Medium_" +
+                        $"{suffix}.png");
+                }
+                CopyRequired(
+                    $"{source}/T_{theme.Folder}_V6_Atlas_Medium.manifest.json",
+                    $"{destination}/" +
+                    $"T_{theme.Folder}_V6_Atlas_Medium.manifest.json");
+            }
+
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            foreach (var profile in profiles)
+            {
+                var textureRoot =
+                    $"{resourceRoot}/{profile.ResourceName}";
+                ConfigureTexture(
+                    $"{textureRoot}/" +
+                    $"T_{theme.Folder}_V6_Atlas_Medium_BaseColor.png",
+                    false);
+                ConfigureTexture(
+                    $"{textureRoot}/" +
+                    $"T_{theme.Folder}_V6_Atlas_Medium_Normal.png",
+                    true);
+                ConfigureTexture(
+                    $"{textureRoot}/" +
+                    $"T_{theme.Folder}_V6_Atlas_Medium_" +
+                    "MetallicSmoothness.png",
+                    false,
+                    linear: true);
+                ConfigureTexture(
+                    $"{textureRoot}/" +
+                    $"T_{theme.Folder}_V6_Atlas_Medium_Emission.png",
+                    false);
+                BuildOpaqueMaterial(
+                    textureRoot,
+                    textureRoot,
+                    theme.Folder,
+                    "_Medium",
+                    MediumBumpScale);
+                BuildEmissiveMaterial(
+                    textureRoot,
+                    textureRoot,
+                    theme,
+                    "_Medium",
+                    MediumBumpScale);
+            }
+        }
+
+        private static void BuildOpus5LargeAtlasProfiles(ThemeEntry theme)
+        {
+            var resourceRoot =
+                $"{Opus5LargeStagingRoot}/Resources/" +
+                $"{Opus5LargeCandidateId}/{theme.Folder}/AtlasProfiles";
+            var profiles = new[]
+            {
+                new LargeAtlasProfile("Control1K", "Large_Control_1K"),
+                new LargeAtlasProfile("Same2K", "Large_2K_SameRepeats"),
+                new LargeAtlasProfile("Finer2K", "Large_2K_FinerRepeats")
+            };
+            foreach (var profile in profiles)
+            {
+                var source =
+                    $"{Opus5LargeTextureRoot}/{profile.SourceFolder}/" +
+                    theme.Folder;
+                var destination = $"{resourceRoot}/{profile.ResourceName}";
+                Directory.CreateDirectory(destination);
+                foreach (var suffix in new[]
+                         {
+                             "BaseColor",
+                             "Normal",
+                             "MetallicSmoothness",
+                             "Emission"
+                         })
+                {
+                    CopyRequired(
+                        $"{source}/T_{theme.Folder}_V6_Atlas_Large_" +
+                        $"{suffix}.png",
+                        $"{destination}/T_{theme.Folder}_V6_Atlas_Large_" +
+                        $"{suffix}.png");
+                }
+                CopyRequired(
+                    $"{source}/T_{theme.Folder}_V6_Atlas_Large.manifest.json",
+                    $"{destination}/" +
+                    $"T_{theme.Folder}_V6_Atlas_Large.manifest.json");
+            }
+
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            foreach (var profile in profiles)
+            {
+                var textureRoot =
+                    $"{resourceRoot}/{profile.ResourceName}";
+                ConfigureTexture(
+                    $"{textureRoot}/" +
+                    $"T_{theme.Folder}_V6_Atlas_Large_BaseColor.png",
+                    false);
+                ConfigureTexture(
+                    $"{textureRoot}/" +
+                    $"T_{theme.Folder}_V6_Atlas_Large_Normal.png",
+                    true);
+                ConfigureTexture(
+                    $"{textureRoot}/" +
+                    $"T_{theme.Folder}_V6_Atlas_Large_" +
+                    "MetallicSmoothness.png",
+                    false,
+                    linear: true);
+                ConfigureTexture(
+                    $"{textureRoot}/" +
+                    $"T_{theme.Folder}_V6_Atlas_Large_Emission.png",
+                    false);
+                BuildOpaqueMaterial(
+                    textureRoot,
+                    textureRoot,
+                    theme.Folder,
+                    "_Large",
+                    LargeBumpScale);
+                BuildEmissiveMaterial(
+                    textureRoot,
+                    textureRoot,
+                    theme,
+                    "_Large",
+                    LargeBumpScale);
+            }
+        }
+
+        private static void BuildOpus5R2AtlasProfiles(ThemeEntry theme)
+        {
+            const string sourceRoot =
+                "ArtSource/Blender/BrushUp/Opus5/KineticSafety/textures";
+            var resourceRoot =
+                $"{Opus5R2StagingRoot}/Resources/{Opus5R2CandidateId}/" +
+                $"{theme.Folder}/AtlasProfiles";
+            foreach (var profile in new[] { "A", "B", "BT" })
+            {
+                var source =
+                    $"{sourceRoot}/Repeats{profile}/{theme.Folder}";
+                var destination = $"{resourceRoot}/{profile}";
+                Directory.CreateDirectory(destination);
+                foreach (var suffix in new[]
+                         {
+                             "BaseColor",
+                             "Normal",
+                             "MetallicSmoothness",
+                             "Emission"
+                         })
+                {
+                    CopyRequired(
+                        $"{source}/T_{theme.Folder}_V6_Atlas_{suffix}.png",
+                        $"{destination}/" +
+                        $"T_{theme.Folder}_V6_Atlas_{suffix}.png");
+                }
+                CopyRequired(
+                    $"{source}/T_{theme.Folder}_V6_Atlas.manifest.json",
+                    $"{destination}/T_{theme.Folder}_V6_Atlas.manifest.json");
+            }
+
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            foreach (var profile in new[] { "A", "B", "BT" })
+            {
+                var textureRoot = $"{resourceRoot}/{profile}";
+                ConfigureTexture(
+                    $"{textureRoot}/T_{theme.Folder}_V6_Atlas_BaseColor.png",
+                    false);
+                ConfigureTexture(
+                    $"{textureRoot}/T_{theme.Folder}_V6_Atlas_Normal.png",
+                    true);
+                ConfigureTexture(
+                    $"{textureRoot}/" +
+                    $"T_{theme.Folder}_V6_Atlas_MetallicSmoothness.png",
+                    false,
+                    linear: true);
+                ConfigureTexture(
+                    $"{textureRoot}/T_{theme.Folder}_V6_Atlas_Emission.png",
+                    false);
+                BuildOpaqueMaterial(
+                    textureRoot,
+                    textureRoot,
+                    theme.Folder,
+                    "",
+                    StandardBumpScale);
+                BuildEmissiveMaterial(
+                    textureRoot,
+                    textureRoot,
+                    theme,
+                    "",
+                    StandardBumpScale);
+            }
         }
 
         [MenuItem(
@@ -122,42 +612,61 @@ namespace MatsuMotoMeterAR.Editor
 
         private static void BuildTheme(ThemeEntry theme)
         {
-            var textureRoot =
-                $"Assets/MatsuMotoMeterAR/Content/Themes/{theme.Folder}/" +
-                "Textures/ThemeMaterialV6";
             var modelRoot =
                 $"{CandidateRoot}/{theme.Folder}/" +
                 "ThemeHardSurfaceV6Material";
+            BuildTheme(
+                theme,
+                Models,
+                modelRoot,
+                StagingRoot,
+                configureTextureImporters: true);
+        }
+
+        private static void BuildTheme(
+            ThemeEntry theme,
+            IReadOnlyList<ModelEntry> models,
+            string modelRoot,
+            string stagingRoot,
+            bool configureTextureImporters,
+            bool useSolidRoleMaterials = false)
+        {
+            var textureRoot =
+                $"Assets/MatsuMotoMeterAR/Content/Themes/{theme.Folder}/" +
+                "Textures/ThemeMaterialV6";
             var materialRoot =
-                $"{StagingRoot}/{theme.Folder}/Materials";
+                $"{stagingRoot}/{theme.Folder}/Materials";
             var prefabRoot =
-                $"{StagingRoot}/{theme.Folder}/Prefabs";
+                $"{stagingRoot}/{theme.Folder}/Prefabs";
             Directory.CreateDirectory(materialRoot);
             Directory.CreateDirectory(prefabRoot);
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
 
-            foreach (var atlasSuffix in new[] { "", "_Medium", "_Large" })
+            if (configureTextureImporters)
             {
-                ConfigureTexture(
-                    $"{textureRoot}/T_{theme.Folder}_V6_Atlas" +
-                    $"{atlasSuffix}_BaseColor.png",
-                    false);
-                ConfigureTexture(
-                    $"{textureRoot}/T_{theme.Folder}_V6_Atlas" +
-                    $"{atlasSuffix}_Normal.png",
-                    true);
-                ConfigureTexture(
-                    $"{textureRoot}/T_{theme.Folder}_V6_Atlas" +
-                    $"{atlasSuffix}_MetallicSmoothness.png",
-                    false,
-                    linear: true);
-                ConfigureTexture(
-                    $"{textureRoot}/T_{theme.Folder}_V6_Atlas" +
-                    $"{atlasSuffix}_Emission.png",
-                    false);
+                foreach (var atlasSuffix in new[] { "", "_Medium", "_Large" })
+                {
+                    ConfigureTexture(
+                        $"{textureRoot}/T_{theme.Folder}_V6_Atlas" +
+                        $"{atlasSuffix}_BaseColor.png",
+                        false);
+                    ConfigureTexture(
+                        $"{textureRoot}/T_{theme.Folder}_V6_Atlas" +
+                        $"{atlasSuffix}_Normal.png",
+                        true);
+                    ConfigureTexture(
+                        $"{textureRoot}/T_{theme.Folder}_V6_Atlas" +
+                        $"{atlasSuffix}_MetallicSmoothness.png",
+                        false,
+                        linear: true);
+                    ConfigureTexture(
+                        $"{textureRoot}/T_{theme.Folder}_V6_Atlas" +
+                        $"{atlasSuffix}_Emission.png",
+                        false);
+                }
             }
 
-            foreach (var model in Models)
+            foreach (var model in models)
             {
                 ConfigureModel(
                     $"{modelRoot}/" +
@@ -200,7 +709,22 @@ namespace MatsuMotoMeterAR.Editor
                 theme,
                 "_Medium",
                 MediumBumpScale);
-            foreach (var model in Models)
+            if (useSolidRoleMaterials)
+            {
+                opaque = BuildSolidRoleMaterial(
+                    materialRoot,
+                    theme,
+                    emissive: false);
+                emissive = BuildSolidRoleMaterial(
+                    materialRoot,
+                    theme,
+                    emissive: true);
+                largeOpaque = opaque;
+                largeEmissive = emissive;
+                mediumOpaque = opaque;
+                mediumEmissive = emissive;
+            }
+            foreach (var model in models)
             {
                 BuildPrefab(
                     modelRoot,
@@ -269,6 +793,53 @@ namespace MatsuMotoMeterAR.Editor
                 "_EmissionColor",
                 theme.EmissionColor * theme.EmissionStrength);
             material.EnableKeyword("_EMISSION");
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
+        private static Material BuildSolidRoleMaterial(
+            string materialRoot,
+            ThemeEntry theme,
+            bool emissive)
+        {
+            var role = emissive ? "Readout" : "Opaque";
+            var material = LoadOrCreateMaterial(
+                $"{materialRoot}/MAT_{theme.Folder}_V6_Solid_{role}_Staging.mat");
+            foreach (var property in new[]
+                     {
+                         "_BaseMap",
+                         "_MainTex",
+                         "_BumpMap",
+                         "_MetallicGlossMap",
+                         "_EmissionMap"
+                     })
+            {
+                if (material.HasProperty(property))
+                    material.SetTexture(property, null);
+            }
+            material.DisableKeyword("_NORMALMAP");
+            material.DisableKeyword("_METALLICSPECGLOSSMAP");
+            var baseColor = emissive
+                ? new Color(0.02f, 0.46f, 0.57f, 1f)
+                : new Color(0.11f, 0.14f, 0.17f, 1f);
+            material.color = baseColor;
+            if (material.HasProperty("_BaseColor"))
+                material.SetColor("_BaseColor", baseColor);
+            material.SetFloat("_Metallic", emissive ? 0.05f : 0.48f);
+            material.SetFloat("_Smoothness", emissive ? 0.38f : 0.56f);
+            if (emissive)
+            {
+                material.SetColor(
+                    "_EmissionColor",
+                    theme.EmissionColor *
+                    (theme.EmissionStrength * 1.65f));
+                material.EnableKeyword("_EMISSION");
+            }
+            else
+            {
+                material.SetColor("_EmissionColor", Color.black);
+                material.DisableKeyword("_EMISSION");
+            }
             EditorUtility.SetDirty(material);
             return material;
         }
@@ -378,10 +949,7 @@ namespace MatsuMotoMeterAR.Editor
                     {
                         var sourceMaterial = sourceMaterials[index];
                         replacements[index] =
-                            sourceMaterial != null &&
-                            sourceMaterial.name.Contains(
-                                "Emissive",
-                                StringComparison.OrdinalIgnoreCase)
+                            IsEmissiveMaterialRole(sourceMaterial?.name)
                                 ? emissive
                                 : opaque;
                     }
@@ -446,6 +1014,19 @@ namespace MatsuMotoMeterAR.Editor
                 $"{root.name} is missing {expectedName}.");
         }
 
+        internal static bool IsEmissiveMaterialRole(string materialName)
+        {
+            if (string.IsNullOrWhiteSpace(materialName))
+                return false;
+
+            return materialName.Contains(
+                       "Emissive",
+                       StringComparison.OrdinalIgnoreCase) ||
+                   materialName.Contains(
+                       "Readout",
+                       StringComparison.OrdinalIgnoreCase);
+        }
+
         private static Renderer FindRenderer(
             Transform root,
             string expectedName)
@@ -499,6 +1080,10 @@ namespace MatsuMotoMeterAR.Editor
                     : TextureImporterType.Default;
             importer.sRGBTexture = !linear && !normalMap;
             importer.mipmapEnabled = true;
+            importer.wrapMode = TextureWrapMode.Repeat;
+            importer.filterMode = FilterMode.Bilinear;
+            importer.anisoLevel = 1;
+            importer.maxTextureSize = 2048;
             importer.textureCompression =
                 TextureImporterCompression.Compressed;
             importer.SaveAndReimport();
@@ -526,6 +1111,48 @@ namespace MatsuMotoMeterAR.Editor
             if (!string.IsNullOrEmpty(directory))
                 Directory.CreateDirectory(directory);
             File.Copy(source, destination, true);
+        }
+
+        private static string SelectedManifestPath()
+        {
+            return CandidateStagingManifest.SelectedAssetPath();
+        }
+
+        private static IReadOnlyList<ResolvedCandidateEntry>
+            ResolveManifestEntries(CandidateStagingManifest manifest)
+        {
+            var resolved = new List<ResolvedCandidateEntry>();
+            foreach (var entry in manifest.entries)
+            {
+                resolved.Add(
+                    new ResolvedCandidateEntry(
+                        entry,
+                        FindTheme(entry.theme),
+                        FindModel(entry.model)));
+            }
+            return resolved;
+        }
+
+        private static ThemeEntry FindTheme(string folder)
+        {
+            foreach (var theme in Themes)
+            {
+                if (theme.Folder == folder)
+                    return theme;
+            }
+            throw new InvalidDataException(
+                $"Unsupported candidate theme: {folder}.");
+        }
+
+        private static ModelEntry FindModel(string key)
+        {
+            foreach (var model in Models)
+            {
+                if (model.Key == key)
+                    return model;
+            }
+            throw new InvalidDataException(
+                $"Unsupported candidate model: {key}.");
         }
 
         private static void BackupIfPresent(
@@ -568,6 +1195,37 @@ namespace MatsuMotoMeterAR.Editor
 
             public string Key { get; }
             public string MotionTarget { get; }
+        }
+
+        private readonly struct LargeAtlasProfile
+        {
+            public LargeAtlasProfile(
+                string resourceName,
+                string sourceFolder)
+            {
+                ResourceName = resourceName;
+                SourceFolder = sourceFolder;
+            }
+
+            public string ResourceName { get; }
+            public string SourceFolder { get; }
+        }
+
+        private readonly struct ResolvedCandidateEntry
+        {
+            public ResolvedCandidateEntry(
+                CandidateStagingEntry entry,
+                ThemeEntry theme,
+                ModelEntry model)
+            {
+                Entry = entry;
+                Theme = theme;
+                Model = model;
+            }
+
+            public CandidateStagingEntry Entry { get; }
+            public ThemeEntry Theme { get; }
+            public ModelEntry Model { get; }
         }
     }
 }
