@@ -21,6 +21,21 @@ namespace MatsuMotoMeterAR.Editor
         [MenuItem("Tools/MatsuMotoMeterAR/Build Concept Release APK")]
         public static void Build()
         {
+            BuildTo(
+                $"{OutputDirectory}/AnalogInstrumentMR-{ReleaseName}-quest3.apk",
+                "Concept release");
+        }
+
+        [MenuItem("Tools/MatsuMotoMeterAR/Build Performance Gate APK")]
+        public static void BuildPerformanceGate()
+        {
+            BuildTo(
+                "Builds/Performance/AnalogInstrumentMR-v0.2.0-perfgate-quest3.apk",
+                "Performance gate");
+        }
+
+        private static void BuildTo(string outputPath, string label)
+        {
             var scenes = EditorBuildSettings.scenes
                 .Where(scene => scene.enabled)
                 .Select(scene => scene.path)
@@ -40,9 +55,9 @@ namespace MatsuMotoMeterAR.Editor
                     $"Player version is {PlayerSettings.bundleVersion}; expected {Version}.");
             }
 
-            Directory.CreateDirectory(OutputDirectory);
-            var outputPath =
-                $"{OutputDirectory}/AnalogInstrumentMR-{ReleaseName}-quest3.apk";
+            var outputDirectory = Path.GetDirectoryName(outputPath);
+            if (!string.IsNullOrEmpty(outputDirectory))
+                Directory.CreateDirectory(outputDirectory);
             var options = new BuildPlayerOptions
             {
                 scenes = scenes,
@@ -66,7 +81,7 @@ namespace MatsuMotoMeterAR.Editor
                 }
 
                 Debug.Log(
-                    $"Concept release APK built: {outputPath}; " +
+                    $"{label} APK built: {outputPath}; " +
                     $"{report.summary.totalSize} bytes.");
             }
             finally

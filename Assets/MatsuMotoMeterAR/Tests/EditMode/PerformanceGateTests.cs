@@ -8,6 +8,7 @@ namespace MatsuMotoMeterAR.Tests
     public sealed class PerformanceGateTests
     {
         [TestCase(12, 12)]
+        [TestCase(1, 1)]
         [TestCase(24, 24)]
         [TestCase(40, 40)]
         [TestCase(48, 48)]
@@ -64,6 +65,43 @@ namespace MatsuMotoMeterAR.Tests
             Assert.That(
                 PerformanceGateConfiguration.NormalizeDuration(requested),
                 Is.EqualTo(expected));
+        }
+
+        [TestCase(0.5f, 0.5f)]
+        [TestCase(1.0f, 1.0f)]
+        [TestCase(3.0f, 3.0f)]
+        [TestCase(5.0f, 5.0f)]
+        [TestCase(0.49f, PerformanceGateConfiguration.DefaultDistanceMeters)]
+        [TestCase(5.01f, PerformanceGateConfiguration.DefaultDistanceMeters)]
+        public void NormalizeDistance_AllowsSafeReviewRange(
+            float requested,
+            float expected)
+        {
+            Assert.That(
+                PerformanceGateConfiguration.NormalizeDistance(requested),
+                Is.EqualTo(expected).Within(0.001f));
+        }
+
+        [TestCase("RoundMeterLarge", MockInstrumentKind.RoundMeterLarge)]
+        [TestCase("windowmeter", MockInstrumentKind.WindowMeter)]
+        [TestCase("WindowPanel", MockInstrumentKind.WindowPanel)]
+        public void ParseKind_UsesDefinedInstrumentKind(
+            string value,
+            MockInstrumentKind expected)
+        {
+            Assert.That(
+                PerformanceGateConfiguration.ParseKind(value),
+                Is.EqualTo(expected));
+        }
+
+        [TestCase("")]
+        [TestCase("NotAKind")]
+        [TestCase("99")]
+        public void ParseKind_RejectsUnknownInstrumentKind(string value)
+        {
+            Assert.That(
+                PerformanceGateConfiguration.ParseKind(value),
+                Is.Null);
         }
 
     }

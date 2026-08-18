@@ -75,6 +75,8 @@ namespace MatsuMotoMeterAR.PerformanceGate
                 $"[PerfGate] Scenario ready: count={PerformanceGateConfiguration.InstrumentCount}, " +
                 $"theme={PerformanceGateConfiguration.Theme}, display={displayFrequency:0.00}Hz, " +
                 $"frameTiming={frameTimingAvailable}, " +
+                $"distance={PerformanceGateConfiguration.DistanceMeters:0.00}m, " +
+                $"kind={PerformanceGateConfiguration.InstrumentKind?.ToString() ?? "Baseline"}, " +
                 $"duration={PerformanceGateConfiguration.DurationSeconds}s.");
             SetStatus(
                 $"PERF WARMUP {WarmupSeconds:0}s\n" +
@@ -129,7 +131,8 @@ namespace MatsuMotoMeterAR.PerformanceGate
             if (forward.sqrMagnitude < 0.001f)
                 forward = Vector3.forward;
             var right = Vector3.Cross(Vector3.up, forward).normalized;
-            var origin = cameraTransform.position + forward * 1.35f;
+            var origin = cameraTransform.position +
+                         forward * PerformanceGateConfiguration.DistanceMeters;
             var normal = -forward;
 
             for (var index = 0; index < count; index++)
@@ -142,6 +145,7 @@ namespace MatsuMotoMeterAR.PerformanceGate
                     Vector3.up,
                     normal);
                 var instrument = MockInstrumentFactory.Create(
+                    PerformanceGateConfiguration.InstrumentKind ??
                     (MockInstrumentKind)(
                         index % MockInstrumentCatalog.PerformanceBaselineCount),
                     pose,
