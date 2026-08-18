@@ -153,12 +153,12 @@ rootの既存custom propertyを削除または変更しない。
 | Object | Required hierarchy | Motion acceptance |
 | --- | --- | --- |
 | MeterRound / MeterMedium / MeterLarge | `needle_pivot/needle` | 針の全域で盤面、glass、frameへ干渉しない |
-| Lever | `handle_pivot/handle` | `-24° / neutral / +24°`でbaseへ干渉しない |
-| Toggle | `switch_pivot/switch` | `-28° / +28°`でcollarへ干渉しない |
+| Lever | `handle_pivot/handle` | Unityの片側48° sweep全域でbaseへ干渉しない |
+| Toggle | `switch_pivot/switch` | Unityの片側56° sweep全域でcollarへ干渉しない |
 | Rotary | `knob_pivot/knob` | 連続回転で偏心しない |
 | Button | `button_travel/button` | 14 mm押下でguideへ不自然に貫通しない |
 | Lamp | `indicator` | node名を維持する |
-| Throttle | `throttle_pivot/throttle_handle` | 70度arcの両端でhousingへ干渉しない |
+| Throttle | `throttle_pivot/throttle_handle` | Unityの片側70° sweep全域でhousingへ干渉しない |
 | PowerSlider | `slider_travel/slider_handle` | local Y方向0.18 mの全域でrailへ干渉しない |
 | StatusIndicator | `indicator` + three states | `status_safe`, `status_warn`, `status_danger`を独立維持 |
 | WindowMeter | `needle_pivot/needle` | 大型針の全域でframeへ干渉しない |
@@ -166,6 +166,13 @@ rootの既存custom propertyを削除または変更しない。
 
 Pivot位置、local axis、親子関係は原則として変更しない。形状改善のため変更が
 不可避な場合は作業を止め、次を提示して承認を得る。
+
+Lever、Toggle、Throttleは `MockInstrumentMotion` のamplitudeへ同じ大きさの
+negative rotation offsetを加えるため、Unity上ではそれぞれ `[-48°, 0°]`、
+`[-56°, 0°]`、`[-70°, 0°]` の片側sweepとなる。FBX座標変換後のUnity local
+`Vector3.right` とBlender `+X`の回転符号を数値だけで同一視しない。2026-08-08に
+active 3-theme prefabのUnity motion auditを再実行し、外向きsweepとmount面非侵入を
+12/12で確認した。candidateをstaging prefab化した後にも同じauditを再実行する。
 
 - 変更理由
 - old/new position
@@ -292,7 +299,7 @@ Required improvements:
 - pivot周辺へbearing coverまたはbushingの機械的根拠を与える
 - detent方向を説明するguideまたはindexを追加する
 - gripとarmの材質・形状差を明確にする
-- `-24° / neutral / +24°`でbase、guard、slotへ干渉させない
+- Unityの片側48° sweepに対応する5状態すべてでbase、guard、slotへ干渉させない
 
 Avoid:
 

@@ -17,7 +17,11 @@ Unity paths and namespaces as a historical development identifier.
 
 ## Project status
 
-The current release candidate is `v0.2.0-concept.1` and includes:
+The latest published pre-release is `v0.2.0-concept.1`. The `main` development
+baseline additionally includes Blender 5.2 authoring support, manifest-driven
+candidate Gate C validation, and the approved M2n8 Kinetic Safety meters.
+
+The application includes:
 
 - 13 instrument types in four functional categories: meters, indicators,
   switches, and motion controls
@@ -34,12 +38,14 @@ The current release candidate is `v0.2.0-concept.1` and includes:
   runtime Current Room switching
 - shared Spatial Anchors, restoration, and automatic re-anchoring
 
-The release candidate passes all 99 Unity EditMode tests and all 39 active
-visual-prefab checks. The previous release passed the Quest 3 24-object,
-72 Hz, 10-minute performance gate. The expanded 48/64-object scenarios have
-not yet received the same physical performance run, and Quest 3S remains
-unverified. See
+The current `main` baseline passes all 133 Unity EditMode tests and all 39
+active visual-prefab checks. Quest 3 passed the 48-object gate and 64-object
+stress scenario in 10-minute baseline-relative runs, as well as the M2n8
+production smoke review. Quest 3S remains unverified. See
 [`docs/releases/v0.2.0-concept.1.md`](docs/releases/v0.2.0-concept.1.md).
+
+The proposed next-development priorities are documented in
+[`docs/V0_3_DEVELOPMENT_ROADMAP.md`](docs/V0_3_DEVELOPMENT_ROADMAP.md).
 
 This repository distributes source only. It does not provide or support an
 official APK, store build, production package identifier, or production

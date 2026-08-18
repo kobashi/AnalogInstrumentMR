@@ -6,12 +6,29 @@
 
 ## [Unreleased]
 
+### Added
+
+- manifest駆動のcandidate隔離staging、構造・motion・固定画像・Quest証跡を束ねる
+  Gate C readiness検証
+- Quest 48配置gate／64配置stressを同じ設定から実行するperformance matrix
+- 承認済みM2n8 Kinetic Safety MeterRound／Medium／LargeのBlender原本、FBX、
+  比較画像、検証report
+
 ### Changed
 
 - Blender authoring pipelineを`5.2.x`へ移行。プロジェクト専用launcher、V6生成前の
   Python API／EEVEE／Legacy FBX preflight、非破壊smoke test、生成reportの
   Blender／Python／FBX exporter provenanceを追加。Blender 5.2のEEVEE engine ID
   `BLENDER_EEVEE`へpreview生成を更新
+- Kinetic Safetyの3サイズmeterをM2n8形状へ更新し、針の表示範囲を±115°へ拡大。
+  active FBX／prefab GUIDを維持し、candidate依存をproductionから分離
+
+### Validated
+
+- Unity EditMode 133 / 133、active visual prefab 39 / 39
+- M2n8 Gate C readiness 16 / 16
+- Quest 3の48配置gate／64配置stress（各10分、baseline-relative）と
+  M2n8 production smoke
 
 ## [0.2.0-concept.1] - 2026-07-30
 
