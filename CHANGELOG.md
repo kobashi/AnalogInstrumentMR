@@ -8,6 +8,9 @@
 
 ### Added
 
+- 接続可能な受信計器の`LabelSocket`へ、現在値、単位、min / max、接続状態と
+  32 sampleの短時間trendを表示するmonitor MVP。信号評価とは分離した5 Hz更新、
+  共有material、固定長bufferによりsteady-stateのper-frame allocationを避ける
 - manifest駆動のcandidate隔離staging、構造・motion・固定画像・Quest証跡を束ねる
   Gate C readiness検証
 - Quest 48配置gate／64配置stressを同じ設定から実行するperformance matrix
@@ -25,7 +28,7 @@
 
 ### Validated
 
-- Unity EditMode 133 / 133、active visual prefab 39 / 39
+- Unity EditMode 136 / 136、active visual prefab 39 / 39
 - M2n8 Gate C readiness 16 / 16
 - Quest 3の48配置gate／64配置stress（各10分、baseline-relative）と
   M2n8 production smoke

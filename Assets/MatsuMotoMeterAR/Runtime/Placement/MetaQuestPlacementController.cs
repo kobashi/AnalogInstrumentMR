@@ -146,6 +146,7 @@ namespace MatsuMotoMeterAR.Placement
         private float modeLockHoldTime;
         private float connectStatusHoldUntil;
         private float nextCurrentRoomPollTime;
+        private float nextSignalMonitorRefreshTime;
         private float pendingCurrentRoomSince;
         private PlacementSurfaceHit stablePlacementSurfaceHit;
         private PlacementSurfaceHit pendingPlacementSurfaceHit;
@@ -217,6 +218,7 @@ namespace MatsuMotoMeterAR.Placement
             public GameObject AnchorRoot;
             public GameObject Root;
             public MockInstrumentInteraction Interaction;
+            public SignalMonitorView SignalMonitor;
         }
 
         private sealed class HandOperationState
@@ -2758,26 +2760,47 @@ namespace MatsuMotoMeterAR.Placement
 
         private void UpdateSignalGraph()
         {
-            if (placementDocument?.connections == null ||
-                placementDocument.connections.Count == 0)
-            {
-                return;
-            }
-
             signalInteractions.Clear();
+            var connections = placementDocument?.connections;
+            if (connections != null && connections.Count > 0)
+            {
+                foreach (var placement in placements)
+                {
+                    if (placement?.Record == null ||
+                        placement.Interaction == null)
+                    {
+                        continue;
+                    }
+                    signalInteractions[placement.Record.placementId] =
+                        placement.Interaction;
+                }
+            }
+            signalGraphEvaluator.Evaluate(
+                connections,
+                signalInteractions);
+
+            if (Time.unscaledTime < nextSignalMonitorRefreshTime)
+                return;
+            nextSignalMonitorRefreshTime =
+                Time.unscaledTime + SignalMonitorView.RefreshIntervalSeconds;
+
             foreach (var placement in placements)
             {
-                if (placement?.Record == null ||
-                    placement.Interaction == null)
+                if (placement?.SignalMonitor == null ||
+                    placement.Record == null)
                 {
                     continue;
                 }
-                signalInteractions[placement.Record.placementId] =
-                    placement.Interaction;
+
+                var connected = signalGraphEvaluator.TryGetOutput(
+                    placement.Record.placementId,
+                    out var value,
+                    out var inputCount);
+                placement.SignalMonitor.SetSignalState(
+                    connected,
+                    value,
+                    inputCount);
             }
-            signalGraphEvaluator.Evaluate(
-                placementDocument.connections,
-                signalInteractions);
         }
 
         private void UpdateConnectionVisuals()
@@ -5265,7 +5288,9 @@ namespace MatsuMotoMeterAR.Placement
                     Anchor = newAnchor,
                     AnchorRoot = newAnchorRoot,
                     Root = newInstrument,
-                    Interaction = interaction
+                    Interaction = interaction,
+                    SignalMonitor = newInstrument
+                        .GetComponentInChildren<SignalMonitorView>(true)
                 });
                 ClearEditHistory();
                 Debug.Log(
@@ -5564,7 +5589,9 @@ namespace MatsuMotoMeterAR.Placement
                     Anchor = anchor,
                     AnchorRoot = anchorRoot,
                     Root = root,
-                    Interaction = interaction
+                    Interaction = interaction,
+                    SignalMonitor = root
+                        .GetComponentInChildren<SignalMonitorView>(true)
                 };
                 SetPlacementLocalPose(
                     runtimePlacement,

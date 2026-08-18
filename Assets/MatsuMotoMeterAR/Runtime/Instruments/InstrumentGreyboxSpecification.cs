@@ -27,6 +27,8 @@ namespace MatsuMotoMeterAR.Instruments
         public const int TriangleBudgetPerInstrument = 5000;
         public const int LargeInstrumentTriangleBudget = 25000;
         public const int SharedMaterialBudgetPerInstrument = 2;
+        public const int SignalMonitorRendererBudget = 2;
+        public const int SignalMonitorMaterialBudget = 2;
         public const int GuaranteedInstrumentsPerRoom = 24;
         public const int StressTestInstrumentsPerRoom = 40;
         public const float MeterSweepDegrees = 115f;

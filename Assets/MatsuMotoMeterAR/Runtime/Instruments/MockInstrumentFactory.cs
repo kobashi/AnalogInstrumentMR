@@ -1,4 +1,5 @@
 using MatsuMotoMeterAR.Rendering;
+using MatsuMotoMeterAR.Signals;
 using UnityEngine;
 
 namespace MatsuMotoMeterAR.Instruments
@@ -56,6 +57,9 @@ namespace MatsuMotoMeterAR.Instruments
                 labelSocket,
                 audioSocket,
                 vfxSocket);
+
+            if (!preview && InstrumentSignalPolicy.CanTarget(kind))
+                SignalMonitorView.Create(labelSocket, kind);
 
             if (preview)
             {

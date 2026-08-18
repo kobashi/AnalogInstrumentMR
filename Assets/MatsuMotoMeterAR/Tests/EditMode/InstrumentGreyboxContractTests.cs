@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using MatsuMotoMeterAR.Instruments;
+using MatsuMotoMeterAR.Signals;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -156,7 +157,12 @@ namespace MatsuMotoMeterAR.Tests
                 {
                     var spec = InstrumentGreyboxSpecification.Get(kind);
                     var renderers = root.GetComponentsInChildren<Renderer>();
-                    Assert.That(renderers.Length, Is.LessThanOrEqualTo(spec.RendererBudget));
+                    var hasMonitor = InstrumentSignalPolicy.CanTarget(kind);
+                    var rendererBudget = spec.RendererBudget +
+                        (hasMonitor
+                            ? InstrumentGreyboxSpecification.SignalMonitorRendererBudget
+                            : 0);
+                    Assert.That(renderers.Length, Is.LessThanOrEqualTo(rendererBudget));
 
                     var materials = new HashSet<Material>();
                     foreach (var renderer in renderers)
@@ -164,7 +170,10 @@ namespace MatsuMotoMeterAR.Tests
                     Assert.That(
                         materials.Count,
                         Is.LessThanOrEqualTo(
-                            InstrumentGreyboxSpecification.SharedMaterialBudgetPerInstrument));
+                            InstrumentGreyboxSpecification.SharedMaterialBudgetPerInstrument +
+                            (hasMonitor
+                                ? InstrumentGreyboxSpecification.SignalMonitorMaterialBudget
+                                : 0)));
 
                     var triangles = 0;
                     foreach (var filter in root.GetComponentsInChildren<MeshFilter>())
