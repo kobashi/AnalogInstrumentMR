@@ -44,6 +44,16 @@ ArtSource/Blender/ThemeHardSurfaceV6/**
 Assets/MatsuMotoMeterAR/Content/RefinedCandidates/
 Assets/MatsuMotoMeterAR/Content/RefinedCandidates.meta
 
+# Repo-local python environment for the V6 texture atlas tooling
+# (numpy from Blender 5.2, Pillow on top). See Tools/Textures/README.md.
+.venv-textures/
+
+# Opus 5 brush-up workspaces contain large generated revisions, review images,
+# and experimental atlas copies. Keep the workspace ignored by default.
+# Approved source, FBX, reports, and visual evidence are force-added in a
+# dedicated promotion commit after their hashes and Gate C evidence are fixed.
+ArtSource/Blender/BrushUp/**
+
 # Internal AI-review packages and temporary review captures are not part of
 # the distributable source. Curated project-owned contact sheets remain public.
 docs/AnalogInstrumentMR_3Dモデル_AIレビュー資料.docx

@@ -1,0 +1,123 @@
+# v0.3 development roadmap proposal
+
+## Goal
+
+v0.3の主目標は、接続した信号をその場で読み取り、意図した変換を安全に調整できる
+MR計器環境にすることである。機能追加と並行して、Quest 3で近接表示に耐える3Dモデル
+品質を、画像比較と実機確認を含む再現可能なgateで段階的に改善する。
+
+すべてをv0.3へ詰め込まず、最初のrelease sliceを「monitor MVP + 接続parameter編集 +
+対象を絞った3D品質改善」とする。複雑な複数入力合成と信号処理nodeは、その基盤を再利用
+して後続sliceへ進める。
+
+## Priority 0: baseline and release gates
+
+1. `main`の133 EditMode tests、39 active visual prefabs、Quest 48 / 64 matrixを
+   v0.3の回帰baselineとして固定する。
+2. 3D候補はactive assetへ直接上書きせず、manifest-driven isolated stagingから
+   Gate Cを通す。
+3. 固定cameraのbaseline / candidate画像、Prefab Preview、Quest実機を視覚受入の
+   必須証跡とする。数値検査だけで見栄えの改善を判定しない。
+4. Blender作業領域の中間revision、`.blend1`、診断画像はGitへ一括追加しない。
+   採用source、FBX、compact report、最終比較画像だけを専用commitで追跡する。
+
+## Priority 1: monitor MVP
+
+最初に数値表示と低頻度trend graphを実装する。図形表示は同じ表示基盤を使うが、MVPの
+完了条件には含めない。
+
+- 1入力の現在値、単位、min / max、接続状態を表示
+- 固定長ring bufferによる短時間trend graph
+- 表示更新頻度を信号評価頻度から分離し、Quest向けに上限を設定
+- per-frame allocation、動的Material生成、無制限mesh rebuildを禁止
+- monitorが未接続・無効値・範囲外を明確に表示
+
+価値は高く、既存のDirect / Invert / Range / Threshold接続を変更せず観測できるため、
+後続機能の診断UIにもなる。
+
+## Priority 2: connection parameter editing
+
+既存接続を作り直さず、RangeとThresholdのparameterをEdit / Connect UIから変更できる
+ようにする。
+
+- Rangeの入力min / maxと出力min / max
+- Thresholdの閾値、比較方向、必要ならhysteresis
+- Direct / Invertを含む共通preview
+- schema移行、保存・復元、取消、異常値clamp
+- monitor上で変換前後を確認できること
+
+monitorを先に置くことで、parameter編集の結果をQuest内で直接確認できる。
+
+## Priority 3: targeted 3D model quality lane
+
+39モデルの全面作り直しは行わず、既知欠陥、利用頻度、近接時の視認性で順番を決める。
+
+1. Toggle D5 / D10候補: 既存の3テーマcandidateを最新Gate C schemaへ再整理し、証跡の
+   不足を補う。production昇格は別承認とする。
+2. Button D1 / D2: emissive glyph復元とForge Brass plunger clearanceを同じcandidateで
+   解決し、OFF / ONと押下全域を確認する。
+3. Orbital Analog meters D3 / D4: tickとinner scaleのclearance修正を、M2n8で確立した
+   full-dial visual gateへ合わせる。
+4. Kinetic Safety WindowMeter / WindowPanel D7 / D8: 可動部の交差をdesign proposalから
+   解決する。
+5. その他のモデルは共通contact sheetで視覚reviewし、具体的な欠陥または明確な品質差が
+   確認できたものだけ候補化する。
+
+各候補は、形状contract、triangle / renderer / material予算、全可動域、固定画像、Quest
+近接・1 m表示、48 / 64構成への影響を確認する。透明glassは現状のQuest負荷と描画順問題を
+増やすため標準要件にせず、必要性が実機画像で示された場合だけ別検討する。
+
+## Priority 4: multiple-input composition
+
+現在の暗黙的な平均合成を明示設定へ置き換える。
+
+- Average / Sum / Min / Max / Priorityの最小構成
+- 入力欠損、無効値、更新停止時の方針
+- 順序依存性と保存schema
+- monitorで各入力と合成結果を確認
+
+接続parameterモデルとmonitorが安定した後に着手する。合成UIと信号評価を同時に設計し直す
+ことを避ける。
+
+## Priority 5: safety signal processing
+
+Limiter、rate limit、manual reset、latched tripを候補とする。安全装置という名称だけで実機の
+安全保証を示さず、アプリ内の信号制約機能として扱う。
+
+- clamp / rate limiter
+- latched threshold + explicit reset
+- invalid / stale input時のfail-safe値
+- reset権限と状態保存
+- feedback loopと発振を防ぐ評価順序
+
+複数入力合成と共通のgraph評価・診断基盤を使い、個別機能ごとの特殊経路を増やさない。
+
+## Quest performance policy
+
+- 48 objectsをrelease gate、64 objectsをstress characterizationとして維持
+- monitor追加後は表示なし / 数値 / graphの同一配置比較を実施
+- CPU frame time、GPU frame time、thermal、memory、dropped framesをbaseline-relativeで記録
+- graph sample数と描画更新Hzを設定可能にし、長時間試験では固定値をreportへ残す
+- 3D candidate昇格後も同じ48 / 64 matrixを再実行し、見た目と性能を別々に合格させる
+
+## Tooling policy
+
+新しい技術領域や検証基盤へ着手する前に、Blender標準機能、定番add-on、公式SDK、保守中の
+OSS libraryを調査する。導入候補が有効な場合は、目的、license、更新状況、Quest / Unity /
+Blender 5.2との互換性、既存project-specific validatorとの役割分担を提示し、ユーザー確認後に
+導入する。
+
+現在のOpus作業領域にある多数のdiagnostic scriptは、そのまま正式QAへ入れない。再利用する
+場合は、実モデルで価値を示した最小機能、fixture、CLI、依存関係、実行時間を整理した小さな
+toolへ切り出す。新しいvalidator研究を3Dモデル改善より優先しない。
+
+## Proposed v0.3 exit criteria
+
+- monitor MVPがQuest 3で数値・trendを表示し、保存済み接続を観測できる
+- Range / Threshold parameterをQuest内で編集・保存・復元できる
+- 優先3D候補のうち少なくとも1 familyがGate Cと実機視覚受入を完了する
+- EditMode、39 prefab、motion、signal visual、Quest 48 gateがPASSする
+- Quest 64 stressの結果と、未解決の性能・視覚課題がrelease noteへ記録される
+
+複数入力合成とsafety処理は基盤までをv0.3へ含められるが、exit criteriaを遅らせる場合は
+後続pre-releaseへ分ける。

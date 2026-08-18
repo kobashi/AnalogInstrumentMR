@@ -25,7 +25,7 @@
 | Recess | dialを前端rimから約8 mm奥へ配置 |
 | Dial | charcoal black |
 | Marks | warm ivory/amberの41 tickと二重arc |
-| Needle | 単一のamber needle。共有emissive材を使い`needle_pivot`で±55° |
+| Needle | 単一のamber needle。共有emissive材を使い`needle_pivot`で±115° |
 | Glass | transparent meshを使わず、atlas上の弱い斜めhighlightで代替 |
 | Wear | micro scratchをgeometry化せず、将来のatlas/normal更新で追加 |
 
