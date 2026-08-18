@@ -96,26 +96,26 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -2376942141672158261, guid: 1602c00ea07684e18b1e4ff391b70153, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 4830150fac4b34d57b67ba23f1496db6, type: 2}
     - target: {fileID: 919132149155446097, guid: 1602c00ea07684e18b1e4ff391b70153, type: 3}
       propertyPath: m_Name
       value: SM_MeterLarge_KineticSafety
       objectReference: {fileID: 0}
-    - target: {fileID: 1831445881295256214, guid: 1602c00ea07684e18b1e4ff391b70153, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value:
-      objectReference: {fileID: 2100000, guid: ea7126c528e5c4a50ad918d3c0e22ee2, type: 2}
-    - target: {fileID: 1831445881295256214, guid: 1602c00ea07684e18b1e4ff391b70153, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
-      value:
-      objectReference: {fileID: 2100000, guid: 52d926489eda24bf1b4fe481d8aa865b, type: 2}
     - target: {fileID: 3088350899068688043, guid: 1602c00ea07684e18b1e4ff391b70153, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value:
-      objectReference: {fileID: 2100000, guid: 52d926489eda24bf1b4fe481d8aa865b, type: 2}
+      objectReference: {fileID: 2100000, guid: 4830150fac4b34d57b67ba23f1496db6, type: 2}
     - target: {fileID: 3088350899068688043, guid: 1602c00ea07684e18b1e4ff391b70153, type: 3}
       propertyPath: 'm_Materials.Array.data[1]'
       value:
-      objectReference: {fileID: 2100000, guid: ea7126c528e5c4a50ad918d3c0e22ee2, type: 2}
+      objectReference: {fileID: 2100000, guid: 04ebcfab503364888814d83ee2445bb9, type: 2}
+    - target: {fileID: 6924603290559210398, guid: 1602c00ea07684e18b1e4ff391b70153, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 04ebcfab503364888814d83ee2445bb9, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

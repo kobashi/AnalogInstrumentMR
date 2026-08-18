@@ -96,14 +96,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: -5392446672585335873, guid: e3b7be62fdb8a465faf4674345ed6394, type: 3}
+    - target: {fileID: -2376942141672158261, guid: e3b7be62fdb8a465faf4674345ed6394, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value:
-      objectReference: {fileID: 2100000, guid: 50895c29d4aa24d6da5944ea8e753fce, type: 2}
-    - target: {fileID: -5392446672585335873, guid: e3b7be62fdb8a465faf4674345ed6394, type: 3}
-      propertyPath: 'm_Materials.Array.data[1]'
-      value:
-      objectReference: {fileID: 2100000, guid: c4b671603b08d47fe81934e176f61f95, type: 2}
+      objectReference: {fileID: 2100000, guid: 4830150fac4b34d57b67ba23f1496db6, type: 2}
     - target: {fileID: 919132149155446097, guid: e3b7be62fdb8a465faf4674345ed6394, type: 3}
       propertyPath: m_Name
       value: SM_MeterRound_KineticSafety
@@ -111,11 +107,15 @@ PrefabInstance:
     - target: {fileID: 3088350899068688043, guid: e3b7be62fdb8a465faf4674345ed6394, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value:
-      objectReference: {fileID: 2100000, guid: c4b671603b08d47fe81934e176f61f95, type: 2}
+      objectReference: {fileID: 2100000, guid: 4830150fac4b34d57b67ba23f1496db6, type: 2}
     - target: {fileID: 3088350899068688043, guid: e3b7be62fdb8a465faf4674345ed6394, type: 3}
       propertyPath: 'm_Materials.Array.data[1]'
       value:
-      objectReference: {fileID: 2100000, guid: 50895c29d4aa24d6da5944ea8e753fce, type: 2}
+      objectReference: {fileID: 2100000, guid: 04ebcfab503364888814d83ee2445bb9, type: 2}
+    - target: {fileID: 6924603290559210398, guid: e3b7be62fdb8a465faf4674345ed6394, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 04ebcfab503364888814d83ee2445bb9, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
