@@ -260,7 +260,7 @@ namespace MatsuMotoMeterAR.Instruments
                     MockInstrumentMotion.MotionKind.Meter,
                     pivot,
                     Vector3.forward,
-                    55f,
+                    InstrumentGreyboxSpecification.MeterSweepDegrees,
                     0.18f);
             }
         }

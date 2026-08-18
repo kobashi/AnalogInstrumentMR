@@ -89,7 +89,7 @@ namespace MatsuMotoMeterAR.Instruments
                         MockInstrumentMotion.MotionKind.Meter,
                         motionTarget,
                         Vector3.forward,
-                        55f,
+                        InstrumentGreyboxSpecification.MeterSweepDegrees,
                         0.18f);
                     break;
                 case MockInstrumentKind.Lever:

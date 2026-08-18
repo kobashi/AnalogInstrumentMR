@@ -29,6 +29,7 @@ namespace MatsuMotoMeterAR.Instruments
         public const int SharedMaterialBudgetPerInstrument = 2;
         public const int GuaranteedInstrumentsPerRoom = 24;
         public const int StressTestInstrumentsPerRoom = 40;
+        public const float MeterSweepDegrees = 115f;
         public const float LeverMaximumAngleDegrees = 24f;
         public const float ThrottleMaximumAngleDegrees = 35f;
         public const float PowerSliderTravelMeters = 0.18f;
