@@ -47,7 +47,8 @@ namespace MatsuMotoMeterAR.Instruments
                     kind != MockInstrumentKind.PowerSlider &&
                     kind != MockInstrumentKind.StatusIndicator &&
                     kind != MockInstrumentKind.WindowMeter &&
-                    kind != MockInstrumentKind.WindowPanel)
+                    kind != MockInstrumentKind.WindowPanel &&
+                    kind != MockInstrumentKind.TrendMonitor)
                 {
                     Debug.LogWarning(
                         $"{theme} visual prefab is missing for {kind}; " +
@@ -468,6 +469,15 @@ namespace MatsuMotoMeterAR.Instruments
                 manifest.transform);
             switch (kind)
             {
+                case MockInstrumentKind.TrendMonitor:
+                    AddMotion(
+                        logic,
+                        MockInstrumentMotion.MotionKind.Display,
+                        motionTarget,
+                        Vector3.forward,
+                        0f,
+                        0f);
+                    break;
                 case MockInstrumentKind.RoundMeter:
                 case MockInstrumentKind.RoundMeterMedium:
                 case MockInstrumentKind.RoundMeterLarge:
@@ -667,6 +677,7 @@ namespace MatsuMotoMeterAR.Instruments
                 MockInstrumentKind.WindowPanel => "WindowPanel",
                 MockInstrumentKind.RoundMeterMedium => "MeterMedium",
                 MockInstrumentKind.RoundMeterLarge => "MeterLarge",
+                MockInstrumentKind.TrendMonitor => "TrendMonitor",
                 _ => "MeterRound"
             };
             return $"PF_Visual_{key}_{ThemeFolder(theme)}";

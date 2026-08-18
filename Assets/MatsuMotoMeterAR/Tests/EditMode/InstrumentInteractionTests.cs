@@ -11,15 +11,15 @@ namespace MatsuMotoMeterAR.Tests
         {
             var initialValues = new[] {
                 0.5f, 0.5f, 0.5f, 0f, 0f, 1f, 0.5f,
-                0.5f, 0f, 0f, 0f, 0.5f, 0.5f
+                0.5f, 0f, 0f, 0f, 0.5f, 0.5f, 0f
             };
             var pressedValues = new[] {
                 0.5f, 0.75f, 0f, 0.125f, 1f, 0f, 0.5f,
-                0.5f, 1f / 3f, 0.2f, 0.1f, 0.5f, 0.5f
+                0.5f, 1f / 3f, 0.2f, 0.1f, 0.5f, 0.5f, 0f
             };
             var releasedValues = new[] {
                 0.5f, 0.75f, 0f, 0.125f, 0f, 0f, 0.5f,
-                0.5f, 1f / 3f, 0.2f, 0.1f, 0.5f, 0.5f
+                0.5f, 1f / 3f, 0.2f, 0.1f, 0.5f, 0.5f, 0f
             };
 
             for (var index = 0; index < MockInstrumentCatalog.Count; index++)

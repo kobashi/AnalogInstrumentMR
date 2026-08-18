@@ -91,27 +91,124 @@ namespace MatsuMotoMeterAR.Tests
         }
 
         [Test]
-        public void Factory_AddsMonitorOnlyToSignalTargets()
+        public void Factory_AddsDisplayOnlyToTrendMonitor()
         {
-            var target = MockInstrumentFactory.Create(
-                MockInstrumentKind.RoundMeter,
+            var monitor = MockInstrumentFactory.Create(
+                MockInstrumentKind.TrendMonitor,
                 Pose.identity);
-            var source = MockInstrumentFactory.Create(
-                MockInstrumentKind.Lever,
+            var meter = MockInstrumentFactory.Create(
+                MockInstrumentKind.RoundMeter,
                 Pose.identity);
             try
             {
                 Assert.That(
-                    target.GetComponentInChildren<SignalMonitorView>(true),
+                    monitor.GetComponentInChildren<SignalMonitorView>(true),
                     Is.Not.Null);
                 Assert.That(
-                    source.GetComponentInChildren<SignalMonitorView>(true),
+                    meter.GetComponentInChildren<SignalMonitorView>(true),
                     Is.Null);
             }
             finally
             {
-                UnityEngine.Object.DestroyImmediate(target);
-                UnityEngine.Object.DestroyImmediate(source);
+                UnityEngine.Object.DestroyImmediate(monitor);
+                UnityEngine.Object.DestroyImmediate(meter);
+            }
+        }
+
+        [Test]
+        public void Factory_AlignsDisplayToVisualDisplaySurface()
+        {
+            var root = MockInstrumentFactory.Create(
+                MockInstrumentKind.TrendMonitor,
+                new Pose(
+                    new Vector3(1f, 2f, 3f),
+                    Quaternion.Euler(12f, 34f, 5f)));
+            try
+            {
+                var contract = root.GetComponent<InstrumentGreyboxContract>();
+                var displaySurface = contract.VisualSocket
+                    .GetComponentInChildren<ThemeVisualManifest>(true)
+                    .MotionTarget;
+                var monitor = root.GetComponentInChildren<SignalMonitorView>(true);
+                var outwardOffset = Vector3.Dot(
+                    monitor.transform.position - displaySurface.position,
+                    displaySurface.forward);
+
+                Assert.That(outwardOffset, Is.GreaterThan(0f));
+                Assert.That(
+                    Vector3.Dot(
+                        monitor.transform.forward,
+                        displaySurface.forward),
+                    Is.LessThan(-0.999f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void Policy_MetersAreObservableOnlyByTrendMonitor()
+        {
+            Assert.That(
+                InstrumentSignalPolicy.CanConnect(
+                    MockInstrumentKind.RoundMeter,
+                    MockInstrumentKind.TrendMonitor),
+                Is.True);
+            Assert.That(
+                InstrumentSignalPolicy.CanConnect(
+                    MockInstrumentKind.RoundMeter,
+                    MockInstrumentKind.WindowMeter),
+                Is.False);
+            Assert.That(
+                InstrumentSignalPolicy.CanConnect(
+                    MockInstrumentKind.Lever,
+                    MockInstrumentKind.TrendMonitor),
+                Is.True);
+            Assert.That(
+                InstrumentSignalPolicy.CanSource(
+                    MockInstrumentKind.TrendMonitor),
+                Is.False);
+        }
+
+        [Test]
+        public void View_AcceptsFourStableChannelsAndRejectsFifth()
+        {
+            var socket = new GameObject("LabelSocket");
+            try
+            {
+                var monitor = SignalMonitorView.Create(
+                    socket.transform,
+                    displaySurface: null);
+                monitor.BeginRefresh();
+                for (var index = 0;
+                     index < SignalMonitorView.ChannelCapacity;
+                     index++)
+                {
+                    Assert.That(
+                        monitor.AddSample($"connection-{index}", index / 3f),
+                        Is.True);
+                }
+                Assert.That(
+                    monitor.AddSample("connection-overflow", 0.5f),
+                    Is.False);
+                monitor.EndRefresh();
+
+                Assert.That(
+                    monitor.ConnectedChannelCount,
+                    Is.EqualTo(SignalMonitorView.ChannelCapacity));
+                for (var index = 0;
+                     index < SignalMonitorView.ChannelCapacity;
+                     index++)
+                {
+                    Assert.That(
+                        monitor.GetChannelSampleCount(index),
+                        Is.EqualTo(1));
+                }
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(socket);
             }
         }
     }

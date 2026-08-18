@@ -109,6 +109,8 @@ namespace MatsuMotoMeterAR.Placement
         private readonly List<string> staleConnectionLineIds = new();
         private readonly Dictionary<string, MockInstrumentInteraction>
             signalInteractions = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, SignalMonitorView>
+            signalMonitors = new(StringComparer.Ordinal);
         private readonly SignalGraphEvaluator signalGraphEvaluator = new();
         private readonly Stack<EditCommand> undoHistory = new();
         private readonly Stack<EditCommand> redoHistory = new();
@@ -2265,8 +2267,53 @@ namespace MatsuMotoMeterAR.Placement
             }
 
             var kind = GetPlacementKind(placement);
+            if (connectSource == null && connectTarget != null)
+            {
+                var targetKind = GetPlacementKind(connectTarget);
+                if (ReferenceEquals(connectTarget, placement))
+                {
+                    SetConnectNotice(
+                        "SOURCE AND TARGET MUST DIFFER",
+                        Color.yellow);
+                    return;
+                }
+                if (!InstrumentSignalPolicy.CanConnect(kind, targetKind))
+                {
+                    SetConnectNotice(
+                        $"{MockInstrumentCatalog.GetDisplayName(kind)} " +
+                        "HAS NO OBSERVABLE OUTPUT",
+                        Color.yellow);
+                    return;
+                }
+
+                connectSource = placement;
+                connectSourceMarker = CreateConnectMarker(
+                    placement,
+                    "[Connect] Source",
+                    ConnectSourceColor,
+                    0.014f);
+                connectStatusHoldUntil = 0f;
+                PulseHaptics();
+                UpdateConnectStatus();
+                return;
+            }
+
             if (connectSource == null)
             {
+                if (kind == MockInstrumentKind.TrendMonitor)
+                {
+                    ClearConnectEditSelection();
+                    connectTarget = placement;
+                    connectTargetMarker = CreateConnectMarker(
+                        placement,
+                        "[Connect] Target",
+                        ConnectTargetColor,
+                        0.012f);
+                    connectStatusHoldUntil = 0f;
+                    PulseHaptics();
+                    UpdateConnectStatus();
+                    return;
+                }
                 if (!InstrumentSignalPolicy.CanSource(kind))
                 {
                     if (InstrumentSignalPolicy.CanTarget(kind))
@@ -2296,11 +2343,12 @@ namespace MatsuMotoMeterAR.Placement
                 return;
             }
 
-            if (!InstrumentSignalPolicy.CanTarget(kind))
+            var sourceKind = GetPlacementKind(connectSource);
+            if (!InstrumentSignalPolicy.CanConnect(sourceKind, kind))
             {
                 SetConnectNotice(
                     $"{MockInstrumentCatalog.GetDisplayName(kind)} " +
-                    "HAS NO TARGET PORT",
+                    "CANNOT ACCEPT THIS OUTPUT",
                     Color.yellow);
                 return;
             }
@@ -2372,7 +2420,7 @@ namespace MatsuMotoMeterAR.Placement
                 SetConnectNotice(
                     connectSource == null
                         ? "SELECT AN INPUT SOURCE FIRST"
-                        : "SELECT AN OUTPUT TARGET",
+                        : "SELECT A TARGET",
                     Color.yellow);
                 return;
             }
@@ -2401,6 +2449,18 @@ namespace MatsuMotoMeterAR.Placement
             }
             else
             {
+                if (GetPlacementKind(connectTarget) ==
+                        MockInstrumentKind.TrendMonitor &&
+                    CountIncomingConnections(
+                        connectTarget.Record.placementId) >=
+                        InstrumentSignalPolicy.MaximumTrendMonitorInputs)
+                {
+                    SetConnectNotice(
+                        $"TREND MONITOR INPUT LIMIT " +
+                        $"{InstrumentSignalPolicy.MaximumTrendMonitorInputs}",
+                        Color.yellow);
+                    return;
+                }
                 if (placementDocument.connections.Count >=
                     PlacementDocument.MaximumConnections)
                 {
@@ -2648,6 +2708,21 @@ namespace MatsuMotoMeterAR.Placement
                 return;
             }
 
+            if (connectSource == null && connectTarget != null)
+            {
+                var monitorTargetName = MockInstrumentCatalog.GetDisplayName(
+                    GetPlacementKind(connectTarget));
+                var inputCount = CountIncomingConnections(
+                    connectTarget.Record?.placementId);
+                SetStatus(
+                    $"TARGET: {monitorTargetName} | INPUTS {inputCount}/" +
+                    $"{InstrumentSignalPolicy.MaximumTrendMonitorInputs}\n" +
+                    "SELECT INPUT SOURCE + TRIGGER\n" +
+                    "METERS ARE OBSERVABLE HERE | B: CANCEL",
+                    ConnectTargetColor);
+                return;
+            }
+
             if (connectSource == null)
             {
                 SetStatus(
@@ -2668,7 +2743,7 @@ namespace MatsuMotoMeterAR.Placement
                 SetStatus(
                     $"SOURCE: {sourceName}\n" +
                     $"TRANSFORM: {transformLabel} | L STICK L/R\n" +
-                    $"OUTPUT TRIGGER | A: SELECT " +
+                    $"TARGET + TRIGGER | A: SELECT " +
                     $"({connectionCount})\n" +
                     "B: CANCEL",
                     ConnectionColor(pendingSignalTransform));
@@ -2688,6 +2763,23 @@ namespace MatsuMotoMeterAR.Placement
             return SignalConnectionSelectionPolicy.CountForPlacement(
                 placementDocument?.connections,
                 placementId);
+        }
+
+        private int CountIncomingConnections(string placementId)
+        {
+            if (placementDocument?.connections == null ||
+                string.IsNullOrEmpty(placementId))
+            {
+                return 0;
+            }
+
+            var count = 0;
+            foreach (var connection in placementDocument.connections)
+            {
+                if (connection?.targetPlacementId == placementId)
+                    count++;
+            }
+            return count;
         }
 
         private void SetConnectNotice(
@@ -2784,6 +2876,7 @@ namespace MatsuMotoMeterAR.Placement
             nextSignalMonitorRefreshTime =
                 Time.unscaledTime + SignalMonitorView.RefreshIntervalSeconds;
 
+            signalMonitors.Clear();
             foreach (var placement in placements)
             {
                 if (placement?.SignalMonitor == null ||
@@ -2791,16 +2884,35 @@ namespace MatsuMotoMeterAR.Placement
                 {
                     continue;
                 }
-
-                var connected = signalGraphEvaluator.TryGetOutput(
-                    placement.Record.placementId,
-                    out var value,
-                    out var inputCount);
-                placement.SignalMonitor.SetSignalState(
-                    connected,
-                    value,
-                    inputCount);
+                placement.SignalMonitor.BeginRefresh();
+                signalMonitors[placement.Record.placementId] =
+                    placement.SignalMonitor;
             }
+
+            if (connections != null)
+            {
+                foreach (var connection in connections)
+                {
+                    if (connection == null ||
+                        !signalMonitors.TryGetValue(
+                            connection.targetPlacementId,
+                            out var monitor) ||
+                        !signalInteractions.TryGetValue(
+                            connection.sourcePlacementId,
+                            out var source))
+                    {
+                        continue;
+                    }
+
+                    var value = InstrumentSignalPolicy.Transform(
+                        source.NormalizedValue,
+                        (SignalTransformKind)connection.transformKind);
+                    monitor.AddSample(connection.connectionId, value);
+                }
+            }
+
+            foreach (var monitor in signalMonitors.Values)
+                monitor.EndRefresh();
         }
 
         private void UpdateConnectionVisuals()

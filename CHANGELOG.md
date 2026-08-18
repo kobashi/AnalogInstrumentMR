@@ -8,9 +8,10 @@
 
 ### Added
 
-- 接続可能な受信計器の`LabelSocket`へ、現在値、単位、min / max、接続状態と
-  32 sampleの短時間trendを表示するmonitor MVP。信号評価とは分離した5 Hz更新、
-  共有material、固定長bufferによりsteady-stateのper-frame allocationを避ける
+- 独立配置できる`monitor.trend`計器。最大4接続を色分けした現在値と32 sampleの
+  短時間trendで同時表示し、通常の操作入力に加えて読取専用meterの出力も観測できる。
+  信号評価とは分離した5 Hz更新、共有material、固定長bufferにより
+  steady-stateのper-frame allocationを避ける
 - manifest駆動のcandidate隔離staging、構造・motion・固定画像・Quest証跡を束ねる
   Gate C readiness検証
 - Quest 48配置gate／64配置stressを同じ設定から実行するperformance matrix
@@ -19,6 +20,8 @@
 
 ### Changed
 
+- Trend Monitorを先に選んでから入力元を選ぶtarget-first接続を追加。meter出力は
+  Trend Monitorでの観測専用とし、既存計器への一般的な信号sourceには拡張しない
 - Blender authoring pipelineを`5.2.x`へ移行。プロジェクト専用launcher、V6生成前の
   Python API／EEVEE／Legacy FBX preflight、非破壊smoke test、生成reportの
   Blender／Python／FBX exporter provenanceを追加。Blender 5.2のEEVEE engine ID
@@ -28,7 +31,7 @@
 
 ### Validated
 
-- Unity EditMode 136 / 136、active visual prefab 39 / 39
+- Unity EditMode 143 / 143、active visual prefab 39 / 39
 - M2n8 Gate C readiness 16 / 16
 - Quest 3の48配置gate／64配置stress（各10分、baseline-relative）と
   M2n8 production smoke

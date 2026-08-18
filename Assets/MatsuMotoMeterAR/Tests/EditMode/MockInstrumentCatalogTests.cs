@@ -42,6 +42,7 @@ namespace MatsuMotoMeterAR.Tests
         [TestCase(MockInstrumentKind.PowerSlider, "control.power_slider")]
         [TestCase(MockInstrumentKind.RoundMeterMedium, "meter.round.medium")]
         [TestCase(MockInstrumentKind.RoundMeterLarge, "meter.round.large")]
+        [TestCase(MockInstrumentKind.TrendMonitor, "monitor.trend")]
         public void TypeIds_PreservePlacementDataContract(
             MockInstrumentKind kind,
             string expectedTypeId)
@@ -85,6 +86,11 @@ namespace MatsuMotoMeterAR.Tests
             Assert.That(
                 MockInstrumentCatalog.Cycle(
                     MockInstrumentKind.WindowMeter,
+                    1),
+                Is.EqualTo(MockInstrumentKind.TrendMonitor));
+            Assert.That(
+                MockInstrumentCatalog.Cycle(
+                    MockInstrumentKind.TrendMonitor,
                     1),
                 Is.EqualTo(MockInstrumentKind.IndicatorLamp));
             Assert.That(
@@ -183,6 +189,7 @@ namespace MatsuMotoMeterAR.Tests
         [TestCase(MockInstrumentKind.WindowMeter)]
         [TestCase(MockInstrumentKind.WindowPanel)]
         [TestCase(MockInstrumentKind.StatusIndicator)]
+        [TestCase(MockInstrumentKind.TrendMonitor)]
         public void DisplayAndCompactControls_SupportAllSurfaces(MockInstrumentKind kind)
         {
             Assert.That(

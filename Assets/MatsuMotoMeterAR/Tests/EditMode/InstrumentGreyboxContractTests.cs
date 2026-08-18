@@ -157,7 +157,8 @@ namespace MatsuMotoMeterAR.Tests
                 {
                     var spec = InstrumentGreyboxSpecification.Get(kind);
                     var renderers = root.GetComponentsInChildren<Renderer>();
-                    var hasMonitor = InstrumentSignalPolicy.CanTarget(kind);
+                    var hasMonitor =
+                        kind == MockInstrumentKind.TrendMonitor;
                     var rendererBudget = spec.RendererBudget +
                         (hasMonitor
                             ? InstrumentGreyboxSpecification.SignalMonitorRendererBudget

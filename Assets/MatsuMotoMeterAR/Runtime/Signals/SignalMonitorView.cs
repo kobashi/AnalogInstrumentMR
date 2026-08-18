@@ -1,5 +1,4 @@
 using System.Globalization;
-using MatsuMotoMeterAR.Instruments;
 using MatsuMotoMeterAR.Rendering;
 using UnityEngine;
 
@@ -7,129 +6,259 @@ namespace MatsuMotoMeterAR.Signals
 {
     public sealed class SignalMonitorView : MonoBehaviour
     {
+        public const int ChannelCapacity = 4;
         public const int SampleCapacity = 32;
         public const float RefreshIntervalSeconds = 0.2f;
 
-        private static readonly Color ConnectedColor =
-            new(0.20f, 0.95f, 1f, 1f);
+        private static readonly Color[] ChannelColors =
+        {
+            new(0.20f, 0.95f, 1f, 1f),
+            new(1f, 0.72f, 0.18f, 1f),
+            new(0.42f, 1f, 0.34f, 1f),
+            new(0.94f, 0.35f, 1f, 1f)
+        };
+
         private static readonly Color DisconnectedColor =
             new(0.65f, 0.68f, 0.70f, 1f);
         private static readonly Color InvalidColor =
             new(1f, 0.30f, 0.12f, 1f);
 
-        private readonly SignalSampleBuffer samples =
-            new(SampleCapacity);
-        private readonly Vector3[] graphPositions =
-            new Vector3[SampleCapacity];
+        private readonly Channel[] channels = new Channel[ChannelCapacity];
+        private TextMesh statusLabel;
 
-        private TextMesh valueLabel;
-        private LineRenderer graph;
-        private bool connected;
-        private float graphWidth;
+        public int ConnectedChannelCount { get; private set; }
 
-        public bool IsConnected => connected;
-        public int SampleCount => samples.Count;
+        private const float DisplayClearanceMeters = 0.002f;
 
         public static SignalMonitorView Create(
             Transform labelSocket,
-            MockInstrumentKind kind)
+            Transform displaySurface)
         {
-            var monitorObject = new GameObject("SignalMonitor");
+            var monitorObject = new GameObject("TrendMonitorDisplay");
             monitorObject.transform.SetParent(labelSocket, false);
-
-            var spec = InstrumentGreyboxSpecification.Get(kind);
-            monitorObject.transform.localPosition = new Vector3(
-                0f,
-                -spec.BoundsSize.y * 0.5f - 0.035f,
-                spec.BoundsSize.z * 0.5f + 0.008f);
+            if (displaySurface != null)
+            {
+                var normal = displaySurface.forward.normalized;
+                var surfacePoint = displaySurface.position;
+                var renderer = displaySurface.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    var extents = renderer.bounds.extents;
+                    var projectedExtent =
+                        Mathf.Abs(normal.x) * extents.x +
+                        Mathf.Abs(normal.y) * extents.y +
+                        Mathf.Abs(normal.z) * extents.z;
+                    surfacePoint += normal * projectedExtent;
+                }
+                monitorObject.transform.SetPositionAndRotation(
+                    surfacePoint + normal * DisplayClearanceMeters,
+                    displaySurface.rotation *
+                    Quaternion.Euler(0f, 180f, 0f));
+            }
+            else
+            {
+                monitorObject.transform.localPosition =
+                    new Vector3(0f, 0f, 0.091f);
+                monitorObject.transform.localRotation =
+                    Quaternion.Euler(0f, 180f, 0f);
+            }
 
             var monitor = monitorObject.AddComponent<SignalMonitorView>();
-            monitor.Build(Mathf.Clamp(spec.BoundsSize.x * 0.72f, 0.10f, 0.30f));
+            monitor.Build();
             return monitor;
         }
 
-        public void SetSignalState(bool hasConnection, float value, int inputCount)
+        public void BeginRefresh()
         {
-            RefreshDisplay(hasConnection, value, inputCount);
+            for (var index = 0; index < channels.Length; index++)
+                channels[index].Touched = false;
         }
 
-        private void Build(float graphWidth)
+        public bool AddSample(string connectionId, float value)
         {
-            var labelObject = new GameObject("Value");
-            labelObject.transform.SetParent(transform, false);
-            labelObject.transform.localPosition = new Vector3(0f, 0.017f, 0f);
-            valueLabel = labelObject.AddComponent<TextMesh>();
-            valueLabel.anchor = TextAnchor.MiddleCenter;
-            valueLabel.alignment = TextAlignment.Center;
-            valueLabel.fontSize = 48;
-            valueLabel.characterSize = 0.0022f;
+            if (string.IsNullOrEmpty(connectionId))
+                return false;
 
-            var graphObject = new GameObject("Trend");
-            graphObject.transform.SetParent(transform, false);
-            graph = graphObject.AddComponent<LineRenderer>();
-            graph.useWorldSpace = false;
-            graph.loop = false;
-            graph.widthMultiplier = 0.002f;
-            graph.numCapVertices = 0;
-            graph.numCornerVertices = 0;
-            RuntimeMaterialUtility.ApplySharedUnlit(graph, ConnectedColor);
+            var channelIndex = FindChannel(connectionId);
+            if (channelIndex < 0)
+                channelIndex = FindAvailableChannel();
+            if (channelIndex < 0)
+                return false;
 
-            this.graphWidth = graphWidth;
-
-            ApplyDisconnected();
-        }
-
-        private void RefreshDisplay(bool hasConnection, float value, int inputCount)
-        {
-            if (!hasConnection)
+            var channel = channels[channelIndex];
+            if (channel.ConnectionId != connectionId)
             {
-                ApplyDisconnected();
-                return;
+                channel.ConnectionId = connectionId;
+                channel.Samples.Clear();
             }
+            channel.Touched = true;
 
-            connected = true;
             if (float.IsNaN(value) || float.IsInfinity(value))
             {
-                valueLabel.text = "INVALID | 0—100 %";
-                valueLabel.color = InvalidColor;
-                graph.enabled = false;
-                samples.Clear();
-                return;
+                channel.Samples.Clear();
+                channel.Label.text = $"{channelIndex + 1} INVALID";
+                channel.Label.color = InvalidColor;
+                channel.Line.enabled = false;
+                return true;
             }
 
             var outOfRange = value < 0f || value > 1f;
             var displayValue = Mathf.Clamp01(value);
-            samples.Add(displayValue);
-            valueLabel.text = string.Format(
+            channel.Samples.Add(displayValue);
+            channel.Label.text = string.Format(
                 CultureInfo.InvariantCulture,
-                inputCount > 1 ? "{0:0.0} % | {1} IN | 0—100" : "{0:0.0} % | 0—100",
-                displayValue * 100f,
-                inputCount);
-            valueLabel.color = outOfRange ? InvalidColor : ConnectedColor;
-
-            graph.enabled = samples.Count >= 2;
-            graph.positionCount = samples.Count;
-            for (var index = 0; index < samples.Count; index++)
-            {
-                var ratio = index / (float)(samples.Count - 1);
-                graphPositions[index] = new Vector3(
-                    (ratio - 0.5f) * graphWidth,
-                    samples.GetOldestFirst(index) * 0.025f - 0.0125f,
-                    0f);
-            }
-            graph.SetPositions(graphPositions);
-            RuntimeMaterialUtility.SetColor(
-                graph,
-                outOfRange ? InvalidColor : ConnectedColor);
+                "{0} {1:0.0}%",
+                channelIndex + 1,
+                displayValue * 100f);
+            channel.Label.color =
+                outOfRange ? InvalidColor : ChannelColors[channelIndex];
+            UpdateLine(channelIndex, outOfRange);
+            return true;
         }
 
-        private void ApplyDisconnected()
+        public void EndRefresh()
         {
-            connected = false;
-            valueLabel.text = "NO SIGNAL | 0—100 %";
-            valueLabel.color = DisconnectedColor;
-            graph.enabled = false;
-            samples.Clear();
+            ConnectedChannelCount = 0;
+            for (var index = 0; index < channels.Length; index++)
+            {
+                var channel = channels[index];
+                if (channel.Touched)
+                {
+                    ConnectedChannelCount++;
+                    channel.Label.gameObject.SetActive(true);
+                    continue;
+                }
+
+                channel.ConnectionId = null;
+                channel.Samples.Clear();
+                channel.Label.gameObject.SetActive(false);
+                channel.Line.enabled = false;
+            }
+
+            statusLabel.gameObject.SetActive(ConnectedChannelCount == 0);
+        }
+
+        public int GetChannelSampleCount(int channelIndex)
+        {
+            return channelIndex >= 0 && channelIndex < channels.Length
+                ? channels[channelIndex].Samples.Count
+                : 0;
+        }
+
+        private void Build()
+        {
+            var statusObject = new GameObject("Status");
+            statusObject.transform.SetParent(transform, false);
+            statusLabel = statusObject.AddComponent<TextMesh>();
+            statusLabel.anchor = TextAnchor.MiddleCenter;
+            statusLabel.alignment = TextAlignment.Center;
+            statusLabel.fontSize = 48;
+            statusLabel.characterSize = 0.0024f;
+            statusLabel.color = DisconnectedColor;
+            statusLabel.text = "NO SIGNAL\n0—100 %";
+
+            for (var index = 0; index < channels.Length; index++)
+            {
+                var labelObject = new GameObject($"Channel{index + 1}Value");
+                labelObject.transform.SetParent(transform, false);
+                labelObject.transform.localPosition = new Vector3(
+                    0.12f - index * 0.08f,
+                    0.068f,
+                    0f);
+                var label = labelObject.AddComponent<TextMesh>();
+                label.anchor = TextAnchor.MiddleCenter;
+                label.alignment = TextAlignment.Center;
+                label.fontSize = 42;
+                label.characterSize = 0.00145f;
+                label.color = ChannelColors[index];
+                labelObject.SetActive(false);
+
+                var lineObject = new GameObject($"Channel{index + 1}Trend");
+                lineObject.transform.SetParent(transform, false);
+                var line = lineObject.AddComponent<LineRenderer>();
+                line.useWorldSpace = false;
+                line.loop = false;
+                line.widthMultiplier = 0.0024f;
+                line.numCapVertices = 0;
+                line.numCornerVertices = 0;
+                RuntimeMaterialUtility.ApplySharedUnlit(
+                    line,
+                    ChannelColors[index]);
+                line.enabled = false;
+
+                channels[index] = new Channel(label, line);
+            }
+        }
+
+        private int FindChannel(string connectionId)
+        {
+            for (var index = 0; index < channels.Length; index++)
+            {
+                if (channels[index].ConnectionId == connectionId)
+                    return index;
+            }
+            return -1;
+        }
+
+        private int FindAvailableChannel()
+        {
+            for (var index = 0; index < channels.Length; index++)
+            {
+                if (string.IsNullOrEmpty(channels[index].ConnectionId))
+                    return index;
+            }
+            for (var index = 0; index < channels.Length; index++)
+            {
+                if (!channels[index].Touched)
+                    return index;
+            }
+            return -1;
+        }
+
+        private void UpdateLine(int channelIndex, bool outOfRange)
+        {
+            var channel = channels[channelIndex];
+            channel.Line.enabled = channel.Samples.Count >= 2;
+            channel.Line.positionCount = channel.Samples.Count;
+            if (channel.Samples.Count < 2)
+            {
+                RuntimeMaterialUtility.SetColor(
+                    channel.Line,
+                    outOfRange
+                        ? InvalidColor
+                        : ChannelColors[channelIndex]);
+                return;
+            }
+            for (var index = 0; index < channel.Samples.Count; index++)
+            {
+                var ratio = index / (float)(channel.Samples.Count - 1);
+                channel.Positions[index] = new Vector3(
+                    0.16f - ratio * 0.32f,
+                    channel.Samples.GetOldestFirst(index) * 0.11f - 0.06f,
+                    0f);
+            }
+            channel.Line.SetPositions(channel.Positions);
+            RuntimeMaterialUtility.SetColor(
+                channel.Line,
+                outOfRange ? InvalidColor : ChannelColors[channelIndex]);
+        }
+
+        private sealed class Channel
+        {
+            public Channel(TextMesh label, LineRenderer line)
+            {
+                Label = label;
+                Line = line;
+            }
+
+            public readonly SignalSampleBuffer Samples =
+                new(SampleCapacity);
+            public readonly Vector3[] Positions =
+                new Vector3[SampleCapacity];
+            public readonly TextMesh Label;
+            public readonly LineRenderer Line;
+            public string ConnectionId;
+            public bool Touched;
         }
     }
 }

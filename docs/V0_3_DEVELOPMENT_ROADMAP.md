@@ -23,11 +23,14 @@ MR計器環境にすることである。機能追加と並行して、Quest 3�
 
 ## Priority 1: monitor MVP
 
-最初に数値表示と低頻度trend graphを実装する。図形表示は同じ表示基盤を使うが、MVPの
-完了条件には含めない。
+最初に独立配置型のTrend Monitorとして数値表示と低頻度trend graphを実装する。
+既存計器へのoverlay案は、表示面の向きと機種ごとの面積差が大きいため撤回する。
+図形表示は同じ表示基盤を使うが、MVPの完了条件には含めない。
 
-- 1入力の現在値、単位、min / max、接続状態を表示
-- 固定長ring bufferによる短時間trend graph
+- 最大4入力の現在値、min / max、接続状態を色分け表示
+- 入力ごとの固定長ring bufferによる短時間trend graph
+- 通常の操作sourceに加え、読取専用meterの値を観測専用入力として接続可能
+- Trend Monitorをtargetとして先に選び、その後に入力元を選ぶ接続UX
 - 表示更新頻度を信号評価頻度から分離し、Quest向けに上限を設定
 - per-frame allocation、動的Material生成、無制限mesh rebuildを禁止
 - monitorが未接続・無効値・範囲外を明確に表示
@@ -113,7 +116,8 @@ toolへ切り出す。新しいvalidator研究を3Dモデル改善より優先�
 
 ## Proposed v0.3 exit criteria
 
-- monitor MVPがQuest 3で数値・trendを表示し、保存済み接続を観測できる
+- 独立Trend MonitorがQuest 3で最大4入力の数値・trendを表示し、操作sourceと
+  読取専用meterの保存済み接続を観測できる
 - Range / Threshold parameterをQuest内で編集・保存・復元できる
 - 優先3D候補のうち少なくとも1 familyがGate Cと実機視覚受入を完了する
 - EditMode、39 prefab、motion、signal visual、Quest 48 gateがPASSする

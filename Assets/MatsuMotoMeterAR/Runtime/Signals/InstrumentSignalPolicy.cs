@@ -19,6 +19,7 @@ namespace MatsuMotoMeterAR.Signals
         public const float RangeMinimum = 0.2f;
         public const float RangeMaximum = 0.8f;
         public const float Threshold = 0.5f;
+        public const int MaximumTrendMonitorInputs = 4;
 
         public static bool CanSource(MockInstrumentKind kind)
         {
@@ -38,7 +39,25 @@ namespace MatsuMotoMeterAR.Signals
                    kind == MockInstrumentKind.IndicatorLamp ||
                    kind == MockInstrumentKind.WindowMeter ||
                    kind == MockInstrumentKind.WindowPanel ||
-                   kind == MockInstrumentKind.StatusIndicator;
+                   kind == MockInstrumentKind.StatusIndicator ||
+                   kind == MockInstrumentKind.TrendMonitor;
+        }
+
+        public static bool CanObserve(MockInstrumentKind kind)
+        {
+            return CanSource(kind) ||
+                   MockInstrumentCatalog.IsReadOnlyMeter(kind);
+        }
+
+        public static bool CanConnect(
+            MockInstrumentKind source,
+            MockInstrumentKind target)
+        {
+            if (!CanTarget(target))
+                return false;
+            if (target == MockInstrumentKind.TrendMonitor)
+                return CanObserve(source);
+            return CanSource(source);
         }
 
         public static float Transform(
