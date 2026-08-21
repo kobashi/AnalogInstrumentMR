@@ -15549,3 +15549,160 @@ HEADは `codex/monitor-mvp` の `508c3eb` のまま、working treeも無変更�
 Blender未実行、asset生成なし、script追加なし。
 active / production asset、Unity `Assets/`、`Builds/`、prefab、`.meta`、material、texture、
 runtime codeはすべて無変更である。
+
+## 242. Opus 5: Blender scriptとalignment recordをversion管理下へ入れた (2026-08-22)
+
+§240.5と§241.1で報告した未追跡問題について、ユーザー承認を得て対処した。
+
+### 242.1 実施内容
+
+commit `3a1badb`。**83 file、56,396 insertions。pushしていない。**
+
+| 対象 | 件数 |
+|---|---|
+| `Tools/Blender/opus5_*.py` | 82 |
+| `docs/OPUS5_CODEX_ALIGNMENT.md` | 1 |
+
+pathspecを明示して`git add`し、**stagingが意図した範囲外を含まないことを実行前に確認した。**
+Codexの変更中21 fileと、Unity `Assets/`配下の未追跡fileには触れていない。
+branch操作・push・`add -A`は行っていない。branchは `codex/monitor-mvp` のままで ahead 1 である。
+
+### 242.2 `ArtSource/Blender/BrushUp/**` のignoreは維持する
+
+生成された`.blend` / `.fbx` / render / atlas copyは引き続きignore対象であり、
+承認後のpromotion commitでforce-addする既存方針（`.gitignore` 55行目）を変更していない。
+**今回追跡下へ入れたのはgeneratorと記録だけで、生成物は1件も含まない。**
+これは§236.3（build scriptがソース、`.blend`は出力）と整合する。
+
+### 242.3 未追跡fileは98件から15件へ
+
+残る15件の内訳は次のとおりで、いずれも今回のscope外である。
+
+- Unity `Assets/`配下 8件（candidate manifest、material、shader、`.meta`）— **Codexの領域**
+- `Tools/Textures/` 3件（README、requirements、atlas等価検証script）
+- `docs/` 4件（`OPUS5_BRUSHUP_PILOT_REVIEW.md`、`V6_KNOWN_DEFECTS.md`、
+  `OPUS5_THEME4_SESSION_HANDOFF.md`、`OPUS5_THEME4_LOG.md`）
+
+**第4テーマの2 docは意図的に未追跡のまま残した。** §241.4のとおり、
+`origin/claude/opus5-theme4-handoff-i14wfz` 上に同pathの別版が存在するため、
+いま追跡下へ入れると両branchが同一pathで分岐し、統合時の衝突が複雑になる。
+クラウドbranchの扱いが決まってから判断する。
+
+### 242.4 gate
+
+commitしたのはscriptと本記録のみ。**pushしていない。**
+merge / checkout / branch操作 / `add -A` は行っていない。
+Blender未実行、asset生成なし。active / production asset、Unity `Assets/`、`Builds/`、prefab、
+`.meta`、material、texture、runtime code、既存M2n8 / Toggle / Trend Monitor成果物は
+すべて無変更である。
+
+## 243. Opus 5: 第4テーマ「Machined Ergonomics」の方針をユーザー承認により確定する (2026-08-22)
+
+§239.4および§241.3で保留していたPhase 0のテーマ方向が、**ユーザー承認により確定した。**
+
+### 243.1 確定内容
+
+第4テーマは **Machined Ergonomics** とする。方針文書は
+`docs/MACHINED_ERGONOMICS_STYLE_GUIDE.md`（85行）。
+`origin/claude/opus5-theme4-handoff-i14wfz` の内容を**byte一致でそのまま採用**し、
+Opus 5による編集は加えていない。
+
+節構成は `## Direction` / `## Part-construction language` / `## Ergonomic language` /
+`## Geometry versus texture` / `## Materials and maps` / `## Runtime limits`。
+既存3件（Direction / Shape language / Materials and maps / Runtime limits）の上位互換であり、
+`Shape language`をpart-construction・ergonomic・geometry vs textureの3節へ分けた形である。
+
+### 243.2 採用前に確認した整合性
+
+**全文を読んだうえで採用した。** 既存の制約と矛盾しないことを次の点で確認した。
+
+| 項目 | style guideの記述 | 既存制約との関係 |
+|---|---|---|
+| renderer | 3以下（meterのみ4以下） | §187の「renderer 4以下」より厳しく、矛盾しない |
+| shared materials | 2以下 | Trend Monitorの§230.2「material role 2以下」と一致 |
+| triangle | 1 objectあたり1,500以下 | §231.6のテーマ別目安と同水準 |
+| envelope / pivot / 可動範囲 | 既存3テーマと同一 | 共通contractを変えない旨が明記されている |
+| visual collider | 無し | §230.2の禁止事項と一致 |
+| realtime light | 使わない | 同上 |
+
+**§232が禁じる「単なる色替え」から明確に離れている。**
+既存3テーマが暗い母材（cast iron / charcoal / graphite）を共有するのに対し、
+明るい成形樹脂 + anodizedアルミ + dark elastomerを主とし、grayscaleでもvalue差で識別できる。
+さらにパーティングライン、抜き勾配、荷重経路上の締結、ブッシング、ガスケット溝といった
+**製造工程の必然から形を導く**言語になっており、色ではなく形で差が付いている。
+
+geometryとnormal map / textureの分担が明示されている点も、Quest予算の観点で妥当である。
+シャットラインを全てgeometry化せず、三角形を主分割面と可動部clearanceへ優先配分するとしている。
+
+### 243.3 引き継ぎ側で補足した点: material role数の見かけの矛盾
+
+style guideは`body` / `metal` / `gasket` / `readout`の4 roleを維持すると書く一方、
+同じ文書が`shared materials 2以下`としている。**矛盾ではない。**
+前者はauthoring時のrole、後者は納品時のmaterial数であり、
+delivery正規化（§236 Phase 4）で§186.1のname mappingにより`body`と`metal`が
+同一のopaque materialへ落ちる。Meter M2n5およびToggle N1と同じ挙動である。
+
+新セッションが混乱しないよう、`docs/OPUS5_THEME4_SESSION_HANDOFF.md` のPhase 0節へ
+この補足を明記した。
+
+### 243.4 Phase 0を閉じ、次はPhase 1
+
+引き継ぎ文書のPhase 0を「承認済み・完了」へ更新した。
+次は**Phase 1: MeterLarge と Button の2機種のshape prototype**である。
+Blendのみを作り、**FBXは作らない。**固定camera画像と寸法reportを出して停止し、形状承認を待つ。
+
+なお、クラウドbranchが同時に変更していた `docs/VISUAL_THEMES.md` と `CHANGELOG.md` は
+**取り込んでいない。** テーマcatalogへの登録はruntime catalogを持つCodexの領域であり、
+かつ§239.1のとおり並行して進めるのはPhase 0〜2までである。形状承認後に改めて判断する。
+
+### 243.5 gate
+
+書いたのは `docs/MACHINED_ERGONOMICS_STYLE_GUIDE.md`（新規・cloud branchからbyte一致で取得）、
+`docs/OPUS5_THEME4_SESSION_HANDOFF.md` のPhase 0節、本節のみ。
+git操作は読み取りのみで、**merge / checkout / commit / pushは行っていない。**
+HEADは `3a1badb`、branchは `codex/monitor-mvp` のまま ahead 1 である。
+Blender未実行、asset生成なし、script追加なし。
+active / production asset、Unity `Assets/`、`Builds/`、prefab、`.meta`、material、texture、
+runtime code、既存成果物はすべて無変更である。
+
+## 244. Opus 5: 誤起動したクラウドセッションの後始末と、Phase 0成果物の追跡化 (2026-08-22)
+
+### 244.1 クラウドセッションはアーカイブ済み、branchは保持する
+
+ユーザーが当該クラウドセッションをアーカイブした。
+ただし**session archiveとbranch削除は別であり**、`origin/claude/opus5-theme4-handoff-i14wfz`
+（`366ad68`）はremoteに残っている。
+
+**これは意図的に残す。** §243.1で「承認したstyle guideはこのbranchからbyte一致で取得した」と
+出典を記録しているため、削除すると参照が宙に浮く。保持コストは無い。
+第4テーマ完了時点で改めて削除を判断する。
+
+当該branchは**今後mergeしない。** 必要が生じた場合はcherry-pickで個別に取り込む。
+`docs/OPUS5_THEME4_SESSION_HANDOFF.md` と `docs/OPUS5_THEME4_LOG.md` は
+ローカル版とbranch版が同一pathで内容が異なるため、mergeするとローカル版が失われる（§241.4）。
+
+### 244.2 Phase 0成果物を追跡下へ入れた
+
+§242.3では、cloud branchとの同一path分岐を理由に第4テーマの2 docを未追跡のまま残した。
+**セッションのアーカイブによりbranchが凍結し、分岐がこれ以上広がらなくなったため、
+保留の理由が消えた。**
+
+承認済みの方針が「未追跡のローカルfile」と「凍結したremote branch」の2箇所にしか
+存在しない状態は、§240.5で報告しクラウド事故（§241.1）を引き起こしたものと同じ脆弱性である。
+
+次の4 fileを1 commitで追跡下へ入れた。pathspecを明示し、**pushしていない。**
+
+- `docs/MACHINED_ERGONOMICS_STYLE_GUIDE.md`（新規・承認済み方針）
+- `docs/OPUS5_THEME4_SESSION_HANDOFF.md`（新規・引き継ぎ手順）
+- `docs/OPUS5_THEME4_LOG.md`（新規・並行セッション用ログ）
+- `docs/OPUS5_CODEX_ALIGNMENT.md`（§241〜§244の追記）
+
+### 244.3 gate
+
+commitしたのはdocsのみ。**pushしていない。**
+merge / checkout / branch操作 / `add -A` は行っていない。
+Blender未実行、asset生成なし、script追加なし。
+active / production asset、Unity `Assets/`、`Builds/`、prefab、`.meta`、material、texture、
+runtime code、既存M2n8 / Toggle / Trend Monitor成果物はすべて無変更である。
+
+次はPhase 1（MeterLarge と Button のshape prototype、Blendのみ、FBXを作らない）である。
