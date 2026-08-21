@@ -8,6 +8,9 @@
 
 ### Added
 
+- 4つめのビジュアルテーマ`Machined Ergonomics`のPhase 0方向性資料。style guide、
+  Phase 0〜2へ範囲を限定したsession handoff、作業ログ。量産とUnity取り込みは
+  未着手で、現行リリース契約は3テーマのまま
 - manifest駆動のcandidate隔離staging、構造・motion・固定画像・Quest証跡を束ねる
   Gate C readiness検証
 - Quest 48配置gate／64配置stressを同じ設定から実行するperformance matrix

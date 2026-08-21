@@ -77,6 +77,20 @@
 - 最終Blender原本は
   `ArtSource/Blender/ThemeHardSurfaceV6/*/*_ProductionReady.blend`を正とする。
 
+### 2026-08-21 テーマ4 検討開始
+
+- 4つめのテーマ`Machined Ergonomics`（theme ID `machined-ergonomics`）の
+  方向性を承認し、Phase 0の方向性確定だけを開始した。
+- 方向性は、パーツ構成と製造工程を意識した実在感のあるつなぎ目・はめ込みと、
+  人間工学・使いやすさを読み取れる形状とする。
+- 現行リリース契約は3テーマのままとする。13種類×4テーマへの量産、
+  Unity prefab追加、`MockInstrumentThemeCatalog`の拡張は未着手であり、
+  別承認まで開始しない。
+- 形状言語とpaletteは
+  [Machined Ergonomics style guide](MACHINED_ERGONOMICS_STYLE_GUIDE.md)、
+  作業範囲と禁止事項は
+  [Theme 4 session handoff](OPUS5_THEME4_SESSION_HANDOFF.md)を正とする。
+
 ## Quest asset budget
 
 - 1 テーマあたりの texture atlas と material 数に上限を設ける。
