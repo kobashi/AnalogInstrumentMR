@@ -147,10 +147,15 @@ delivery正規化（Phase 4）では§186.1のname mappingにより`body`と`met
 落ち、最終的な**shared material 2以下**という同guideの制限と整合する。
 矛盾ではないので、authoringでは4 roleのまま進めてよい。
 
-### Phase 1 — pilot 2機種だけ、Blendのみ、FBXは作らない
+### Phase 1 — pilot 3機種だけ、Blendのみ、FBXは作らない
 
-13機種すべてを作らない。**MeterLarge（大型・情報量最大）と Button（最小・共通要素が少ない）**
-の2機種を先に作る。この両端で成立すれば中間は補間できる。
+13機種すべてを作らない。**MeterRound / Lever / Toggle** の3機種を先に作る。
+
+**当初はMeterLarge + Buttonの2機種としていたが、変更した。**
+その選択はテーマ方向が決まる前に「最大と最小の両端」という一般論で決めたものであり、
+Machined Ergonomicsの主張（軸受、グリップ断面、detent、end stop、形状コーディング）を
+**Buttonではほぼ検証できない。** 可動部と軸受を持つLever / Toggleが要る。
+MeterRoundは表示面の傾斜と分割面を受け持つ。
 
 - **手でモデリングしない。** build scriptがソース、`.blend`は出力。
   `Tools/Blender/opus5_trend_monitor_prototype.py` の構造をそのまま真似る:
@@ -291,3 +296,76 @@ git show origin/claude/opus5-theme4-handoff-i14wfz:docs/MACHINED_ERGONOMICS_STYL
 
 差分を見る場合も同様に `git diff codex/monitor-mvp...origin/claude/opus5-theme4-handoff-i14wfz`
 までに留め、mergeしない。取り込む場合は**ユーザー承認後に、必要なファイルだけ個別に**行う。
+
+---
+
+## 10. 未解決のOPEN項目（クラウドセッションから回収）
+
+クラウドセッションのログT8 / T9から回収した。**ローカルのログには存在しない**ため、
+ここに移す。Phase 1着手時に引き継ぐこと。
+
+### 10.1 OPEN — テーマ名とtheme IDが未確定
+
+`Machined Ergonomics` / theme ID `machined-ergonomics` は**提案段階である。**
+`Assets/MatsuMotoMeterAR/Runtime/Instruments/MockInstrumentThemeCatalog.cs` に
+既存3件（`forge-brass` / `kinetic-safety` / `orbital-analog`）が焼き込まれており、
+4つ目も同様にasset名とcatalogへ入る。
+
+**Phase 2完了までに確定が必要。** 今なら変更コストは文書のみだが、
+Phase 3以降はasset名の改名を伴う。**確定はユーザー/Codex判断であり、セッションが決めない。**
+
+（クラウドのログはPlayerPrefsへ焼き込まれると記したが、実際の束縛先は
+`MockInstrumentThemeCatalog.cs` である。`PlayerPrefs`はplacement保存に使われており別物。
+指摘の本質は正しいが、束縛先の名前だけ訂正する。）
+
+### 10.2 OPEN — 明るい母材でのbevel highlightコントラスト
+
+既存3テーマは暗い母材（cast iron / charcoal / graphite）で、稜線をhighlightの
+明暗差で読ませている。**Machined Ergonomicsは明るい成形樹脂body**であり、
+同じbevel幅では稜線のコントラストが落ちる可能性がある。
+
+シャットラインをgeometryとnormal mapのどちらへ配分するかにも影響する。
+**Phase 1のBlender作業と固定camera画像でのみ判定できる。**
+Phase 1の評価項目に必ず含めること。grayscale contact sheetでの識別可否を見る。
+
+---
+
+## 11. Phase 1の完了条件
+
+- MeterRound / Lever / Toggleの3種で、envelope・pivot・可動域が**既存3テーマと一致する**
+- 1 objectあたり1,500 triangles以下、renderer 3以下（meterのみ4以下）、shared material 2以下
+- non-manifold edge 0、zero-area face 0
+- 固定camera画像（正面・左右斜視・側面）
+- **既存3テーマとの4テーマ横並びgrayscale contact sheet**で識別できる（§10.2の判定を兼ねる）
+- 寸法report（object名、role、triangle、bounds、SHA-256）
+- **FBXを作らない。** Unity取り込み・prefab生成・active化へ進まない
+
+出力先とscript名は**本文書§4の規約に従う。**
+クラウドセッションが提案した `ArtSource/Blender/Theme4/...` と
+`Tools/Blender/generate_theme4_*.py` は**使わない** — 前者は`.gitignore`の
+`ArtSource/Blender/BrushUp/**` に該当せず`.blend`がgitへ入ってしまい、
+後者は§240.4でcommitを許可した`opus5_theme4_*.py`の範囲外である。
+
+---
+
+## 12. 次のセッションへ渡す初期依頼文
+
+そのまま貼れる。
+
+```
+docs/OPUS5_THEME4_SESSION_HANDOFF.md を読んで、第4テーマ
+Machined Ergonomics の Phase 1 を進めてください。
+
+方針は docs/MACHINED_ERGONOMICS_STYLE_GUIDE.md に確定済みです（全文を読むこと）。
+Phase 0 は承認済みで完了しています。
+
+Phase 1 は MeterRound / Lever / Toggle の3機種の shape prototype です。
+Blend のみを作り、FBX は作りません。固定camera画像・4テーマ横並びの
+grayscale contact sheet・寸法report を出して停止し、形状承認を待ってください。
+
+着手前に §10 の OPEN 項目2件（テーマID未確定、明るい母材でのbevel
+highlightコントラスト）を確認してください。後者は Phase 1 の評価項目です。
+
+§1 の衝突回避規則と §4 の出力先・命名規約を必ず守ってください。
+作業ログは docs/OPUS5_THEME4_LOG.md へ T1. から追記してください。
+```

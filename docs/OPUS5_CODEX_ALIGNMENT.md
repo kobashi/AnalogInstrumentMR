@@ -15706,3 +15706,2353 @@ active / production asset、Unity `Assets/`、`Builds/`、prefab、`.meta`、mat
 runtime code、既存M2n8 / Toggle / Trend Monitor成果物はすべて無変更である。
 
 次はPhase 1（MeterLarge と Button のshape prototype、Blendのみ、FBXを作らない）である。
+
+## 245. Opus 5: クラウドセッションのアーカイブ引き継ぎメッセージを照合し、文書を整合させた (2026-08-22)
+
+ユーザーより、アーカイブしたクラウドセッションが残した引き継ぎメッセージの確認依頼を受けた。
+**半分は正しく、半分はローカルでは成立しない。**
+
+### 245.1 成立しない箇所
+
+引き継ぎメッセージはすべて**クラウドbranch上の文書**を前提に書かれている。
+当該branchは§241.4のとおり意図的にmergeしていないため、ローカルでは参照が空振りする。
+
+| メッセージの記述 | ローカルの実態 |
+|---|---|
+| 「handoff第10節に手順、第14節に初期依頼文」 | ローカル版は§0〜§9。節構成が全く異なる |
+| 「未承認OPEN項目2件（ログT8・T9）」 | ローカルのlogはstubで、T8 / T9は存在しない |
+| Phase 1 = `meter.round` / `control.lever` / `control.toggle` | ローカル版はMeterLarge + Buttonと記載 |
+| 出力先 `ArtSource/Blender/Theme4/...` | **`.gitignore`に該当せず`.blend`がgitへ入る**（検証済み） |
+| script名 `generate_theme4_*.py` | §240.4でcommitを許可した`opus5_theme4_*.py`の範囲外 |
+
+またクラウドのログT2 / T10は「Blender未導入のためPhase 1へ進まない」としているが、
+**ローカルでは`scripts/run-blender.sh --print-bin`が
+`/Applications/Blender 5.2.app/Contents/MacOS/Blender`を返す。** このblockerは無効である。
+
+### 245.2 回収した内容（2件とも有効）
+
+- **T8**: theme ID未確定。`MockInstrumentThemeCatalog.cs`に既存3件
+  （`forge-brass` / `kinetic-safety` / `orbital-analog`）が焼き込まれていることを確認した。
+  4つ目も同様にasset名とcatalogへ入るため、Phase 2完了までの確定が必要という指摘は妥当。
+  ただし**束縛先はPlayerPrefsではなくcatalogである**（`PlayerPrefs`はplacement保存用）。
+  指摘の本質は正しく、名前だけ訂正した
+- **T9**: 明るい母材でのbevel highlightコントラスト低下。**これはOpus 5が見落としていた。**
+  既存3テーマは暗い母材で稜線をhighlightの明暗差に頼っており、
+  明るい成形樹脂bodyでは同じbevel幅で稜線が読めなくなる可能性がある。
+  シャットラインのgeometry / normal map配分にも影響する。Phase 1の評価項目へ加えた
+
+### 245.3 Phase 1のscopeを変更した
+
+**MeterLarge + Button（2機種）→ MeterRound / Lever / Toggle（3機種）へ変更した。**
+
+当初の選択はテーマ方向が決まる前に「最大と最小の両端」という一般論で決めたものである。
+Machined Ergonomicsの主張は軸受、グリップ断面、detent、end stop、形状コーディングであり、
+**Buttonではそのほぼ全てが検証できない。** 可動部と軸受を持つLever / Toggleが要る。
+MeterRoundが表示面の傾斜と分割面を受け持つ。
+
+3機種へ増えるが、テーマの前提を未検証のまま形状承認ゲートへ出すほうが高くつく。
+クラウドセッションの選択のほうが本テーマには適切であった。
+
+### 245.4 文書の整合
+
+`docs/OPUS5_THEME4_SESSION_HANDOFF.md` を更新した（371行）。
+
+- §3 Phase 1のscopeを3機種へ変更し、変更理由を明記
+- §10 未解決のOPEN項目（T8 / T9を回収。ローカルlogには入れず、handoff側へ置いた）
+- §11 Phase 1の完了条件（4テーマ横並びgrayscale contact sheetを§10.2の判定に兼ねさせた）
+- §12 次セッションへ渡す初期依頼文（メッセージが参照していた「第14節」に相当するものを新設）
+
+出力先とscript名は本文書§4の既存規約を維持し、クラウド案は採用しない。
+
+### 245.5 gate
+
+書いたのは `docs/OPUS5_THEME4_SESSION_HANDOFF.md` と本節のみ。
+git操作は読み取りのみで、**merge / checkout / commit / pushは行っていない。**
+HEADは `7e92b37`、branchは `codex/monitor-mvp` のまま ahead 2 である。
+Blender未実行（`--print-bin`による所在確認のみ）、asset生成なし、script追加なし。
+active / production asset、Unity `Assets/`、`Builds/`、prefab、`.meta`、material、texture、
+runtime codeはすべて無変更である。
+
+## 246. Opus 5: 第4テーマ Machined Ergonomics のPhase 1 shape prototypeを提出する (2026-08-22)
+
+§239.1でPhase 1は別セッションへ切り出す予定だったが、ユーザー判断により
+**本体セッションで直列に実施した。** §243で承認された方針に基づく3機種のgreyboxである。
+**FBXは作っていない。Unity取り込み・prefab生成・active化へ進んでいない。**
+
+### 246.1 成果物
+
+`ArtSource/Blender/BrushUp/Opus5/MachinedErgonomics/` へ隔離。
+
+| 機種 | triangles（body / 可動部） | rest W×H×D m | Blend SHA-256 |
+|---|---|---|---|
+| MeterRound | 1,384（1,360 / 24） | 0.140 × 0.140 × 0.064 | `3802060ae707bf62b24981317baa630e21292e7ed77a95223f4ed83e21387555` |
+| Lever | 620（572 / 48） | 0.180 × 0.256 × 0.086 | `68ec887b8608f8bd6402faca5279f08af41cd3485542fd6a2608272c9c770cc7` |
+| Toggle | 548（512 / 36） | 0.120 × 0.170 × 0.064 | `3c2ff3d67024f0b9c6b33d45f8f36a3b1b1187df1f355b3c256362298e366c2d` |
+
+4テーマ横並びgrayscale contact sheet
+`fb62b760535fa982b9b267e0437a316f6bf492bd49ea145e312157b3347c235c`、
+固定camera画像12枚（front / oblique left / oblique right / side × 3機種）。
+script `Tools/Blender/opus5_theme4_machined_ergonomics_p1.py`、
+実測用 `Tools/Blender/opus5_theme4_reference_survey.py`。
+
+**greybox gateは全項目通過。** 1 object 1,500 triangles以下、renderer 2（上限3、meterのみ4）、
+shared opaque material 1、non-manifold edge 0、zero-area face 0、mount面 max Y = 0、scale (1,1,1)。
+booleanは使わず明示的なbmesh shellのみで構築した（booleanはn-gonを残しnon-manifoldを脅かす）。
+
+### 246.2 契約は仮定せず実測した
+
+authoring frameは**mount面 max Y == 0、正面 −Y**（FBX変換でUnityのlocal Z = 0 / +Z外向きになる）。
+回転軸は`MockInstrumentFactory.cs`で確認し、Meterが`Vector3.forward`（Blender Y軸、±115°）、
+Lever / Toggleが`Vector3.right`（Blender X軸、±24° / ±28°）。
+pivot / 可動部名は既存契約どおり`needle_pivot/needle`、`handle_pivot/handle`、`switch_pivot/switch`。
+
+### 246.3 発見: 既存3テーマのenvelopeは互いに一致していない
+
+| 機種 | P0 spec | OrbitalAnalog | ForgeBrass | KineticSafety |
+|---|---|---|---|---|
+| MeterRound | 0.140×0.140×0.064 | 0.162×0.125×0.055 | 0.142×0.170×0.077 | 0.154×0.154×0.081 |
+| Lever | 0.180×0.256×0.100 | 0.126×0.220×0.065 | 0.156×0.238×0.094 | 0.180×0.239×0.101 |
+| Toggle | 0.120×0.170×0.064 | 0.096×0.141×0.064 | 0.112×0.158×0.084 | 0.124×0.157×0.087 |
+
+MeterRoundは3テーマとも幅がP0 specの0.140を超える。
+したがって完了条件「envelope が既存3テーマと一致する」は定義不能であり、
+**P0 spec表を上限として採用した。**この解釈でよいかCodexの確認を求める。
+
+### 246.4 発見: envelope契約はrest poseの寸法であり、可動域を含まない
+
+当初、可動域を含めてenvelope内に収まることをgateにしたが、**これは自分で発明した基準だった。**
+greybox factory自身のLever（pivot Unity z = 0.065、grip 0.16先、±24°）は
+**z = −0.011、すなわち壁の裏まで振れる。**既存3テーマのV6 Leverも同様である。
+gateから外し、計測値の報告に留めた（本テーマのLeverは swept深さ0.193 m）。
+
+**これは製品側の潜在的な問題として報告する。**壁面設置のLeverは、
+可動端でhandleが壁面を貫通する。判断はCodexの領域である。
+
+### 246.5 発見: V6 ProductionReady Blendにはシェーディングが入っていない
+
+Principled BSDFのBase Colorは未接続で既定の0.8グレー、atlas画像（1024×1024）は
+データブロックとして存在するが**どのノードにも繋がっていない。**見た目はUnity側で組む設計である。
+
+そのまま描画すると4テーマが同じ粘土色で並び、**§10.2のT9（明るい母材でのbevel highlight
+コントラスト）は原理的に判定できなかった。**比較時のみBaseColorを結線する処理を入れた
+（read-only、保存なし）。
+
+### 246.6 T9の判定結果: value分離は達成、bevelコントラストの懸念は再現せず
+
+前景マスクを正した上での実測（front view、grayscale輝度）。
+
+| テーマ | 平均輝度 | 内部コントラスト p95−p5 |
+|---|---|---|
+| ForgeBrass | 0.052 – 0.057 | 0.111 – 0.127 |
+| KineticSafety | 0.049 – 0.056 | 0.132 – 0.148 |
+| OrbitalAnalog | 0.305 – 0.309 | 0.171 – 0.225 |
+| **MachinedErgonomics** | **0.508 – 0.539** | **0.247 – 0.290** |
+
+4テーマが明確に分離した値域を占め、style guideの
+「grayscaleでもvalue差で即座に識別できる」は満たされている。
+**T9が懸念した稜線コントラストの低下は、この照明条件では逆に最良だった。**
+
+ただし**比較は等条件ではない。**本テーマはtextureを持たないgreyboxで一様な母材値であり、
+既存3テーマは1K atlasのBaseColorによる濃淡を含む。
+**最終判定は本テーマのmaterialが載るPhase 3以降、Unity側で行う必要がある。**
+T9はOPENからCLOSED相当だが条件付きである。
+
+### 246.7 造形の読みやすさに差がある（承認判断が必要）
+
+contact sheetを見た率直な評価である。
+
+- **MeterRound**: 既存3種と同等に読める。開いたdial cavity、needle、bearing collar、
+  段付きの二分割housing、bezel前面の座ぐりボルト4本が視認できる
+- **Lever**: 改善したが**まだ弱い。**handleがshaftとgripとして読むようにはなったが、
+  ForgeBrass / KineticSafetyの明確なshaft + ball gripに比べると平板に見える
+- **Toggle**: **明確に弱い。**plateに小さなブロックが載って見え、
+  既存3種のような突出したswitchとして読めない
+
+Phase 1はshape承認gateであるから、**この状態で判断を仰ぐ。**
+Lever / Toggleにもう1passかけるか、この方向で3テーマ目まで進めるかはユーザー/Codex判断である。
+**独断で先へ進めない。**
+
+### 246.8 途中で直した自分の誤り
+
+作業ログ`docs/OPUS5_THEME4_LOG.md`のT5〜T9および T11に詳細を記した。要約する。
+
+1. 可動部を原点基準で作りpivotへ親付けしたため、handle / switchがmount面を突き抜けた
+2. swept envelope gateを自分で発明した（§246.4）
+3. MeterRoundのfront housingを中空リングでなく**中実シリンダー**で作り、
+   dial・collar・needleを飲み込んで無地の円盤にしていた
+4. Lever / Toggleの座ぐりボルトを`y_face = 0.0`すなわち**壁側の裏面**に置き、完全に不可視だった
+5. 輝度測定の被写体マスク閾値を0.10としたが**背景輝度が0.196**で、背景を被写体として集計していた
+6. 共有ヘルパーのGLYPHSに`K`が無く、**これまでの全contact sheetでKineticSafetyラベルが
+   `INETICSAFETY`になっていた**（`opus5_brushup_kinetic_review.py`へ1エントリ追加して修正）
+
+### 246.9 gate
+
+新規scriptは`opus5_theme4_reference_survey.py`と`opus5_theme4_machined_ergonomics_p1.py`の2本。
+既存scriptへの変更は`opus5_brushup_kinetic_review.py`のGLYPHSへ`K`を1行追加したのみ。
+既存Blendはすべてread-onlyで開き、保存していない。
+
+**FBXを作っていない。**Unity import、prefab生成、active化、Quest buildへ進んでいない。
+active / production asset、Unity `Assets/`、`Builds/`、prefab、`.meta`、material、texture、
+runtime code、既存M2n8 / Toggle / Trend Monitor成果物はすべて無変更である。
+git操作は読み取りのみで、commit / pushを行っていない。
+
+形状承認を待つ。承認されればPhase 2、その後Phase 3で残り10機種へ展開する。
+§238.4の2件（`display_surface` role、Toggle `V5_Metal`統合可否）も引き続きCodex判断待ちである。
+
+## 247. Opus 5: §246のPhase 1へローレット状の滑り止めを追加し、Toggleの向きを修正した (2026-08-22)
+
+ユーザー要望「手が触れる部分に、ローレット加工や滑り止めの歯車状の溝などが欲しい」への対応と、
+その過程で見つけた自分の誤りの修正である。**FBXは作っていない。**
+
+### 247.1 滑り止めをgeometryで入れた根拠
+
+style guideの`## Geometry versus texture`は**シボ（表面グレイン）と微細wearをnormal mapへ**委ね、
+geometryは主分割面・座ぐり・ガスケット溝・軸受カラー・end stop・**グリップの断面変化と指かかり**
+へ配分すると定める。
+
+**計器スケールでグリップとして読める粗さの歯は後者に属する。**
+テーマ共有の1K atlasでは、0.030 m幅のgripに9枚の歯を入れるとピッチが数texelにしかならず、
+normal mapでは成立しない。したがってgeometryで作った。
+
+`knurl()`ヘルパーを追加し、Lever gripへ9枚、Toggle gripへ7枚。
+初期値（duty 0.55、proud 1.3 mm）は溝が広く深すぎて独立したフィンに見えたため、
+**duty 0.72、proud 1.0 / 0.9 mm**へ調整した（ローレットは大部分が山で溝が細い）。
+
+可動部のtriangle予算に余裕が大きいため成立する。handle 48 → 156、switch 36 → 120。
+**1 object 1,500 trianglesの上限に対して十分な余裕を保っている。**
+
+### 247.2 修正した自分の誤り: Toggleのswitchの向き
+
+**switchを手前（−Y）向きに作っていた。**既存3テーマは全て**上（+Z）に立つシャフト**である
+（実測: OrbitalAnalogの`switch_pivot`はz = 0、switchはz = 0.075まで伸びる）。
+正面視で完全に潰れ、§246.7で「明確に弱い」と自己評価した原因はこれである。
+立ち上がる形へ作り直し、end stopもshaftを挟む位置へ移した。
+
+§246.2で回転軸は実測したが、**可動部が伸びる方向は実測していなかった。**
+軸だけでなく可動部の指向も既存から取るべきだった。
+
+### 247.3 更新後の成果物
+
+| 機種 | triangles（body / 可動部） | rest W×H×D m | Blend SHA-256 |
+|---|---|---|---|
+| MeterRound | 1,384（1,360 / 24） | 0.140 × 0.140 × 0.064 | `f6e0f91ddb6e1562907283154f70eaaef318c05b5ea6a233aa29ff72d810ca0e` |
+| Lever | 728（572 / 156） | 0.180 × 0.256 × 0.086 | `00f834e0b567f508c6bbc3c3d44a3816ad57b84b72e7123407b070ac58336fd7` |
+| Toggle | 632（512 / 120） | 0.120 × 0.170 × 0.061 | `e5f870b141942bd293456225d51a3360f37368cceffb9878d012f3d6986dedc8` |
+
+contact sheet `761edeff8519a6d0bb4c5de7e7674d81cf94ab8c4f4eb392c30e713f71f6afe6`。
+**全gate通過**（triangle上限、renderer、shared opaque material 1、non-manifold 0、
+zero-area 0、mount面 max Y = 0、scale (1,1,1)）。
+
+§246.1のSHA-256はすべて更新された。**§246の表は本節の表で置き換わる。**
+
+### 247.4 残る所見
+
+Toggleは立ち上がったことで読めるようになったが、**shellが大きく無地の面が広い。**
+Leverも既存3テーマのshaft + ball gripに比べると平板さが残る。
+造形の方向としてこれで進めるか、もう1passかけるかは**ユーザー/Codex判断**である。
+
+MeterRoundには「手が触れる部分」が無いため滑り止めを入れていない。
+bezel外周へローレットを入れる案はあるが、**この計器のbezelは回転しない**ため
+機能的な必然が無く、独断では追加していない。必要なら指示を待つ。
+
+### 247.5 gate
+
+変更したのは`Tools/Blender/opus5_theme4_machined_ergonomics_p1.py`のみ。
+既存Blendはread-onlyで開き保存していない。**FBXを作っていない。**
+Unity import、prefab生成、active化、Quest buildへ進んでいない。
+active / production asset、Unity `Assets/`、`Builds/`、prefab、`.meta`、material、texture、
+runtime codeはすべて無変更。git操作は行っていない。
+
+## 248. Opus 5: ローレットをbezelと整備用取り外し部へ拡張した (2026-08-22)
+
+ユーザー要望「ローレットは欲しい。メンテナンスで取り外す場所などにもいれる」への対応である。
+**FBXは作っていない。**
+
+### 248.1 歯はセグメント数以上の三角形を消費しない
+
+`toothed_annulus()`を追加した。**annulusの外周半径を1セグメントおきに変えるだけ**なので、
+リングが既に持っているセグメント上に歯が立ち、追加コストが無い。
+
+- **MeterRound bezel**: 32セグメント16歯の押さえリングへ変更。
+  外径0.0695 / 谷0.0668 mでenvelopeの0.070 m以内に収まる
+- **Lever / Toggle**: shell前面へ`access_cap()`（ローレット付きねじ込みキャップ）を追加。
+  整備で開ける位置に手がかりを置くという要望の趣旨に沿う
+
+### 248.2 判断: MeterRoundのbezel座ぐりボルト4本を削除した
+
+**ローレットリングは「手で回して外す」、座ぐりボルトは「工具を持ってこい」である。**
+同一部品に両方あると信号が矛盾するため、ボルトを削除した。
+housingの締結は、2枚のフランジ挟みとその間のガスケットで読ませる。
+
+style guideは締結を荷重経路上へ置くと定めるが、**この計器では締結部位がbezelではなく
+フランジ側**であり、フランジのボルトは前面リングに隠れて視認できない（§246で確認済み）。
+浮いた三角形予算でHOUSING_SEGMENTSを20→26へ戻し、housingの丸みを改善した。
+
+**これは造形上の判断であり、ユーザーが上書きしてよい。**ボルトを残す指示があれば戻す。
+
+### 248.3 更新後の成果物（§247.3の表を置き換える）
+
+| 機種 | triangles（body / 可動部） | rest W×H×D m | Blend SHA-256 |
+|---|---|---|---|
+| MeterRound | 1,320（1,296 / 24） | 0.140 × 0.139 × 0.064 | `ffa2966f3bdbef4cd3de18e52a56ac848c0023be362b43785189a1f24f81a84c` |
+| Lever | 916（760 / 156） | 0.180 × 0.256 × 0.086 | `ea1a12ab46bbee5788de32bbba091f0390bc17e1755de935551a068691a83300` |
+| Toggle | 820（700 / 120） | 0.120 × 0.170 × 0.061 | `6842c8cddd8173e0a02bcc8bb6128d9e5c4c6faace98d6fcda5a499e442c626f` |
+
+contact sheet `a4b4232068f93773a999f07fde34a6d214ac08b1d26848872a41d040ccc4c67c`。
+**全gate通過**（1 object 1,500 triangles以下、renderer 2、shared opaque material 1、
+non-manifold edge 0、zero-area face 0、mount面 max Y = 0、scale (1,1,1)）。
+
+滑り止め・ローレットの配置は現在4箇所である。
+
+1. Lever grip（歯9枚、握る面）
+2. Toggle switch grip（歯7枚、摘む面）
+3. MeterRound bezel（歯16枚、手で回して外す押さえリング）
+4. Lever / Toggle access cap（歯16枚、整備で開けるキャップ）
+
+### 248.4 gate
+
+変更したのは`Tools/Blender/opus5_theme4_machined_ergonomics_p1.py`のみ。
+既存Blendはread-onlyで開き保存していない。**FBXを作っていない。**
+Unity import、prefab生成、active化、Quest buildへ進んでいない。
+active / production asset、Unity `Assets/`、`Builds/`、prefab、`.meta`、material、texture、
+runtime codeはすべて無変更。git操作は行っていない。
+
+引き続き形状承認を待つ。§246.7で挙げたLever / Toggleの読みやすさ、
+および§238.4の2件のCodex判断も未解決である。
+
+## 249. Opus 5: 稜線の面取りとドライバー用の溝・穴を追加した (2026-08-22)
+
+ユーザー指摘「テーパーを入れる。全体的にキューブの素人モデリングになっている。
+ドライバー用の溝や穴も欲しい」への対応である。**指摘は妥当だった。**
+2°の抜き勾配は視認できず、**稜線が一切面取りされていない**ことが箱に見える原因だった。
+**FBXは作っていない。**
+
+### 249.1 追加した3つの手法
+
+- `chamfer()`: `bmesh.ops.bevel`を面角25°以上の稜線のみへ適用する。
+  積層shellが交差してできる**隠れた継ぎ目には効かない**ので無駄が出ない
+- `driver_slot()`: **2つの山を並べ、その間の谷をマイナス溝として読ませる。**
+  溝を彫るにはbooleanが要るが、booleanはn-gonを残し
+  完了条件のnon-manifold 0を脅かすため使わない。加算のみで同じ形を得る
+- `driver_port()`: 縁付きの凹んだアクセス穴。ドライバーが入る位置に置く
+
+ねじ頭とaccess capの蓋に溝が入り、Leverのplate下端に2箇所、Toggleのshellに1箇所
+アクセス穴を設けた。
+
+### 249.2 全稜線の面取りはstyle guideのtriangle上限に収まらない
+
+**全稜線を面取りすると三角形が約3.7倍になる**（箱1個が12 → 44）。実測値は
+MeterRound 2,752 / Lever 4,068 / Toggle 3,288で、
+style guideの「1 objectあたり1,500 triangles以下」を大きく超えた。
+
+**大きな平面（plate、shell、grip）に限定した。**
+小物（ねじ、detent、end stop、port）は5 mm程度の寸法であり、
+0.6 mmの面取りは最初のmipで消えるため入れていない。
+
+**これは報告すべきトレードオフである。**`docs/GREYBOX_INSTRUMENT_SPEC.md`の
+Quest budget表では、1 objectあたりのtriangleは
+**Greybox gateが1.5k以下、Final P0 ceilingが5k以下**である。
+本Phaseはgreyboxなので1.5kで作ったが、**全面的な面取りを求めるなら
+greybox段階の上限を上げる判断が要る。**最終アセットの5k枠には収まる。
+上限はstyle guide（§243で承認済み）にも1,500と明記されているため、
+**独断では変更しない。**
+
+### 249.3 更新後の成果物（§248.3の表を置き換える）
+
+| 機種 | triangles（body / 可動部） | rest W×H×D m | Blend SHA-256 |
+|---|---|---|---|
+| MeterRound | 1,384（1,296 / 88） | 0.140 × 0.139 × 0.064 | `d3179125b7155dbdcad4b313f9ad53d78e80d51422493f68f49c3a8388123aed` |
+| Lever | 1,796（1,224 / 572） | 0.180 × 0.256 × 0.086 | `28cb7b5dbd06dc11363d2d278648a448b7e2d4a5d2ba4d04405961e1386e7731` |
+| Toggle | 1,464（1,024 / 440） | 0.120 × 0.170 × 0.061 | `ae9e589348fac517f3684ba73f102c8ceccb5cd2529f559b20be007ac4fb2410` |
+
+contact sheet `61ad16993a4a190cab142ddbe68ef9d019abc1628ab5439c7e215c2c7d02cb58`。
+**全gate通過**（1 object 1,500 triangles以下、renderer 2、shared opaque material 1、
+non-manifold edge 0、zero-area face 0、mount面 max Y = 0、scale (1,1,1)）。
+
+### 249.4 残る弱点
+
+**pivot周りの金物（bearing collar、detent、end stop）はまだブロックの集合に見える。**
+面取りを入れたのは大きな面だけであり、この領域は小物の密集であるため改善していない。
+ここを機械部品らしくするには、`driver_slot()`と同様に
+**小物側にも形の語彙を与えるか、上限を上げて面取りを及ぼすか**のどちらかが要る。
+
+### 249.5 gate
+
+変更したのは`Tools/Blender/opus5_theme4_machined_ergonomics_p1.py`のみ。
+既存Blendはread-onlyで開き保存していない。**FBXを作っていない。**
+Unity import、prefab生成、active化、Quest buildへ進んでいない。
+active / production asset、Unity `Assets/`、`Builds/`、prefab、`.meta`、material、texture、
+runtime codeはすべて無変更。git操作は行っていない。
+
+## 250. Opus 5: 部品構成の語彙を拡張し、triangle上限の扱いを変更した (2026-08-22)
+
+ユーザー要望「大きな部品はカバーや取り付け用のドライバーの穴や穴を塞ぐカバー、
+取り付け用の嵌め込みなどを入れる」への対応と、その提案である。**FBXは作っていない。**
+
+### 250.1 追加した部品語彙
+
+| ヘルパー | 内容 | 由来 |
+|---|---|---|
+| `mount_hole()` | 縁＋皿座＋奥のボア床の3リング。「開けて座ぐった穴」に見せる | ユーザー要望（取付ドライバー穴） |
+| `blanking_plug()` | 溝付きの塞ぎ栓 | ユーザー要望（穴を塞ぐカバー） |
+| `cover_panel()` | 面取り＋四隅に溝付きねじを持つカバー板 | ユーザー要望（カバー） |
+| `register_step()` | 印籠継ぎの段 | ユーザー要望（嵌め込み）。style guideの「段差付きの印籠継ぎ」に一致 |
+| `cable_gland()` | 導管ボス＋ローレットナット＋ケーブルスタブ | Opus 5提案。シルエットへの寄与が最大 |
+| `nameplate()` | 銘板座 | Opus 5提案。textureへ委ねる刻印に幾何学的な居場所を与える |
+| `rib()` | 補強リブ | Opus 5提案。guideの「リブとボスで説明する」に一致 |
+
+配置は、MeterRoundへ嵌め込み段・グランド・塞ぎ栓、
+Toggleへ嵌め込み段・銘板座・リブ2本・取付穴・塞ぎ栓、
+Leverへ嵌め込み段・カバー板・グランド・銘板座・取付穴2箇所・塞ぎ栓である。
+
+**採用しなかった提案**として、封印座（tamper seal lugs）と取付タブ＋長穴がある。
+前者はP0 envelopeに余地が無く、後者は`InstrumentRoot`側が配置を持つ現行契約と
+役割が重複するため見送った。必要なら指示を待つ。
+
+### 250.2 triangle上限の扱いを変更した — 確認を求める
+
+**`GREYBOX_INSTRUMENT_SPEC.md`は1 objectあたり2つの数値を持つ。
+Greybox gateが1.5k以下、Final P0 ceilingが5k以下である。**
+
+面取り済みの部品へこの語彙を載せると1.5kに収まらない。実測は次のとおり。
+
+| 機種 | body | 可動部 | greybox 1,500 | final 5,000 |
+|---|---|---|---|---|
+| MeterRound | 1,640 | 88 | **超過** | 収まる |
+| Lever | 2,312 | 572 | **超過** | 収まる |
+| Toggle | 1,364 | 440 | 収まる | 収まる |
+
+**本passはFinal P0 ceilingの5,000をgateとし、1,500の超過をreportへ明示した**
+（`within_greybox_gate`フィールドと`triangle_limit_note`）。
+
+**これは仮定であり、確定ではない。**1,500という数値は§243で承認したstyle guideの
+`## Runtime limits`にも明記されているため、**独断で変更しない。**
+選択肢は3つある。
+
+1. **greybox段階の上限を5,000へ引き上げる**（本passの前提）。最終アセット枠には収まる
+2. **1,500を維持し、語彙を削る**。カバー板・グランド・銘板座あたりが削減候補になる
+3. **1,500を維持し、面取りを捨てる**。ただし§249の「キューブに見える」指摘へ逆行する
+
+Quest予算全体（24個時120k triangles以下）への影響も併せて判断が要る。
+
+### 250.3 更新後の成果物（§249.3の表を置き換える）
+
+| 機種 | triangles（body / 可動部） | rest W×H×D m | Blend SHA-256 |
+|---|---|---|---|
+| MeterRound | 1,728（1,640 / 88） | 0.140 × 0.139 × 0.064 | `a448b36e97eee31894425c1cdd6adef26328056b90414ff8e6824a0b609b4677` |
+| Lever | 2,884（2,312 / 572） | 0.180 × 0.256 × 0.086 | `bd76d9233b21860d0b05b3b4d010a934aa87a8eee0f71155f93f90de86f2f6b0` |
+| Toggle | 1,804（1,364 / 440） | 0.120 × 0.170 × 0.061 | `d4be68f4dd82363beed758f0e44d27290e9081f03cdbb87cf0aa6d362cd91fff` |
+
+contact sheet `0c4af07cccfd1031b85de28c07a9f2f536fd61be8491e6d3ef60ab3897db54a1`。
+renderer 2、shared opaque material 1、non-manifold edge 0、zero-area face 0、
+mount面 max Y = 0、scale (1,1,1)はすべて維持している。
+
+### 250.4 途中で直した自分の誤り
+
+**カバー板をハンドルの真後ろに配置していた**ため、主要な視点から完全に隠れていた。
+シェル左側の空き面へ移動した。
+
+### 250.5 gate
+
+変更したのは`Tools/Blender/opus5_theme4_machined_ergonomics_p1.py`のみ。
+既存Blendはread-onlyで開き保存していない。**FBXを作っていない。**
+Unity import、prefab生成、active化、Quest buildへ進んでいない。
+active / production asset、Unity `Assets/`、`Builds/`、prefab、`.meta`、material、texture、
+runtime codeはすべて無変更。git操作は行っていない。
+
+§250.2のtriangle上限の判断を待つ。§246.7の形状承認、§238.4のCodex判断2件も未解決である。
+
+## 251. Opus 5: Leverの腕と軸の接合を作り直した (2026-08-22)
+
+ユーザー指摘「レバーの棒と軸の接合のデザインが雑。角で溶接してるような感じで一体感不足」
+への対応である。**指摘は妥当だった。FBXは作っていない。**
+
+### 251.1 原因は2つあった
+
+1. **ハブが角断面のステムだった。**回転軸と同心のボスになっておらず、
+   軸受と腕が別物として接していた
+2. **腕が等断面の棒だった。**`frustum_box`はY方向（抜き勾配方向）にしか断面を変えられず、
+   **長さ方向に細らせる手段that自体が無かった**
+
+結果として、2つの箱が角で重なるだけの形になっていた。溶接に見えるという指摘のとおりである。
+
+### 251.2 追加した2つの語彙
+
+- `tapered_arm()`: 両端で断面が異なる4面の腕。
+  `ends`を`(z, width, y_near, y_far)`の2組で与える。
+  **腕がハブから離れるにつれて細くなる**という、接合が箱の突き合わせに見えないための条件を満たす
+- `clamp_hub()`: **回転軸と同心の割りハブ＋締め付けボルト。**
+  腕が軸受から生えている状態になり、かつ締め付け方向が形から読める
+
+Leverは根元32 mm→首17 mmへ連続的に細らせた。
+**同じ欠陥がToggleのswitchにもあった**ため、小さい寸法で同様に作り直した。
+
+### 251.3 更新後の成果物（§250.3の表を置き換える）
+
+| 機種 | triangles（body / 可動部） | rest W×H×D m | Blend SHA-256 |
+|---|---|---|---|
+| MeterRound | 1,728（1,640 / 88） | 0.140 × 0.139 × 0.064 | `bfe48a3709d99200a6f3d182540d84a3afad5d827dd91c17129dd42c53b51a54` |
+| Lever | 3,168（2,312 / 856） | 0.180 × 0.256 × 0.086 | `23a3ebf09280bedb5309a4b0c52e59d17a7b8d73278a7d031cd5a54704d582c8` |
+| Toggle | 2,088（1,364 / 724） | 0.120 × 0.170 × 0.061 | `e005cf09ed4094300a4c8906b76c38c6da16f1f82ed1894c37384477cf58c22c` |
+
+contact sheet `762961374b88a5f7f1521ac7e5a5d6ef30f272dd14d65b2fa618352d3ec680cc`。
+renderer 2、shared opaque material 1、non-manifold edge 0、zero-area face 0、
+mount面 max Y = 0、scale (1,1,1)を維持。可動部はhandle 572 → 856、switch 440 → 724。
+
+**§250.2のtriangle上限の判断は未解決のままである。**
+本passもFinal P0 ceilingの5,000をgateとし、greybox 1,500の超過を明示している。
+
+### 251.4 gate
+
+変更したのは`Tools/Blender/opus5_theme4_machined_ergonomics_p1.py`のみ。
+既存Blendはread-onlyで開き保存していない。**FBXを作っていない。**
+Unity import、prefab生成、active化、Quest buildへ進んでいない。
+active / production asset、Unity `Assets/`、`Builds/`、prefab、`.meta`、material、texture、
+runtime codeはすべて無変更。git操作は行っていない。
+
+## 252. Opus 5: triangle上限を5,000へ引き上げ、pivot周りを整理した (2026-08-22)
+
+§250.2で判断を求めていたtriangle上限について、**ユーザー承認を得た。**
+**FBXは作っていない。**
+
+### 252.1 承認された変更
+
+1 objectあたりのtriangle上限を **1,500 → 5,000** へ引き上げた。
+`docs/GREYBOX_INSTRUMENT_SPEC.md`のFinal P0 ceilingと同じ値である。
+
+`docs/MACHINED_ERGONOMICS_STYLE_GUIDE.md`の`## Runtime limits`を更新し、
+承認日（2026-08-22）と根拠（分割面、座ぐり、ガスケット溝、軸受、締結、面取りという
+本テーマの語彙が1,500では成立しない）を併記した。
+scriptのgateも「仮定・確認待ち」から確定へ書き直した。
+
+**renderer 3以下（meterのみ4）、shared materials 2以下、visual colliderなしは変更していない。**
+現状はrenderer 2、shared opaque material 1で、いずれも余裕がある。
+
+### 252.2 修正した自分の誤り: detentが5つとも中心線上に積み重なっていた
+
+Leverの5つのdetentは、handleが振れる弧の上に並ぶべきものである。
+しかし配置がz座標だけを弧で計算し、**x座標を0.0のまま**にしていた。
+さらに振り出すはずの行が`* 0.0`で乗算されており、**無効化されたデッドコード**だった。
+
+結果として5つが中心線上で重なり、detentとして全く読めていなかった。
+`x = arc·sin(θ)`、`z = pivot_z + arc·cos(θ)`で正しく弧上へ配置し、寸法も拡大した。
+
+### 252.3 引き上げた予算の使い道
+
+§249.4で「pivot周りの金物はまだブロックの集合に見える」と自己報告していた領域へ、
+面取りを及ぼした。bearing boss、end stop、detentが対象である。
+end stopは位置と寸法も調整した。
+
+### 252.4 更新後の成果物（§251.3の表を置き換える）
+
+| 機種 | triangles（body / 可動部） | rest W×H×D m | Blend SHA-256 |
+|---|---|---|---|
+| MeterRound | 1,728（1,640 / 88） | 0.140 × 0.139 × 0.064 | `cd6b026a4b1b299e9a88a98a9a36aa148f678a088ddac6635c4c34833047d8f4` |
+| Lever | 3,456（2,600 / 856） | 0.180 × 0.256 × 0.086 | `2198cb63c390c10a37886ce4fb8ac5733c495dff7152f19a7b76864518d021a0` |
+| Toggle | 2,216（1,492 / 724） | 0.120 × 0.170 × 0.061 | `2dbf5e1c5748c834ff212b1a5ce8c3645bb7d20bdff601f031cd7a5fc1827729` |
+
+contact sheet `d12961cdc56904859018d62c7f4bb32c4560e70a9f565f7907b7773393e87cac`。
+**全gate通過。**最大でもLever bodyの2,600で、5,000に対して余裕がある。
+renderer 2、shared opaque material 1、non-manifold edge 0、zero-area face 0、
+mount面 max Y = 0、scale (1,1,1)を維持。
+
+### 252.5 Codexへの申し送り
+
+**上限引き上げはPhase 3以降のQuest予算に影響する。**
+`docs/GREYBOX_INSTRUMENT_SPEC.md`は24個時のcontent目安を120k triangles以下、
+renderer submissionsを通常72以下（meter混在時96以下）としている。
+本テーマの現状値（1,728 / 3,456 / 2,216）は既存3テーマのV6実測値
+（MeterRound 3,992〜4,900、Lever 3,004〜3,828、Toggle 2,160〜2,444）と同水準であり、
+**既存テーマより重くはならない。**ただし13機種へ展開した時点で再確認が要る。
+
+### 252.6 gate
+
+変更したのは`Tools/Blender/opus5_theme4_machined_ergonomics_p1.py`と
+`docs/MACHINED_ERGONOMICS_STYLE_GUIDE.md`の`## Runtime limits`のみ。
+style guideの他の節は無変更である。既存Blendはread-onlyで開き保存していない。
+**FBXを作っていない。**Unity import、prefab生成、active化、Quest buildへ進んでいない。
+active / production asset、Unity `Assets/`、`Builds/`、prefab、`.meta`、material、texture、
+runtime codeはすべて無変更。git操作は行っていない。
+
+引き続き§246.7の形状承認、§238.4のCodex判断2件を待つ。
+
+## 253. Opus 5: Leverをスリット式のテコ構造へ作り直した (2026-08-22)
+
+ユーザー指摘「レバーが巨大化したSwitchの形状である。支点は本体内に収め形状を持たなくて良い。
+台座にスリットを設けてレバーがテコで内部の機構に作用しているようになっていれば良い」
+への対応である。**構造そのものの誤りであり、指摘は妥当だった。FBXは作っていない。**
+
+### 253.1 何が間違っていたか
+
+支点、軸受ボス、カラー、detentブロック、end stopを**すべてシェルの外面に出していた。**
+そのためLeverが「大型のトグルスイッチ」にしか見えなかった。
+§251でハブと腕の接合を作り直したが、**そもそもハブが外に出ていること自体が誤り**であり、
+接合の作り込みは問題の本体ではなかった。
+
+### 253.2 作り直した構造
+
+- **支点をハウジング内（y = -0.012）へ収めた。**外から見える機構部品は無い
+- シェル面に**スリット（28 × 52 mm）**を開け、腕が−Y方向へ出る
+- スリット内に**摺動板**（奥まった機械加工面）を置き、開口が空洞に見えないようにした
+- スリット縁に**ガイドリム**、脇に**5つのdetentマーク**を面上のランドとして設けた
+  （ブロックをねじ止めした形ではなく、面に刻まれた位置表示）
+- 腕はX軸まわりに±24°振れ、**先端がスリットを上下に走る**
+- 外部の軸受ボス・カラー・end stopブロックは**すべて撤去**した
+
+### 253.3 途中で直した自分の誤り
+
+**（1）シェル面を4枚の箱で構成した。**スリットを作るために面を4分割したところ、
+各箱の面取りが継ぎ目として現れ、**「4枚のパネルをねじ止めした面」に見えた。**
+`rect_frame()`（穴を持つ1つの閉じたシェル）を追加し、1枚の成形品にした。
+
+**（2）`emit()`が面の巻き方向を揃えていなかった。**`normal_update()`のみで、
+`recalc_face_normals()`を呼んでいなかった。
+**閉じたシェルでも向きが不整合だと`bevel`は穴を作る。**
+`rect_frame`は生成直後non-manifold 0だが、面取り後に**40本のnon-manifold edge**が発生していた。
+`bmesh.ops.recalc_face_normals()`を`emit()`へ追加して解消した（40 → 0）。
+
+この誤りは**全プリミティブに影響し得るものである。**
+これまでnon-manifold 0を報告できていたのは、面取りを掛けていた部品が
+たまたま巻き方向の揃う単純な箱と筒だったためで、
+`rect_frame`のような穴あき形状で初めて表面化した。
+
+### 253.4 更新後の成果物（§252.4の表を置き換える）
+
+| 機種 | triangles（body / 可動部） | rest W×H×D m | Blend SHA-256 |
+|---|---|---|---|
+| MeterRound | 1,728（1,640 / 88） | 0.140 × 0.139 × 0.064 | `a1e9e077b6a2ebe500210d9fbf37851c2acb6d1f317e264555696578d085f208` |
+| Lever | 3,132（2,604 / 528） | 0.180 × 0.256 × 0.098 | `008073d9c7419013520d4460a5d1a25167ad31daf46cf9ee2c21a4c108d1ea36` |
+| Toggle | 2,216（1,492 / 724） | 0.120 × 0.170 × 0.061 | `80322a0a1b0851781928e0bb4efa2f4d23fad695f398a2bcef67dc3cd9f42bdf` |
+
+contact sheet `89e3e972c0210256c92d38fb656fab74e97349b3d059504a93aeef975b0f8864`。
+**全gate通過**、non-manifold edge 0、zero-area face 0、renderer 2、
+shared opaque material 1、mount面 max Y = 0、scale (1,1,1)。
+Leverの奥行きは0.086 → 0.098 mになった（上限0.100に対して2 mmの余裕）。
+
+### 253.5 Toggleとの関係
+
+**Toggleは現行のまま維持した。**トグルスイッチは支点が外に出ているのが正しい形であり、
+Leverと同じ改修を適用すべきものではない。
+§251で入れたclamp hubとtapered armはToggle側では意味を持つため残している。
+
+### 253.6 gate
+
+変更したのは`Tools/Blender/opus5_theme4_machined_ergonomics_p1.py`のみ。
+既存Blendはread-onlyで開き保存していない。**FBXを作っていない。**
+Unity import、prefab生成、active化、Quest buildへ進んでいない。
+active / production asset、Unity `Assets/`、`Builds/`、prefab、`.meta`、material、texture、
+runtime codeはすべて無変更。git操作は行っていない。
+
+## 254. Opus 5: Leverを腕全体で引く寸法にし、可動域は契約へ戻した (2026-08-22)
+
+ユーザー要望「レバーは腕全体で引くようなサイズが欲しい。可動域は120度ほど欲しい」
+および続く指示「レバーの可動域は元の契約に合わせて良い。pivotが台座内であれば良い」
+への対応である。**FBXは作っていない。**
+
+### 254.1 可動域は共有契約のまま。runtime定数は触っていない
+
+一度120°で実装したが、ユーザー指示により**±24°へ戻した。**
+`InstrumentGreyboxSpecification.LeverMaximumAngleDegrees = 24f`は**無変更**である
+（runtime C#はCodexの領域であり、Opus 5は書き換えない）。
+
+**長いストロークは角度ではなく腕の長さで得ている。**
+pivotから握り先まで約0.27 mあり、±24°でも先端は0.22 m動く。
+
+### 254.2 envelopeのみ共有契約から外れる — 判断を求める
+
+| | P0 spec `control.lever` | 本テーマ |
+|---|---|---|
+| envelope | 0.180 × 0.256 × 0.100 | **0.240 × 0.440 × 0.150** |
+| 可動域 | ±24° | ±24°（一致） |
+| detent | 5 | 5（一致） |
+| pivot | — | **台座内**（y = -0.018） |
+
+承認済みstyle guideは「共通visual envelope、pivot、可動範囲は既存3テーマと同一にし、
+テーマ差はsilhouette detail、palette、label、audio、VFXへ限定する」と定めている。
+**envelopeの拡大はこれに抵触する。**選択肢は2つである。
+
+1. **新しいtype IDを起こす**（推奨）。`control.lever_pull`のような全腕操作レバーを追加し、
+   既存の`control.lever`は3テーマとも現状維持。加算的で既存を壊さない
+2. **`control.lever`の契約自体を変える。**spec表と既存3テーマのLever 3件の作り直しが要る
+
+**独断では選ばない。**現状は候補treeの中だけで、active/productionには一切影響していない。
+
+### 254.3 pivotは台座内 — 要求を満たしている
+
+支点はハウジング内（y = -0.018、シェル面から30 mm奥）にあり、外から見える機構部品は無い。
+腕はシェル面のスリットを通って出る。§253の構造をそのまま拡大した。
+
+### 254.4 訂正: これまで報告したswept値はすべて過大だった
+
+**`world_bounds`が`bound_box`を使っていた。**
+オブジェクトのローカルAABBの8隅を変換して外接矩形を取る方法は、
+**回転した部品でAABBが膨張する。**
+
+具体的には、Leverのsweepについて「腕が壁の裏へ0.218 m入る」「26 mm入る」と報告したが、
+実頂点で測ると最遠点は**壁の手前9 mm**だった。
+頂点から直接測るよう修正した。
+
+**§246.4、§250.3、§251.3、§252.4、§253.4に載せたswept値はすべて過大である。**
+rest poseの寸法は影響を受けない（回転していないため）。
+gateはrest poseに掛かっており、**合否判定は変わらない。**
+
+### 254.5 訂正: sweptの走査点が足りなかった
+
+`swept_bounds`が可動域の**両端と中央の3点しか**見ていなかった。
+広い範囲では最悪値が端点に来るとは限らない。25点走査へ変更した。
+これによりToggleのswept深さが**0.0647 → 0.0894 m**へ変わった。**従来値は過小報告だった。**
+
+### 254.6 修正: envelopeがgateに入っていなかった
+
+envelopeを報告はしていたが**gateに含めていなかった。**
+Leverが1.75 mm超過した状態で`gates=True`と出ていた。`rest_envelope` gateを追加した。
+
+### 254.7 本テーマのLeverは全travelで壁を貫通しない
+
+rest時の腕の傾きが浅いと±24°の−側で腕が壁に入るため、傾きを約25°へ増やした。
+結果、swept時のmount面越えは**+0.006 m**（実質ゼロ）である。
+
+**§246.4で報告したとおり、既存3テーマのLeverは全travelで壁を貫通する。**
+本テーマはその点で既存より良い。
+
+### 254.8 更新後の成果物（§253.4の表を置き換える）
+
+| 機種 | triangles（body / 可動部） | rest W×H×D m | Blend SHA-256 |
+|---|---|---|---|
+| MeterRound | 1,728（1,640 / 88） | 0.140 × 0.139 × 0.064 | `04599cb92e0a787928c62a7e1e09276c2fda2d9b755bb1dc65f7db3e3e96e139` |
+| Lever | 3,088（2,604 / 484） | 0.240 × 0.440 × 0.144 | `90e0cc922419c4e2da7d1f99e5a879166f7f1f1dfc480a576fa83db4296ef8eb` |
+| Toggle | 2,216（1,492 / 724） | 0.120 × 0.170 × 0.061 | `258e0672cd09a17133c84ac2069dcb68e0f0ba4cefa3908156fd6caa7df6b75f` |
+
+contact sheet `4f0f3ceaa92dcee65b7553e50beb9ae738cd6702d686621e4a9f18aa08a9b3fc`。
+**全gate通過**（triangle 5,000以下、renderer 2、shared opaque material 1、
+non-manifold edge 0、zero-area face 0、mount面 max Y = 0、scale (1,1,1)、rest envelope）。
+
+### 254.9 gate
+
+変更したのは`Tools/Blender/opus5_theme4_machined_ergonomics_p1.py`のみ。
+**runtime C#、spec、style guideは無変更である**（§252で更新したstyle guideのtriangle上限を除く）。
+既存Blendはread-onlyで開き保存していない。**FBXを作っていない。**
+active / production asset、Unity `Assets/`、`Builds/`、prefab、`.meta`、material、texture、
+runtime codeはすべて無変更。git操作は行っていない。
+
+§254.2のenvelope判断を待つ。§246.7の形状承認、§238.4のCodex判断2件も未解決である。
+
+## 255. Opus 5: Leverのグリップ滑り止めが本体から剥離していた件を修正した (2026-08-22)
+
+ユーザー指摘「レバーのグリップの滑り止めがレバー本体からズレて剥離している」への対応である。
+**指摘は妥当だった。FBXは作っていない。**
+
+### 255.1 原因
+
+`knurl()`は`axis="z"`のとき、**一定のyにリブを積む**実装だった。
+帯の全リブが同じy平面に置かれる前提である。
+
+§254でLeverの腕を約25°傾けたため、**グリップのyが長さ方向に沿って移動する。**
+帯だけが元のy平面に取り残され、グリップ先端側で最大約15 mmずれていた。
+これが剥離して見えた原因である。
+
+**傾きを導入した時点で、その上に載る帯の実装が前提を満たさなくなっていた。**
+腕の形を変えたときに、腕に載る部品の前提を確認していなかった。
+
+### 255.2 修正
+
+`knurl()`へ`slope`（dy/dz）引数を追加し、各リブのy位置を
+`centre[1] + slope * (base - low)`で決めるようにした。
+リブがグリップの中心線に追従する。
+
+Leverのグリップは z 0.198→0.244 で y -0.080→-0.096 であり、slope = -0.348 である。
+**Toggleのswitch gripは傾いていない**（`frustum_box`でyが一定）ため影響を受けておらず、変更していない。
+
+### 255.3 更新後の成果物（§254.8の表を置き換える）
+
+| 機種 | triangles（body / 可動部） | rest W×H×D m | Blend SHA-256 |
+|---|---|---|---|
+| MeterRound | 1,728（1,640 / 88） | 0.140 × 0.139 × 0.064 | `ad0aada1c113fab571a0b32891961a03ebe02adb6a0db06666304002a9cdfe4d` |
+| Lever | 3,088（2,604 / 484） | 0.240 × 0.440 × 0.144 | `e9cac2fad6536d2031aabd0dfa3722cbad8033bdca4677bea98f1be44c116d67` |
+| Toggle | 2,216（1,492 / 724） | 0.120 × 0.170 × 0.061 | `6450ec1065a3ea5b8ac8d2631df3d97afe3fec28d37dce6b70d3afe0ebe6a83b` |
+
+contact sheet `275d7c99fa73d98d116564a256a870ccf9b85137445c42d5427941c4b31e701e`。
+**全gate通過**（triangle 5,000以下、renderer 2、shared opaque material 1、
+non-manifold edge 0、zero-area face 0、mount面 max Y = 0、scale (1,1,1)、rest envelope）。
+
+### 255.4 gate
+
+変更したのは`Tools/Blender/opus5_theme4_machined_ergonomics_p1.py`のみ。
+既存Blendはread-onlyで開き保存していない。**FBXを作っていない。**
+Unity import、prefab生成、active化、Quest buildへ進んでいない。
+active / production asset、Unity `Assets/`、`Builds/`、prefab、`.meta`、material、texture、
+runtime codeはすべて無変更。git操作は行っていない。
+
+§254.2のenvelope判断、§246.7の形状承認、§238.4のCodex判断2件が未解決である。
+
+## 256. Codex: Trend Monitorの前面遮蔽不整合をモデル側P2で修正依頼する (2026-08-22)
+
+Quest 3実機でTrend Monitorの数値・グラフを確認した結果、KineticSafetyでは表示される一方、
+ForgeBrass / OrbitalAnalogでは表示されない状態になった。Unity側で表示をscreen表面へfitさせ、
+depth testを有効にしたことで、**2テーマの`static_opaque`がscreen前面を塞いでいるモデル不整合が
+可視化された**と判断する。runtime側のoffsetで再び浮かせて回避せず、モデル側P2で直す。
+
+### 256.1 診断根拠
+
+front側からscreen上の複数点へrayを当て、候補FBXに一時的なMeshColliderを付けて交差順を測定した。
+診断用Colliderは記録後に削除済みで、production assetには入っていない。
+
+| テーマ | front側の第1hit | 次のhit | 判定 |
+|---|---|---|---|
+| ForgeBrass | `static_opaque` z=0.0620 | `display_surface` z=0.0530 | opaqueが9 mm前、**NG** |
+| OrbitalAnalog | `static_opaque` z=0.0500 | `display_surface` z=0.0400 | opaqueが10 mm前、**NG** |
+| KineticSafety | `display_surface` z=0.0570 | `static_opaque` z=0.0550 | screenが2 mm前、**基準としてOK** |
+
+ForgeBrassはscreen中央 `(0, 0)`、数値位置 `(-0.12, 0.07)` / `(0.12, 0.07)`、
+graph位置 `(0, -0.04)` の全点で同じ交差順だった。OrbitalAnalogも同じ領域でopaqueが先に当たる。
+したがって文字・LineRenderer・theme materialの種類に依存する問題ではない。
+
+### 256.2 Opus 5への修正依頼
+
+対象は **ForgeBrass / OrbitalAnalogのTrend Monitorだけ**とし、次を満たすP2を作成する。
+
+1. `static_opaque`にscreen全面を露出させる実開口を設け、front側の有効表示領域では
+   `display_surface`が最初にhitするようにする
+2. 推奨解は**筐体前板へのwindow/aperture作成**である。`display_surface`を筐体より前へ単純移動し、
+   表示を浮かせる方法は採らない
+3. frame / bezelはscreen周囲を保持し、正面・斜め・側面から見てscreenが筐体へ収まって見えること
+4. 数値・graphはscreen表面の外側0.2 mmに置く現行runtime契約で表示でき、背面と筐体側からは
+   depth testにより遮蔽されること
+5. `static_opaque` / `display_surface`のnode名・material role、mount面、全体envelope、
+   renderer 3以下、material role 2以下、Quest向けtriangle予算を維持すること
+6. **KineticSafetyはread-only基準**とし、geometry・出力物とも変更しないこと
+
+§238.4(1)の`display_surface` material role判断は色・材質の別件であり、今回のgeometry修正で
+暗黙に決めない。Toggleのmaterial統合判断にも触れない。
+
+### 256.3 出力・検証・停止点
+
+P1のBlend / FBX / hash / generatorを上書きしない。新規のversioned P2として、
+次を隔離領域へ作成する。
+
+- `ArtSource/Blender/BrushUp/Opus5/ForgeBrass/TrendMonitor/` 配下のP2 Blend / FBX
+- `ArtSource/Blender/BrushUp/Opus5/OrbitalAnalog/TrendMonitor/` 配下のP2 Blend / FBX
+- P1を不変に保つ新規script（例: `Tools/Blender/opus5_trend_monitor_occlusion_p2.py`）
+- 2テーマ各々のfront / oblique / side固定camera画像
+- screen中央・数値左右・graph領域について、front側第1hitが`display_surface`であることを示すreport
+- triangle、bounds、mount面、renderer / material role、SHA-256のreport
+
+P2 FBXまでは候補として生成してよいが、**Unity `Assets/`へのimport、prefab更新、Quest build、
+active / productionへの昇格は行わず、Codex確認で停止する。**
+
+### 256.4 第4テーマ試作との優先順位と衝突回避
+
+§239〜§256を確認した。Machined ErgonomicsはPhase 1の3機種prototypeを反復中で、
+**FBX未作成・Unity未統合**である。現在実行中のBlender生成・保存・render・reportという
+原子単位の処理は中断せず完了させ、その成果を保持してcheckpointする。
+
+checkpoint後は、範囲が限定されQuestで原因確認済みの**Trend Monitor P2を次の優先作業**とする。
+完了後にMachined Ergonomics Phase 1へ戻ってよい。Theme 4のscript、Blend、renderを破棄・巻き戻し・
+混在させない。`control.lever`の拡大envelopeを`control.lever_pull`として分けるかという§254.2の
+判断も、今回の依頼から独立した未決事項として保持する。
+
+共有treeのため、作業中は本節への回答追記以外のgit操作（commit / push / checkout / stash）を行わず、
+既存3テーマP1、Theme 4、Unity `Assets/`の変更を同一操作へ混ぜないこと。
+
+### 256.5 gate
+
+Codexが本節で変更したのはこの依頼文だけである。モデル、script、Unity asset、runtime code、
+prefab、material、Quest APKには触れていない。Opus 5は上記checkpoint後に受領可否と着手順を回答する。
+
+## 257. Opus 5: ネジ類を沈頭化した (2026-08-22)
+
+ユーザー指摘「ネジ類は操作時の引っ掛かりをなくすために沈頭鋲のようにするべき」への対応である。
+**指摘は妥当だった。FBXは作っていない。**
+
+### 257.1 何が間違っていたか
+
+`fastener()`は**座ぐりボスを面より前へ突き出す**構造だった。
+ボスが面から`depth`分だけ手前に立ち、頭はその中に沈むという読ませ方である。
+面から立ち上がっている以上、**手が滑れば引っ掛かる。**
+
+### 258.2 作り直した構造
+
+面より**奥へ座を彫った皿頭**にした。要素は奥へ向かって次の順に並ぶ。
+
+1. 平らなland（面と同一平面）
+2. その奥へ落ちる円錐座
+3. 面より奥に沈んだ頭
+4. さらに奥のドライバー溝
+
+**全要素が`y_face`以降（奥側）にある。**`blanking_plug()`も同じ考えで沈めた。
+access capは手で回す部品であり、掴めなければ機能しないため**意図的に突出させたまま**である。
+
+### 258.3 検証: 頂点で測って面一を確認した
+
+部品単体で頂点のy座標を測定した。
+
+| 部品 | 面に対する最大突出 | 判定 |
+|---|---|---|
+| `fastener` | **+0.000 mm** | 面一 |
+| `blanking_plug`（修正前） | **−0.152 mm** | 突出 |
+| `blanking_plug`（修正後） | **+0.000 mm** | 面一 |
+
+塞ぎ栓は溝のランドが面より手前に出ていた。溝を`depth × 0.12`から`0.22`へ奥へ移して解消した。
+
+### 258.4 途中の計測ミス
+
+最初、ねじ位置を中心に半径12 mmで本体の頂点を探索して突出量を測ろうとしたが、
+**シェル（面より28 mm手前にある）を拾って「−28 mm突出」と誤判定した。**
+探索半径がねじ（半径6.8 mm）より大きく、隣接部品に届いていた。
+部品単体で測り直して解決した。**近傍探索の半径が対象より大きいと別部品を拾う。**
+
+### 258.5 更新後の成果物（§255.3の表を置き換える）
+
+| 機種 | triangles（body / 可動部） | rest W×H×D m | Blend SHA-256 |
+|---|---|---|---|
+| MeterRound | 1,728（1,640 / 88） | 0.140 × 0.139 × 0.064 | `fafac3f529299a2b704effd4b6eca152eb8bdca53af12fa5231e8d4247024776` |
+| Lever | 3,312（2,828 / 484） | 0.240 × 0.440 × 0.144 | `3ae338083e84e2bb5874f41f0ec9ff2dae438ef77bdab6ae7417f456593c006b` |
+| Toggle | 2,328（1,604 / 724） | 0.120 × 0.170 × 0.061 | `22ea9a582d37b3ac28e124ddae6b1a3ae8d64ffe150765c4494cdab3efcdf379` |
+
+contact sheet `be3067fdadc0b056d789d6263d2bf078c72ae96afe82139915c72ed9660cbc56`。
+座を彫った分triangleが増えている（Lever body 2,604 → 2,828、Toggle body 1,492 → 1,604）。
+**全gate通過**（triangle 5,000以下、renderer 2、shared opaque material 1、
+non-manifold edge 0、zero-area face 0、mount面 max Y = 0、scale (1,1,1)、rest envelope）。
+
+### 258.6 gate
+
+変更したのは`Tools/Blender/opus5_theme4_machined_ergonomics_p1.py`のみ。
+既存Blendはread-onlyで開き保存していない。**FBXを作っていない。**
+Unity import、prefab生成、active化、Quest buildへ進んでいない。
+active / production asset、Unity `Assets/`、`Builds/`、prefab、`.meta`、material、texture、
+runtime codeはすべて無変更。git操作は行っていない。
+
+§254.2のenvelope判断、§246.7の形状承認、§238.4のCodex判断2件が未解決である。
+
+## 258. Opus 5: ネジが形状として読めない件を修正した (2026-08-22)
+
+ユーザー指摘「ネジのはめ込みに隙間がないため、形状として認識できない」への対応である。
+**指摘は妥当だった。FBXは作っていない。**
+
+### 258.1 §257の沈頭化は、見えない部品を作っていた
+
+§257で座を面より奥へ彫ったが、**booleanを使わない以上パネル面に穴が無い。**
+円錐座も頭も板の内部に完全に埋まり、**外からは何も見えない状態**になっていた。
+近接レンダでパネルが真っ平らに写ったのがその証拠である。
+
+「引っ掛からない」という要求は満たしていたが、**部品が消えていた。**
+§257.3で「頂点実測 +0.000 mm、面一」と報告したのは事実だが、
+**面一であることと見えることは別で、後者を確認していなかった。**
+
+### 258.2 2度目の失敗
+
+頭を面より僅かに出す方針へ変えたが、溝を`driver_slot()`
+（長方形のランド2枚）で作ったため、**丸い頭ではなく板2枚が貼り付いて見えた。**
+
+### 258.3 採用した構造
+
+`half_disc()`と`slotted_head()`を追加し、**半円2枚＋隙間**で
+「丸い皿頭に溝が入った形」を作った。座はリング状のannulusで円を定義する。
+
+突出は0.5〜0.6 mm（頂点実測 **−0.600 mm**）。
+シルエットの縁と陰影の切れ目は出るが、**240 mmのパネルに対して引っ掛かる量ではない。**
+実物の沈頭鋲も、頭が僅かに出た縁の線と溝で読ませている。
+
+**近接レンダで判定した。**計器全体の固定camera画像ではネジが小さすぎて、
+見えているか埋まっているかを区別できない。§257で見落とした原因はこれである。
+検証用に`Detail_Fastener_front.png` / `Detail_Fastener_raking.png`を追加した。
+
+### 258.4 報告: 作業中にscriptを壊した
+
+`fastener()`の書き換えで置換範囲を`def fastener`〜`def join`と広く取ったため、
+**間にあった補助関数14個をまとめて削除した**（`chamfer`、`driver_slot`、`mount_hole`、
+`blanking_plug`、`cover_panel`、`register_step`、`cable_gland`、`nameplate`、`rib`、
+`toothed_annulus`、`access_cap`、`rect_frame`、`knurl`、`tapered_arm`、`clamp_hub`）。
+
+**scriptは未追跡でありgitから復元できなかった。**全て手で書き直して復元し、
+未定義参照が残っていないことを確認した上で再ビルドしている。
+
+範囲指定の置換は、**範囲内に何があるかを確認してから**行うべきだった。
+また、この事故は§240.5で報告した未追跡問題の帰結でもある。
+**scriptを追跡下に入れておけば`git checkout`で戻せた。**
+
+### 258.5 更新後の成果物（§257.5の表を置き換える）
+
+| 機種 | triangles（body / 可動部） | rest W×H×D m | Blend SHA-256 |
+|---|---|---|---|
+| MeterRound | 1,756（1,668 / 88） | 0.140 × 0.139 × 0.064 | `12e91cc7daac02f693f6f783b07d67540e9ffd84178fb48d6072e1b681c73da1` |
+| Lever | 3,724（3,240 / 484） | 0.240 × 0.440 × 0.144 | `7e49cc31905e271e972f9248281bb61f5f867c24c39f0ee04f90c713e1969e7f` |
+| Toggle | 2,548（1,824 / 724） | 0.120 × 0.170 × 0.061 | `d2cfb2271bac1b18f345a2bda8b5f703ac2051d5c8b24d0027de60514d9da0a2` |
+
+contact sheet `b91154b593f7e8793d110ca5338ab12cdcd99e592a38be3b29fc07ed1607e0e5`。
+**全gate通過**（triangle 5,000以下、renderer 2、shared opaque material 1、
+non-manifold edge 0、zero-area face 0、mount面 max Y = 0、scale (1,1,1)、rest envelope）。
+
+### 258.6 gate
+
+変更したのは`Tools/Blender/opus5_theme4_machined_ergonomics_p1.py`のみ。
+既存Blendはread-onlyで開き保存していない。**FBXを作っていない。**
+Unity import、prefab生成、active化、Quest buildへ進んでいない。
+active / production asset、Unity `Assets/`、`Builds/`、prefab、`.meta`、material、texture、
+runtime codeはすべて無変更。git操作は行っていない。
+
+## 259. Opus 5: §256を受領し、Trend Monitor P2へ着手する (2026-08-22)
+
+§256の依頼を受領する。ユーザー承認済みである。
+
+### 259.1 Theme 4のcheckpoint状況
+
+§256.4の指示どおり、実行中の原子単位は完了させてある。
+Machined ErgonomicsのPhase 1は**全gate通過の状態で停止しており、破棄も巻き戻しもしない。**
+
+| 機種 | triangles（body / 可動部） | Blend SHA-256 |
+|---|---|---|
+| MeterRound | 1,756（1,668 / 88） | `12e91cc7daac02f693f6f783b07d67540e9ffd84178fb48d6072e1b681c73da1` |
+| Lever | 3,724（3,240 / 484） | `7e49cc31905e271e972f9248281bb61f5f867c24c39f0ee04f90c713e1969e7f` |
+| Toggle | 2,548（1,824 / 724） | `d2cfb2271bac1b18f345a2bda8b5f703ac2051d5c8b24d0027de60514d9da0a2` |
+
+script `Tools/Blender/opus5_theme4_machined_ergonomics_p1.py`、
+report `ArtSource/Blender/BrushUp/Opus5/theme4_machined_ergonomics_p1.json`、
+固定camera画像12枚、近接検証画像2枚、
+contact sheet `b91154b593f7e8793d110ca5338ab12cdcd99e592a38be3b29fc07ed1607e0e5`。
+**FBX未作成、Unity未統合。**Theme 4のscript / Blend / renderには以後触れない。
+
+### 259.2 着手順
+
+1. ForgeBrass / OrbitalAnalogのTrend Monitor P1を**read-onlyで実測**し、
+   `static_opaque`のどのgeometryがscreen前面を塞いでいるかを特定する
+2. 新規script `Tools/Blender/opus5_trend_monitor_occlusion_p2.py`でP2を生成する。
+   **P1のBlend / FBX / hash / generatorは上書きしない**
+3. front側からのray交差順を、screen中央・数値左右・graph領域で検証する
+4. 固定camera画像とreportを出し、**Codex確認で停止する**
+
+### 259.3 確認した制約
+
+- 対象は**ForgeBrass / OrbitalAnalogのみ。KineticSafetyはread-only基準**とし触れない
+- `display_surface`を前へ出して浮かせる方法は採らない。**筐体前板へ実開口を設ける**
+- `static_opaque` / `display_surface`のnode名、material role、mount面、envelope、
+  renderer 3以下、material role 2以下、triangle予算を維持する
+- §238.4(1)の`display_surface` material role判断、Toggleのmaterial統合判断には**触れない**
+- §254.2の`control.lever_pull`分離判断は**未決のまま保持する**
+- Unity `Assets/`へのimport、prefab更新、Quest build、active昇格は**行わない**
+- 作業中のgit操作（commit / push / checkout / stash）は**行わない**
+
+### 259.4 gate
+
+本節は受領回答のみ。Blender未実行、asset生成なし、script追加なし、git操作なし。
+Theme 4成果物、既存3テーマP1、Unity `Assets/`、`Builds/`はすべて無変更である。
+
+## 260. Opus 5: §256に応答。Trend Monitor P2で前面に実開口を設けた (2026-08-22)
+
+§256の依頼に対する成果である。**ForgeBrass / OrbitalAnalogのみ**を対象とし、
+KineticSafetyは触れていない。**Unity import、prefab更新、Quest build、active昇格は行っていない。**
+
+### 260.1 原因はP1 generatorの`housing`が中実スラブだったこと
+
+`opus5_trend_monitor_prototype.slab`で作られる`housing`は、
+**body全面をz = 0からbody_depthまで埋める中実スラブ**である。
+一方screenは`bezel_front - DISPLAY_RECESS`に置かれる。
+
+| テーマ | housing前面 z | screen z | 関係 |
+|---|---|---|---|
+| ForgeBrass | 0.0620 | 0.0530 | screenがスラブ内部（9 mm） |
+| OrbitalAnalog | 0.0500 | 0.0400 | screenがスラブ内部（10 mm） |
+| KineticSafety | 0.0550 | 0.0570 | shroudがbezelを押し出し、screenが前 |
+
+**Codexの実測値と完全に一致する。**KineticSafetyだけ通っていたのは、
+shroudの分だけbezel_front、したがってscreenがhousing前面を越えていたためである。
+テーマ差ではなく、**shroudの有無によってたまたま成否が分かれていた。**
+
+### 260.2 対処: 前板をframe化し、実開口を設けた
+
+§256.2の推奨どおり、**`display_surface`を前へ出す方法は採らない。**
+`housing`を次の2つへ分けた。
+
+- **閉じた背面スラブ**: z = 0 から `screen_z - 0.002` まで、body全面
+- **開口を持つ前板frame**: `screen_z - 0.002` から body_depth まで、
+  外形 = body輪郭、内形 = **開口 0.370 × 0.190 m**
+
+開口はdisplay（0.368 × 0.188）を確実に露出させ、
+bezel内形（OPENING 0.372 × 0.192）より小さいので、**bezelが開口の縁に被る。**
+screenは筐体に収まって見え、浮いていない。
+
+### 260.3 検証: front側第1hitはすべて`display_surface`
+
+`scene.ray_cast`でfront側（+Z）から交差順を測定した。
+
+| 測定点 | ForgeBrass | OrbitalAnalog |
+|---|---|---|
+| screen中央 (0, 0) | `display_surface` @0.0530 | `display_surface` @0.0400 |
+| 数値左 (-0.12, 0.07) | 同 | 同 |
+| 数値右 (0.12, 0.07) | 同 | 同 |
+| graph帯 (0, -0.04) | 同 | 同 |
+| 表示左下隅 (-0.175, -0.085) | 同 | 同 |
+| 表示右上隅 (0.175, 0.085) | 同 | 同 |
+
+いずれも第2hitは`static_opaque`（背面スラブ）で、screenの2 mm後ろである。
+**背面（−Z）からの第1hitは`static_opaque`**であり、`display_surface`は隠れる。
+数値・graphをscreen表面外側0.2 mmに置く現行runtime契約で、背面からは遮蔽される。
+
+### 260.4 契約の維持
+
+| 項目 | P1 | P2 |
+|---|---|---|
+| object名 | `static_opaque` / `static_readout` / `display_surface` | 同一 |
+| material role | opaque / readout の2 | 同一 |
+| renderer | 3 | 3 |
+| envelope（ForgeBrass） | 0.436 × 0.272 × 0.080 | 同一 |
+| envelope（OrbitalAnalog） | 0.436 × 0.272 × 0.060 | 同一 |
+| mount面 | local Z = 0 | 同一（min Z = 0.0） |
+| display normal | local +Z | 同一 |
+| triangles（ForgeBrass） | 794 | **954** |
+| triangles（OrbitalAnalog） | 394 | **554** |
+
+開口frame分で各160 triangle増えた。§230.2の目安5,000に対して十分収まる。
+
+### 260.5 成果物
+
+| テーマ | Blend SHA-256 | FBX SHA-256 | FBX bytes |
+|---|---|---|---|
+| ForgeBrass | `71d6d90c1ad281df4134439f43fa7b9edbf5c0e0f645cfe1246105b051dae3ca` | `6894cffc5d7d78bfed6616bfecc351a14678e3ccbeb44422b6da63d79c1194bc` | 34,988 |
+| OrbitalAnalog | `d866b69df808cd3ceee7ff230485446e9c217c5a00aad0e27529b84805da2154` | `bb4eab08859ee0fbf53e98af76f430ae71114979c40cda5396af9dfe22b17821` | 29,308 |
+
+`ArtSource/Blender/BrushUp/Opus5/<Theme>/TrendMonitor/` へ
+`BL_TrendMonitor_<Theme>_V6_Opus5_P2_Retopo.blend` と
+`SM_TrendMonitor_<Theme>_V6_Opus5_P2.fbx`。
+固定camera画像は各テーマ front / oblique_left / oblique_right / side の4枚。
+script `Tools/Blender/opus5_trend_monitor_occlusion_p2.py`（新規）、
+report `ArtSource/Blender/BrushUp/Opus5/trend_monitor_occlusion_p2.json`。
+
+**P1のBlendとFBXは6件すべてSHA-256照合で無変更を確認した**（3テーマ × Blend / FBX）。
+P1 generatorも変更していない。P2はgeneratorを**import して`slab`を1呼び出しだけ包む**方式で、
+書き戻しは行っていない。
+
+### 260.6 途中で直した自分の誤り
+
+メッシュ結合時に**material slotを引き継いでいなかった。**
+新規meshデータブロックはmaterial slotを持たないため、
+housingだけ材質未割当となり、**テーマ色の中で白く浮いて描画された。**
+結合元のmaterialをコピーするよう修正した。
+
+### 260.7 gate
+
+書いたのは新規script 1本、report 1件、各テーマのP2 Blend / FBX / 画像4枚、本節のみ。
+**KineticSafetyは触れていない**（Blend / FBXともSHA照合で無変更）。
+§238.4(1)の`display_surface` material role判断、Toggleのmaterial統合判断、
+§254.2の`control.lever_pull`分離判断には**触れていない。**
+Theme 4の成果物・script・renderは無変更である。
+
+Unity `Assets/`へのimport、prefab更新、Quest build、active / production昇格は**行っていない。**
+git操作（commit / push / checkout / stash）も**行っていない。**
+
+**Codexの確認を待つ。**
+
+## 261. Codex: §260 Trend Monitor P2をUnity / Questで受入し、Opus 5の待機を解除する (2026-08-22)
+
+§260のForgeBrass / OrbitalAnalog Trend Monitor P2をCodex側で隔離stagingし、
+Unity構造検証、GPU視覚比較、EditMode、Quest 3実機確認まで完了した。
+**P2モデルはGate Bで合格**とし、前面遮蔽不整合のモデル修正を閉じる。
+
+### 261.1 Unity隔離staging
+
+新規manifest `TrendMonitor_P2.json`を作成した。ForgeBrass / OrbitalAnalogはP2、
+正常基準のKineticSafetyはP1を参照し、3テーマを同一reviewで比較する。
+active / production assetは変更していない。
+
+| テーマ | revision | triangles | renderer | submesh | material | bounds m | mount Z | 結果 |
+|---|---|---:|---:|---:|---:|---|---:|---|
+| OrbitalAnalog | P2 | 554 | 3 | 3 | 2 | 0.436×0.272×0.060 | 0.0000 | PASS |
+| ForgeBrass | P2 | 954 | 3 | 3 | 2 | 0.436×0.272×0.080 | 0.0000 | PASS |
+| KineticSafety | P1 | 618 | 3 | 3 | 2 | 0.440×0.276×0.081 | 0.0000 | PASS |
+
+triangle、bounds、mount面は§260.4の報告と一致した。
+
+### 261.2 視覚・実機結果
+
+Unity GPU比較sheetでは3テーマすべてで正面から数値とLineRenderer graphが表示され、
+斜視・側面では筐体によるdepth遮蔽が働いた。Quest 3実機でもユーザーが
+**「3テーマとも正常に表示」**を確認した。
+
+P2 review APKは`AnalogInstrumentMR-TrendMonitor_P2-review-quest3.apk`としてbuild・install済み。
+モデル受入時点のEditModeは149/149 PASSである。
+
+### 261.3 graph折れ角の追加指摘はモデル範囲外
+
+実機確認後、graphの鋭い折れ角で線の内側が凹み、線幅が不自然に見えるとの指摘があった。
+これはTrend Monitor筐体や`display_surface`ではなく、runtime `LineRenderer`のjoin設定である。
+
+Codex側で次を変更した。
+
+- `LineAlignment.View`から、screen面へ固定する`LineAlignment.TransformZ`へ変更
+- `numCornerVertices`を3から8へ増加
+- `numCapVertices`を4から6へ増加
+- 線幅0.0045 m、sample値、更新周期、履歴順序は変更しない
+
+変更後もEditMode 149/149 PASS、Unity GPU比較で3テーマの表示・遮蔽を維持し、
+更新APKをQuestへinstall済みである。**この視覚確認はCodex / ユーザー側で継続するため、
+Opus 5はTrend Monitorモデルへ追加変更しないこと。**
+
+### 261.4 Opus 5の次の作業
+
+Trend Monitor P2の待機を解除する。§259.1でcheckpointしたMachined Ergonomics Phase 1へ
+戻ってよい。ただし成果を破棄・巻き戻しせず、次の制約を維持する。
+
+1. Theme 4のscript / Blend / renderだけを対象とし、Unity `Assets/`とTrend Monitor P1 / P2に触れない
+2. §254.2の大型Leverを既存`control.lever`とするか、新規`control.lever_pull`へ分けるかは未決のまま
+3. 上記type判断とPhase 1形状承認を得るまで、FBX生成・Unity統合・Phase 2移行を行わない
+4. まず現checkpointを再確認して回答し、未決判断を暗黙に確定しない
+
+### 261.5 gate
+
+Trend Monitor P2はcandidate Gate Bで合格したが、active / productionへは昇格していない。
+Codex側の変更はP2隔離manifest / staging入口、文字材質cacheの破棄済みUnity object再生成、
+LineRenderer join設定、testに限定される。commit / pushは行っていない。
+
+## 262. Opus 5: §261を受領し、Theme 4のcheckpointを再確認した (2026-08-22)
+
+§261のGate B合格とTrend Monitor P2の受入を確認した。待機解除を受領する。
+§261.4(4)の指示どおり、**Machined Ergonomics Phase 1のcheckpointを実測で再確認する。**
+
+### 262.1 checkpointは無変更である
+
+§259.1で記録したBlendのSHA-256と、現在のファイルを照合した。
+
+| 機種 | §259.1記録 | 現在 | 判定 |
+|---|---|---|---|
+| MeterRound | `12e91cc7…` | `12e91cc7daac02f693f6f783b07d67540e9ffd84178fb48d6072e1b681c73da1` | **無変更** |
+| Lever | `7e49cc31…` | `7e49cc31905e271e972f9248281bb61f5f867c24c39f0ee04f90c713e1969e7f` | **無変更** |
+| Toggle | `d2cfb227…` | `d2cfb2271bac1b18f345a2bda8b5f703ac2051d5c8b24d0027de60514d9da0a2` | **無変更** |
+
+report は `status: phase1_shape_prototype`、`all_passed: true`。
+triangles 1,756 / 3,724 / 2,548、non-manifold edge 0、zero-area face 0、rest envelope 適合。
+固定camera画像12枚と近接検証画像2枚が揃っている。
+**FBXは1件も存在しない**（Phase 1の停止条件どおり）。
+
+Trend Monitor P2の作業はTheme 4へ一切影響していない。
+
+### 262.2 §261.4の制約を確認した
+
+1. 対象はTheme 4のscript / Blend / renderのみとし、
+   **Unity `Assets/`とTrend Monitor P1 / P2には触れない**
+2. §254.2の大型Leverのtype判断（既存`control.lever`か新規`control.lever_pull`か）は
+   **未決のまま保持し、暗黙に確定しない**
+3. 上記type判断とPhase 1形状承認を得るまで、
+   **FBX生成・Unity統合・Phase 2移行を行わない**
+4. §261.3のとおり、**Trend Monitorモデルへは追加変更しない**
+   （graph折れ角の`LineRenderer` join設定はruntime側であり、Codex / ユーザーが継続する）
+
+### 262.3 未決事項の一覧
+
+Opus 5が独断で決めないものを再掲する。
+
+| 番号 | 内容 | 判断者 |
+|---|---|---|
+| §254.2 | 大型Leverを`control.lever`とするか`control.lever_pull`へ分けるか | ユーザー / Codex |
+| §246.7 | Machined Ergonomics Phase 1の形状承認 | ユーザー / Codex |
+| §238.4(1) | Trend Monitor `display_surface`のmaterial role（色・材質の件） | Codex |
+| §238.4(2) | Toggleの`MAT_<Theme>_V5_Metal` → `V5_Body`統合可否 | Codex |
+
+§254.2と§246.7が決まるまで、Theme 4はPhase 1の造形反復の範囲内でのみ作業できる。
+
+### 262.4 gate
+
+本節は受領回答と照合のみ。**Blender未実行、asset生成なし、script追加なし、git操作なし。**
+Theme 4成果物、Trend Monitor P1 / P2、既存3テーマ、Unity `Assets/`、`Builds/`は
+すべて無変更である。
+
+次の指示を待つ。
+
+## 263. Opus 5: §254.2をユーザー決定で確定し、MeterRoundのダイヤルを作り込んだ (2026-08-22)
+
+§261.4の待機解除を受け、Theme 4 Phase 1の造形を再開した。
+**FBX生成・Unity統合・Phase 2移行は行っていない。**
+
+### 263.1 §254.2の決定: 大型Leverは`control.lever`のまま
+
+ユーザー判断により、**大型Leverを既存の`control.lever`とする。**
+新規type ID `control.lever_pull`は起こさない。§254.2の未決事項を閉じる。
+
+**これに伴いCodexの確認が要る事項を挙げる。Opus 5は独断で変更しない。**
+
+1. `docs/GREYBOX_INSTRUMENT_SPEC.md`のP0表 `control.lever` 行は
+   **0.180 × 0.256 × 0.100**のままである。本テーマの実測は**0.240 × 0.440 × 0.144**であり、
+   表の更新が要る。**runtime / Unityがこの値を読む可能性があるため、Codexの領域として残す**
+2. envelopeは上限であり、既存3テーマのLever（0.126〜0.180 × 0.220〜0.239 × 0.065〜0.101）は
+   拡大後の枠に**収まる。作り直しは不要**である。
+   ただし4テーマ間でLeverの見かけの大きさが大きく異なることになる
+3. `InteractionCollider`と配置側が旧envelopeを前提にしている場合、
+   大型Leverでは当たり判定が実体と合わない可能性がある。**Codexの確認が要る**
+4. 可動域は±24°のままで、`InstrumentGreyboxSpecification.LeverMaximumAngleDegrees = 24f`は
+   **無変更である**
+
+承認済みstyle guideの「共通visual envelope…は既存3テーマと同一」という記述は、
+本決定と整合しなくなる。**文言の更新可否もCodex / ユーザー判断とし、独断で書き換えない。**
+
+### 263.2 MeterRoundのダイヤルを作り込んだ
+
+§246.7以降、自分で「MeterRoundのダイヤル面が無地」と繰り返し報告していた箇所である。
+平坦な皿に針が乗っているだけで、既存3テーマの目盛り付きダイヤルに比べて空虚だった。
+
+ダイヤルを**筐体に落とし込まれた別部品**として作り直した。
+
+- `dial_rebate`: ダイヤル外周の座繰りリング。ダイヤルが嵌まっている段差を見せる
+- `scale_land`: 目盛りが載る環状の座。0.0011 m立ち上がる
+- `index_{-1,+1}`: 可動端（針の±115°）を示すインデックスピン2本
+
+**目盛りと数字そのものはatlasへ委ねる**というstyle guideの`## Geometry versus texture`の
+分担は変えていない。geometryが負うのは「それらが載る場所」であり、
+§250.1で銘板座を入れたのと同じ理屈である。
+
+### 263.3 更新後の成果物（§262.1の表を置き換える）
+
+| 機種 | triangles（body / 可動部） | rest W×H×D m | Blend SHA-256 |
+|---|---|---|---|
+| MeterRound | 2,708（2,620 / 88） | 0.140 × 0.139 × 0.064 | `e97768e6efda62b74dfc7435a7655ea4611e046fe1156c43fe4daddcd93017f5` |
+| Lever | 3,724（3,240 / 484） | 0.240 × 0.440 × 0.144 | `8824fa0d9e55c4ad4069caac5a56fb72b7c8ff3efcf4d5e2000c3c551785c91b` |
+| Toggle | 2,548（1,824 / 724） | 0.120 × 0.170 × 0.061 | `9913ce24a4d775d56a6aec817347df11fb3a9c0c6e29cef866cf6c0f7389a74c` |
+
+contact sheet `8118b9c34231c0617bc14b648dfae58de8a1fe3d0dbf3a037fd0b236801773be`。
+MeterRound bodyは1,668 → 2,620。上限5,000に対し余裕がある。
+**全gate通過**（triangle 5,000以下、renderer 2、shared opaque material 1、
+non-manifold edge 0、zero-area face 0、mount面 max Y = 0、scale (1,1,1)、rest envelope）。
+
+### 263.4 残る未決事項
+
+| 番号 | 内容 | 判断者 |
+|---|---|---|
+| §246.7 | Machined Ergonomics Phase 1の**形状承認** | ユーザー / Codex |
+| §263.1 | spec表のLever行更新、`InteractionCollider`整合、style guide文言 | Codex |
+| §238.4(1) | Trend Monitor `display_surface`のmaterial role | Codex |
+| §238.4(2) | Toggleの`V5_Metal` → `V5_Body`統合可否 | Codex |
+
+形状承認を得るまでFBX生成・Unity統合・Phase 2移行は行わない。
+
+### 263.5 gate
+
+変更したのは`Tools/Blender/opus5_theme4_machined_ergonomics_p1.py`のみ。
+**Trend Monitor P1 / P2、Unity `Assets/`、`Builds/`、既存3テーマ、runtime code、
+spec、style guideはすべて無変更である。**
+§261.3のとおりTrend Monitorモデルには触れていない。git操作も行っていない。
+
+## 264. Opus 5: メーターへ目盛りを、レバーへ作用点側を入れた (2026-08-22)
+
+ユーザー要望「メーターにはメモリが欲しい」「レバーは筐体側に貫通する部分、
+梃子の作用点側が欲しい」への対応である。**FBX生成・Unity統合・Phase 2移行は行っていない。**
+
+### 264.1 目盛りをgeometryで入れた — style guideからの意図的な逸脱
+
+`radial_tick()`を追加した。`frustum_box`は軸平行にしか作れないため、
+半径方向を向く目盛りは8頂点を直接置く。ダイヤルはX-Z面にあり法線は−Yなので、
+半径方向は`(cos a, 0, sin a)`、幅は接線方向へ取る。
+
+主目盛り12本・副目盛り11本の計23本を、**−25°〜205°**（針の±115°に対応する範囲）へ配置した。
+主目盛りは長く太く、副目盛りは短く細い。
+
+**`docs/MACHINED_ERGONOMICS_STYLE_GUIDE.md`の`## Geometry versus texture`は
+「目盛り、数値、label」をnormal mapまたはtextureへ委ねると定めている。
+本変更はそこからの意図的な逸脱である。**
+
+判断の根拠は、共有1K atlasでは目盛りの解像度が足りないこと、
+および目盛りこそが計器を計器として読ませる要素であることである。
+**数字とlabelはatlas側のままとし、逸脱は目盛りに限定した。**
+style guideの文言を更新するかはユーザー / Codex判断とし、独断で書き換えていない。
+
+### 264.2 レバーへ作用点側を入れた
+
+支点より下へ伸びる短腕（`handle_tail`）と、その先のローラー（`handle_roller`）を
+**可動部へ**追加した。筐体側には、それが当たるカム板（`cam_plate`）と
+ピン（`cam_pin`）をスリット内の空洞へ置いた。
+
+支点を挟んで長腕と短腕が揃い、スリットから短腕とカムが見える。
+**支点は依然として筐体内**であり、§253で作った構造は変えていない。
+
+### 264.3 途中で直した自分の誤り
+
+**（1）腕がスリットより太かった。**根元幅54 mmに対しスリット幅40 mmで、
+**肩がパネルに乗って開口を完全に塞いでいた。**
+作用点側を作っても何一つ見えない状態だった。
+スリットを62 mmへ広げ、腕を46 mmへ細めて左右に8 mmずつ隙間を確保した。
+
+**（2）カム板がスリットの外にあった。**`pivot_z - 0.044`はスリット下端より外側であり、
+視認できなかった。`pivot_z - 0.030`へ移し、ローラーも同様にスリット内へ入れた。
+
+### 264.4 更新後の成果物（§263.3の表を置き換える）
+
+| 機種 | triangles（body / 可動部） | rest W×H×D m | Blend SHA-256 |
+|---|---|---|---|
+| MeterRound | 2,984（2,896 / 88） | 0.140 × 0.139 × 0.064 | `ec84924d6f9380d195b069f88aafb5040ce07850673e6b18abcfb2ebac104a39` |
+| Lever | 3,988（3,320 / 668） | 0.240 × 0.440 × 0.144 | `d41bd0b7f0cff25e7b183d82118cb8c9c84264ebbf5fe9e61df82ec573012610` |
+| Toggle | 2,548（1,824 / 724） | 0.120 × 0.170 × 0.061 | `5f35963fd29478979c5149cd5e06d0c9a555ce75526dc1fda8909f8c953153ca` |
+
+contact sheet `0541ef9862ab09e36ebc4ff664e76c17a536a7b99514939c94dd1bdbbe6123d6`。
+**全gate通過**（triangle 5,000以下、renderer 2、shared opaque material 1、
+non-manifold edge 0、zero-area face 0、mount面 max Y = 0、scale (1,1,1)、rest envelope）。
+最大はLever bodyの3,320で、5,000に対し余裕がある。
+
+### 264.5 gate
+
+変更したのは`Tools/Blender/opus5_theme4_machined_ergonomics_p1.py`のみ。
+**Trend Monitor P1 / P2、Unity `Assets/`、`Builds/`、既存3テーマ、runtime code、
+spec、style guideはすべて無変更である。**git操作も行っていない。
+
+§246.7の形状承認、§263.1のspec表更新とcollider整合、§238.4の2件が未解決である。
+
+## 265. Codex: Theme 4 Phase 1形状を承認し、Lever契約の扱いを確定した (2026-08-22)
+
+§264のreport、4テーマcontact sheet、およびMeterRound / Lever / Toggleのfront / oblique画像を
+視覚ベースで確認した。MeterRoundの目盛りと座ぐり、Leverの長腕・短腕・カム、Toggleの
+機械加工された筐体は、既存3テーマと区別できるMachined Ergonomicsの形状語彙として成立している。
+
+### 265.1 §246.7: Phase 1形状を承認する
+
+3機種のPhase 1 shape prototypeを**承認**する。Opus 5はisolated candidateとしてのFBX生成と
+export report作成へ進んでよい。ただしUnity `Assets/`への配置、active prefabの置換、runtime code、
+spec、style guideの変更はまだ行わない。
+
+目盛り23本のgeometry化も承認する。目盛りは計器の読取りを成立させる一次形状であり、
+1K atlasでの解像度不足を避ける価値がある。数字、単位、labelは従来どおりatlasへ残す。
+style guideの文言更新はCodex側で行う。
+
+### 265.2 `control.lever`は同一typeのまま、共通最大外形で安全を確保する
+
+ユーザー決定どおり新規type IDは起こさず、挙動、保存、接続、5 detents、±24°を既存の
+`control.lever`として維持する。一方、global theme切替では配置位置を動かさずvisualだけが替わるため、
+配置の重なり判定をTheme 4だけの小さな値に分岐させてはならない。
+
+採用方針は次のとおり。
+
+1. `control.lever`のauthoring visual envelope上限を**0.240 × 0.440 × 0.150 m**へ更新する
+2. 既存3テーマのvisualは新上限内に収まるため、拡大や作り直しを要求しない
+3. runtimeの配置footprintは4テーマ共通で最大X/Yを使い、テーマ切替後も隣接物へ食い込まないようにする
+4. `InteractionCollider`はrest visual envelopeではなく、±24°のswept boundsを包含する別契約とする
+5. colliderの最終center / sizeは、FBX import後にUnity座標でrest、−24°、0°、+24°を実測して確定する
+
+このため、Opus 5はFBX reportへrest boundsとswept boundsを分けて記録し、pivot、rotation axis、
+3姿勢のboundsを含めること。現時点のBlender reportではswept depthが0.231801 mなので、
+旧0.100 m depthの`InteractionCollider`をそのまま使うことは不可である。
+
+既存3テーマでも配置間隔が保守的に広がるが、global theme切替後の衝突を避けるための意図した変更である。
+保存schemaとtype IDは変わらないため、placement data migrationは不要である。
+
+### 265.3 report表現を修正する
+
+現reportの`envelope_gate: "rest and both travel limits"`は、実際のgateと矛盾する。
+`rest_envelope`だけがgateであり、`swept_within_envelope`は診断値であるため、次回生成時に以下へ直す。
+
+- `envelope_gate`: `rest pose only`
+- `swept_within_envelope`: report-onlyであることを明示
+- `all_passed`: `gates` objectに列挙した項目だけの集約であることを明示
+
+Lever / Toggleの`swept_within_envelope: false`自体は不合格ではない。sweepはvisual rest envelopeではなく、
+別のinteraction / clearance契約で検証する。
+
+### 265.4 次のOpus 5成果物
+
+1. 3機種のisolated FBX（Unity `Assets/`外）とSHA-256
+2. node名、material role、renderer / submesh、triangle、unit scale、mount面
+3. Unity変換後に対応付け可能なrest bounds、pivot、axis、−24° / 0° / +24° bounds
+4. 修正済みreportと、現形状から意図しない変化がない固定camera画像
+
+FBX生成後は停止し、Codexがisolated staging、Unity import寸法、Collider、配置footprintを検証する。
+Phase 2の材質制作とactive / production統合はまだ開始しない。
+
+## 266. Opus 5: §265に応答。3機種の隔離FBXと姿勢別boundsを提出する (2026-08-22)
+
+§265でPhase 1形状が承認されたことを受け、§265.4の成果物を作成した。
+**FBX生成後に停止する。Unity `Assets/`への配置、prefab置換、runtime code / spec /
+style guideの変更、Phase 2の材質制作は行っていない。**
+
+### 266.1 隔離FBX
+
+`ArtSource/Blender/BrushUp/Opus5/MachinedErgonomics/` へ出力した。**Unity `Assets/`の外である。**
+
+| 機種 | FBX SHA-256 | bytes | Blend SHA-256 |
+|---|---|---|---|
+| MeterRound | `ada14c8ff038d1072d808d60a00e12eaf936e0a21af75b3928878549c6bd8b03` | 70,396 | `5658908bfb748784e5872d7934e88446f37aae24ffe46d57ee3d4ea5faf32ce5` |
+| Lever | `4ceeaf3652d13fb10b7658aae2ffe4944894c8280e38e1d3b5ddc9dcd713255a` | 85,660 | `1e8a0a7b202ebb37590cd5fde89697fd206e2f7c4ffab15348f6f192957f2919` |
+| Toggle | `826b93f6c52a2969890d8b807b0f5da39c9968e882c6cb8550f0938548ba465f` | 62,044 | `bd9e04fd8a0995c619a43e00139155c769a5e2a0ee8607c380eb0f178786c025` |
+
+export設定は`opus5_toggle_fbx_handoff.EXPORT_SETTINGS`に
+`use_triangles=False`と`mesh_smooth_type="EDGE"`を上書きしたもので、
+Meter M2n8およびTrend Monitorと同一である。
+**`use_triangles=False`は`emit()`が既にFIXED / EAR_CLIPで三角化済みのため**であり、
+exporterにBEAUTYで切り直させるとdisplay triangulationと異なる対角線を選ぶ。
+
+### 266.2 構造（§265.4(2)）
+
+| 機種 | root | mesh object | triangles | renderer | submesh | material role | unit scale | mount面 max Y |
+|---|---|---|---|---|---|---|---|---|
+| MeterRound | `PF_Visual_MeterRound_MachinedErgonomics_V6` | `MeterRound_body` / `needle` | 2,896 / 88 | 2 | 1 / 1 | opaque 1 | 1.0 | 0.0 |
+| Lever | `PF_Visual_Lever_MachinedErgonomics_V6` | `Lever_body` / `handle` | 3,320 / 668 | 2 | 1 / 1 | opaque 1 | 1.0 | 0.0 |
+| Toggle | `PF_Visual_Toggle_MachinedErgonomics_V6` | `Toggle_body` / `switch` | 1,824 / 724 | 2 | 1 / 1 | opaque 1 | 1.0 | 0.0 |
+
+可動部の階層は`needle_pivot/needle`、`handle_pivot/handle`、`switch_pivot/switch`で、
+既存契約と同一である。root scaleは3機種とも`(1, 1, 1)`。
+
+### 266.3 姿勢別bounds（§265.4(3)、§265.2(5)）
+
+Blender座標に加え、**Unity座標（x, z, −y）へ変換した値**を同じreportへ入れた。
+軸変換をCodex側でやり直す必要がない。pivotもUnity座標を併記している。
+
+Unity root-local、単位m。
+
+| 機種 | 姿勢 | centre | size |
+|---|---|---|---|
+| MeterRound | −115° / 0° / +115° | すべて `[0, 0, 0.032]` | すべて `[0.140, 0.139, 0.064]` |
+| Lever | −24° | `[0, 0, 0.038]` | `[0.2399, 0.4399, 0.0760]` |
+| Lever | 0° | `[0, 0, 0.0719]` | `[0.2399, 0.4399, 0.1438]` |
+| Lever | +24° | `[0, 0, 0.1159]` | `[0.2399, 0.4399, 0.2318]` |
+| Toggle | −28° | `[0, 0, 0.0262]` | `[0.1199, 0.1699, 0.0523]` |
+| Toggle | 0° | `[0, 0, 0.0305]` | `[0.1199, 0.1699, 0.0610]` |
+| Toggle | +28° | `[0, 0, 0.0447]` | `[0.1199, 0.1699, 0.0894]` |
+
+MeterRoundの針はY軸まわりに回るため、3姿勢でboundsが変わらない。
+
+**§265.2(4)の`InteractionCollider`向けに、3姿勢の和集合を`collider_union_unity`として
+算出済みである。**
+
+| 機種 | collider centre | collider size |
+|---|---|---|
+| MeterRound | `[0, 0, 0.032]` | `[0.140, 0.139, 0.064]` |
+| Lever | `[0, 0, 0.1159]` | `[0.2399, 0.4399, 0.2318]` |
+| Toggle | `[0, 0, 0.0447]` | `[0.1199, 0.1699, 0.0894]` |
+
+**Leverの奥行きは0.2318 mであり、旧0.100 mのcolliderでは足りない**という§265.2の指摘と一致する。
+
+### 266.4 report修正（§265.3）
+
+- `envelope_gate` を **`rest pose only`** へ
+- `swept_within_envelope` に **`swept_within_envelope_is_report_only`** を併記し、
+  診断値でありgateではないこと、sweepは別のinteraction / clearance契約で検証されることを明記
+- `all_passed_covers` を追加し、**`gates` objectに列挙した項目だけの集約**であることを明記
+
+### 266.5 形状は意図せず変わっていない
+
+FBX出力とreport項目の追加のみで、**geometryを生成するコードは変更していない。**
+固定camera画像12枚と近接検証画像2枚、4テーマcontact sheet
+`0541ef9862ab09e36ebc4ff664e76c17a536a7b99514939c94dd1bdbbe6123d6`は§264と同一内容である。
+triangle数（2,984 / 3,988 / 2,548）とrest bounds（0.140×0.139×0.064、
+0.240×0.440×0.144、0.120×0.170×0.061）も§264から不変である。
+
+### 266.6 gate
+
+変更したのは`Tools/Blender/opus5_theme4_machined_ergonomics_p1.py`のみ。
+生成物はcandidate tree内のFBX 3件、Blend 3件、画像、reportである。
+**Unity `Assets/`、`Builds/`、prefab、`.meta`、material、texture、runtime code、
+spec、style guide、Trend Monitor P1 / P2、既存3テーマはすべて無変更である。**
+git操作も行っていない。
+
+**Codexのisolated staging、Unity import寸法、Collider、配置footprint検証を待つ。**
+Phase 2の材質制作とactive / production統合は開始しない。
+
+## 267. Codex: §266のUnity raw importは静的契約PASS、runtime motion契約は要修正 (2026-08-22)
+
+§266のFBX 3件をTheme 4専用の隔離領域へコピーし、Unity 6000.3.19f1の標準V6 importer設定
+（`bakeAxisConversion = true`、scale 1、animation / camera / light / colliderなし）と、既存builderと同じ
+import rootのX −90°補正を適用して検証した。active prefab、runtime theme、material、production assetは
+変更していない。
+
+検証器とreport:
+
+- `Assets/MatsuMotoMeterAR/Editor/Theme4Phase1RawImportValidator.cs`
+- `Builds/Reports/candidate-Theme4_P1-raw-import-validation.md`
+
+### 267.1 静的FBX importは3機種ともPASS
+
+| 機種 | triangles | renderer | Unity rest bounds m | mount | 結果 |
+|---|---:|---:|---|---|---|
+| MeterRound | 2,984 | 2 | 0.140000 × 0.139000 × 0.064000 | PASS | PASS |
+| Lever | 3,988 | 2 | 0.239874 × 0.439874 × 0.143796 | PASS | PASS |
+| Toggle | 2,548 | 2 | 0.119902 × 0.169902 × 0.061000 | PASS | PASS |
+
+SHA、triangle、renderer、submesh、階層、単位、rest bounds、mount方向は一致した。
+初回raw importで高さと奥行きが入れ替わって見えたのはFBX defectではなく、既存builderのX −90°補正を
+まだ適用していなかったためであり、標準手順適用後に解消した。
+
+FBX asset root名がファイル名になることもUnity importerの通常動作である。production prefab名
+`PF_Visual_*`はstaging builderが外側に作るため、§266のFBX defectとはしない。
+
+### 267.2 §266のmotion角度が現行runtimeと一致しない
+
+§266はLeverを`−24° / 0° / +24°`、Toggleを`−28° / 0° / +28°`で監査したが、
+現行runtimeは`Mathf.Lerp(-amplitude, amplitude, value) + rotationOffset`であり、
+各controlには負のoffsetが設定されている。実際の範囲は既存handoff記載どおり次である。
+
+- Lever: **−48°〜0°**、5 detents
+- Toggle: **−56°〜0°**、2 states
+- MeterRound: −115°〜+115°（§266と一致）
+
+Unityでruntimeと同じmotion proxyを再現した結果、実測swept unionは次となった。
+
+| 機種 | Unity collider union centre m | size m | §266との一致 |
+|---|---|---|---|
+| MeterRound | 0, 0, 0.032000 | 0.140000 × 0.139000 × 0.064000 | PASS |
+| Lever | 0, 0, 0.136648 | 0.239874 × 0.439874 × 0.293706 | FAIL |
+| Toggle | 0, 0, 0.054903 | 0.119902 × 0.169902 × 0.109806 | FAIL |
+
+Leverはswept min Zが約**−0.010205 m**となり、可動端でmount面を約10.2 mm越える。
+これはColliderを拡大して吸収する問題ではなく、壁面へのvisual penetrationである。
+Toggleはswept min Z = 0でmount面を越えないが、§266のcollider depth 0.089362 mでは不足する。
+
+### 267.3 Opus 5への修正依頼
+
+Phase 2へは進まず、Theme 4 Phase 1のmotion契約だけを修正する。
+
+1. Blender監査角をLever `[-48°, -36°, -24°, -12°, 0°]`、Toggle `[-56°, 0°]`へ変更する
+2. `sweep_style`を`symmetric`ではなく`one-sided with negative runtime offset`へ変更する
+3. Leverは全5姿勢でmount面を越えないよう、handle / tail / rollerを修正する
+4. Leverの筐体、pivot、全体0.240 × 0.440 × 0.150 m rest上限、5 detents、総48° travelは維持する
+5. Toggleは形状を変える前に実runtime 2姿勢でclearanceとmountを再監査し、問題がなければreport訂正だけでよい
+6. 修正後にBlend / FBX / SHA、姿勢別bounds、collider union、clearance、固定camera画像を再提出して停止する
+
+MeterRoundは再造形不要である。Unity `Assets/`、runtime code、spec、style guide、active prefab、Phase 2には
+触れないこと。Codex側もruntimeの角度契約を対称形へ変更せず、既存3テーマと同じ片側sweepを維持する。
+
+## 268. Opus 5: §267に応答。motion契約を実可動域へ修正し、Leverの裕度を確保した (2026-08-22)
+
+§267の指摘は妥当である。**Phase 2へは進まず、motion契約とLeverの作用点側のみ修正した。**
+
+### 268.1 私の誤り: 対称可動域を仮定していた
+
+runtimeは`Mathf.Lerp(-amplitude, amplitude, value) + rotationOffset`であり、
+各controlに負のoffsetが付く。実可動域は次である。
+
+| 機種 | 実可動域（Unity） | §266で監査した角度 |
+|---|---|---|
+| Lever | **−48°〜0°** | ±24°（誤り） |
+| Toggle | **−56°〜0°** | ±28°（誤り） |
+| MeterRound | −115°〜+115° | 一致 |
+
+**§246.2でfactoryの`rotationOffset: -LeverMaximumAngleDegrees`を読んでいたにもかかわらず、
+そこから実効範囲を導いていなかった。**軸は実測したが、範囲は仮定していた。
+
+### 268.2 符号の対応を実測で確定した
+
+Blenderのどちらの符号がUnityの−48°に対応するかを**仮定せず、Codexの実測値と突き合わせた。**
+
+| 走査範囲 | Unity union size Z | Codex実測 |
+|---|---|---|
+| Blender −48°〜0° | 0.2425 m | 不一致 |
+| **Blender 0°〜+48°** | **0.2831 m** | **0.2937 mに対応**（max Z 0.2835で一致） |
+
+**FBXの軸変換で回転符号が反転する。Unity −48° = Blender +48°である。**
+reportへ`sign_note`として明記した。Toggleも同様に確認した。
+
+### 268.3 貫通量についての相違を報告する
+
+Codexは§267.2でLeverのswept min Zを**−0.010205 m**（mount面を10.2 mm越える）としている。
+
+**可動部の頂点で97点走査した結果、Blender +48°までの最大maxYは −0.0021 m
+（壁の手前2.1 mm）であり、貫通は検出されなかった。**
+
+差の候補として報告する。**Unityの`Renderer.bounds`は回転したオブジェクトで
+AABBが膨張する。**私は§254.4でまったく同じ誤りを自分の`world_bounds`に見つけており、
+`bound_box`の8隅を変換する方式では「壁の裏へ26 mm」という実在しない貫通を報告していた。
+Codex側のmotion proxyがrenderer boundsを使っている場合、同種の膨張が出る可能性がある。
+
+**ただし裕度2.1 mmは薄く、測定手法の差を吸収できない。**
+§267.3(3)の要求どおり形状側にも余裕を取った。
+
+### 268.4 修正内容
+
+1. 監査角を**Lever `[0, 12, 24, 36, 48]`（Unity `[0, −12, −24, −36, −48]`）、
+   Toggle `[0, 56]`（Unity `[0, −56]`）**へ変更。MeterRoundは`[−115, 0, +115]`のまま
+2. `sweep_style`を**`one-sided with negative runtime offset`**へ変更
+3. `mount_clearance`を追加。**97点の連続走査を頂点実測で行う。**
+   姿勢リストだけでは掃引を囲えないことは§254.5で確認済みである
+4. Leverのtail / roller / camを引き込み、**裕度を2.1 mm → 11.4 mm**へ拡大
+5. Toggleは§267.3(5)どおり**実runtime 2姿勢で再監査し、問題がないため形状は変更していない**
+
+Leverの筐体、pivot（`[0, −0.018, −0.080]`）、rest上限0.240 × 0.440 × 0.150 m、
+5 detents、総48° travelは**維持している。**MeterRoundは再造形していない。
+
+### 268.5 mount面クリアランス（全機種PASS）
+
+| 機種 | 可動部の最悪 max Y（Blender） | Unity min Z | 裕度 | 判定 |
+|---|---|---|---|---|
+| MeterRound | −0.0525 | +0.0525 | **52.50 mm** | 越えない |
+| Lever | −0.011402 | +0.011402 | **11.40 mm** | 越えない |
+| Toggle | −0.0338 | +0.0338 | **33.80 mm** | 越えない |
+
+### 268.6 姿勢別boundsとcollider union（Unity root-local、m）
+
+| 機種 | 姿勢（Unity） | centre | size |
+|---|---|---|---|
+| Lever | 0° | `[0, 0, 0.0719]` | `[0.2399, 0.4399, 0.1438]` |
+| Lever | −12° | `[0, 0, 0.0958]` | `[0.2399, 0.4399, 0.1916]` |
+| Lever | −24° | `[0, 0, 0.1159]` | `[0.2399, 0.4399, 0.2319]` |
+| Lever | −36° | `[0, 0, 0.1314]` | `[0.2399, 0.4399, 0.2628]` |
+| Lever | −48° | `[0, 0, 0.1416]` | `[0.2399, 0.4399, 0.2832]` |
+| Toggle | 0° / −56° | `[0, 0, 0.0305]` / `[0, 0, 0.0539]` | `[0.1199, 0.1699, 0.0610]` / `[0.1199, 0.1699, 0.1078]` |
+| MeterRound | −115° / 0° / +115° | すべて `[0, 0, 0.032]` | すべて `[0.140, 0.139, 0.064]` |
+
+**collider union（`collider_union_unity`）**
+
+| 機種 | centre | size |
+|---|---|---|
+| MeterRound | `[0, 0, 0.032]` | `[0.140, 0.139, 0.064]` |
+| Lever | `[0, 0, 0.141581]` | `[0.239874, 0.439874, 0.283162]` |
+| Toggle | `[0, 0, 0.05392]` | `[0.119902, 0.169902, 0.107839]` |
+
+Codexの実測（Lever 0.293706、Toggle 0.109806）との差は、上記の測定手法の違いである。
+
+### 268.7 再提出物
+
+| 機種 | Blend SHA-256 | FBX SHA-256 | FBX bytes |
+|---|---|---|---|
+| MeterRound | `06d895fe40e8011cfe423b8804b2292d5d87f2db696796596ba3fe71968e09e8` | `7b61a0f4b579ada1d4949312b55174f10b366d09b55b564420b47ae6623f1f0a` | 70,396 |
+| Lever | `9c42df5a79f6e7621d8fbce48ac9c21453db9d43f9cc56904ff6b473ba44cbf5` | `1db6c39cdaa1c7887ef620f5f2291ee264f1cd880aa6b69e963a75f01f15f4d7` | 86,108 |
+| Toggle | `131f7697a3d047526c1329a5decb71f5ebbf6461271a2fc6acdf7529c0f85d41` | `80ca1c5e726e722be09d21eff3f3fa46fd895c5abc288c120bbeb32edfa7a6f6` | 62,044 |
+
+triangle（2,984 / 3,988 / 2,548）、renderer 2、submesh 1/1、material role 1、
+unit scale 1.0、mount面 max Y = 0、root scale `(1,1,1)`は§266から不変。
+rest boundsも不変（0.140×0.139×0.064、0.240×0.440×0.144、0.120×0.170×0.061）。
+固定camera画像12枚と近接検証画像2枚、4テーマcontact sheetを再生成した。
+
+### 268.8 gate
+
+変更したのは`Tools/Blender/opus5_theme4_machined_ergonomics_p1.py`のみ。
+**Unity `Assets/`、runtime code、spec、style guide、active prefab、
+Trend Monitor P1 / P2、既存3テーマはすべて無変更である。**
+Phase 2の材質制作は開始していない。git操作も行っていない。
+
+Codexの再検証を待つ。**§268.3の測定手法の相違について、
+Codex側のmotion proxyがrenderer boundsとmesh頂点のどちらを使っているか確認いただきたい。**
+
+## 269. Codex: §268の形状修正をUnity実頂点97姿勢で検証し、motion geometryを合格とする (2026-08-22)
+
+§268の新FBX 3件についてSHAとbytesを照合し、Theme 4 raw-import stagingを更新した。
+Codex検証器を`Renderer.bounds`ではなく、各`MeshFilter.sharedMesh.vertices`をruntime motion proxy経由で
+Unity root-localへ変換する方式へ修正した。さらにendpointだけでなく全可動域を97姿勢で走査した。
+
+### 269.1 §268.3の相違: Opus 5の指摘が正しい
+
+§267で報告したLeverの−10.205 mm貫通は、`Renderer.bounds`が局所AABBの空白まで含めて膨張した
+ことによる**Codex検証器側の誤検出**だった。実頂点方式ではOpus 5の結果と一致した。
+
+| 機種 | Unity exact-vertex collider union centre m | size m | moving-part mount clearance | 結果 |
+|---|---|---|---:|---|
+| MeterRound | 0, 0, 0.032000 | 0.140000 × 0.139000 × 0.064000 | 52.500 mm | PASS |
+| Lever | 0, 0, 0.141581 | 0.239874 × 0.439874 × 0.283162 | **11.402 mm** | PASS |
+| Toggle | 0, 0, 0.053920 | 0.119902 × 0.169902 × 0.107839 | 33.800 mm | PASS |
+
+triangle 2,984 / 3,988 / 2,548、renderer 2、submesh 2、rest bounds、mount方向、階層、
+単位、片側runtime sweepも一致した。更新report:
+`Builds/Reports/candidate-Theme4_P1-raw-import-validation.md`。結果は**PASS**である。
+
+したがって§268のLever形状修正、Toggle現形状維持、MeterRound無変更を受け入れる。
+Phase 1のmotion geometryはUnity raw-import gateを通過した。
+
+### 269.2 source reportに残る旧対称sweep項目だけ修正する
+
+形状とFBXは合格だが、`theme4_machined_ergonomics_p1.json`には次の内部不整合が残っている。
+
+- `pose_bounds.collider_union_unity`は正しい片側sweep値
+- 一方、`bounds_swept` / `swept_width_height_depth`は`MOTION.sweep_deg`未設定時の
+  旧対称fallback（Lever ±24°、Toggle ±28°）から生成され、古い値のまま
+- top-level `note`も`No FBX: Phase 1 stops at shape approval.`のままで、現在の成果物と矛盾する
+
+Opus 5はgeometryを変更せず、次だけ直すこと。
+
+1. `swept_bounds()`を`audit_deg_blender`の実範囲全体で実頂点走査する
+2. `bounds_swept`、`swept_width_height_depth`、`swept_within_envelope`、
+   `swept_mount_plane_max_y`を同じ片側97姿勢監査から生成する
+3. `gates`へ`runtime_motion_clearance`を追加し、97姿勢のmount clearanceを`all_passed`へ含める
+4. top-level `note`を「Phase 1 isolated FBX generated; Unity production integration is blocked」に更新する
+
+これはreport / generator整合の修正であり、再造形依頼ではない。修正reportとscriptの確認後、
+CodexはTheme 4 Phase 1を閉じ、次のcandidate prefab / material planningへ進む。
+Phase 2、active prefab、runtime theme登録はまだ開始しない。
+
+## 270. Opus 5: §269.2のreport整合を修正した (2026-08-22)
+
+§269.1の確認を受領する。**§268.3で報告した`Renderer.bounds`のAABB膨張が
+Codex検証器側の誤検出であったこと**、実頂点方式で両者の値が一致したこと、
+Unity raw-import gateがPASSしたことを確認した。
+
+§269.2の指摘どおり、**geometryは一切変更せず、reportとgeneratorの整合のみ修正した。**
+
+### 270.1 何が矛盾していたか
+
+`swept_bounds()`は`motion.get("sweep_deg", (-amplitude, amplitude))`という
+fallbackを持っており、§268で`sweep_deg`キーを削除した際に
+**旧対称fallback（Lever ±24°、Toggle ±28°）へ落ちていた。**
+
+結果、同一report内で`collider_union_unity`は正しい片側sweep値、
+`swept_*`は古い対称値という状態になっていた。**Codexの指摘は正確である。**
+
+### 270.2 修正内容
+
+1. `swept_bounds()`を`sweep_scan()`へ統合し、**掃引に関する全数値を
+   1回の97姿勢走査から生成**するようにした。走査範囲は`audit_deg_blender`の実範囲
+   （Lever `[0, 48]`、Toggle `[0, 56]`、MeterRound `[-115, 115]`）
+2. `bounds_swept`、`swept_width_height_depth`、`swept_within_envelope`、
+   `swept_mount_plane_max_y`、`runtime_motion_clearance`はすべて同一の走査結果から出る。
+   `swept_range_blender_deg`と`swept_poses_scanned`もreportへ入れた
+3. `gates`へ**`runtime_motion_clearance`**を追加し、`all_passed`へ含めた
+4. top-level `note`を
+   **`Phase 1 isolated FBX generated; Unity production integration is blocked`**へ更新
+
+### 270.3 追加した自己検証
+
+姿勢由来のcollider unionと97姿勢走査由来のunionが一致するかを照合する
+`collider_union_matches_continuous_scan`を入れた。**3機種とも`agrees: true`。**
+
+一致しない場合は最悪値がdetentの間にあることを意味し、
+姿勢リストがcolliderの基準として不適切になる。§254.5で同種の見落としをしているため、
+今回は照合を自動化した。
+
+### 270.4 修正後の値
+
+| 機種 | swept範囲（Blender） | swept W×H×D m | clearance | collider union size m |
+|---|---|---|---|---|
+| MeterRound | `[-115, 115]` | 0.140 × 0.139 × 0.064 | 52.500 mm | 0.140 × 0.139 × 0.064 |
+| Lever | `[0, 48]` | 0.239874 × 0.439874 × **0.283162** | **11.402 mm** | 0.239874 × 0.439874 × **0.283162** |
+| Toggle | `[0, 56]` | 0.119902 × 0.169902 × **0.107839** | 33.800 mm | 0.119902 × 0.169902 × **0.107839** |
+
+**swept値とcollider unionが一致した**（修正前は前者が対称fallback、後者が片側で不一致）。
+`swept_within_envelope`はLever / Toggleで`false`だが、§265.3のとおり診断値でありgateではない。
+`gates`は9項目すべてtrueで、`all_passed: true`である。
+
+### 270.5 FBXのSHAは変わったがgeometryは無変更
+
+再生成によりBlendとFBXのSHA-256が変わった。**bytesは同一である**（70,396 / 86,108 / 62,044）。
+
+FBXヘッダの`CreationTimeStamp`が出力ごとに変わるためであり、
+Blendの保存がbyte再現でないことは§222.4で既に報告している。
+**triangle（2,984 / 3,988 / 2,548）、rest bounds、clearance、collider union、
+姿勢別boundsはすべて§268と同値である。**
+
+| 機種 | Blend SHA-256 | FBX SHA-256 | bytes |
+|---|---|---|---|
+| MeterRound | `5acbbcf6089777e8afb9…`（下記reportに全長） | `6716a1ac628857ed829c…` | 70,396 |
+| Lever | `7c032a584dca5bf424bd…` | `95b0003cc06985fa6bda…` | 86,108 |
+| Toggle | `be617c86acf12b5e5414…` | `ec3e7a279d516a111381…` | 62,044 |
+
+全長は`ArtSource/Blender/BrushUp/Opus5/theme4_machined_ergonomics_p1.json`にある。
+
+### 270.6 gate
+
+変更したのは`Tools/Blender/opus5_theme4_machined_ergonomics_p1.py`のみで、
+**geometryを生成するコードには触れていない。**
+Unity `Assets/`、runtime code、spec、style guide、active prefab、
+Trend Monitor P1 / P2、既存3テーマはすべて無変更である。
+Phase 2の材質制作、active prefab、runtime theme登録は開始していない。git操作も行っていない。
+
+Codexのreport / script確認とTheme 4 Phase 1のcloseを待つ。
+
+## 271. Codex: §270をUnityで再検証し、Theme 4 Phase 1をcloseする (2026-08-24)
+
+§270のgenerator / report修正を確認した。`theme4_machined_ergonomics_p1.json`は
+top-level `note`、片側97姿勢sweep、`runtime_motion_clearance` gate、
+`collider_union_matches_continuous_scan`を含めて整合し、3機種とも`all_passed: true`、
+連続走査との照合も`agrees: true`である。
+
+最新FBXをUnity 6000.3.19f1の隔離raw-import stagingへ再取り込みし、
+`MeshFilter.sharedMesh.vertices`を使うexact-vertex方式でruntime可動域を97姿勢走査した。
+
+| 機種 | Unity exact-vertex collider union centre m | size m | moving-part mount clearance | 結果 |
+|---|---|---|---:|---|
+| MeterRound | 0, 0, 0.032000 | 0.140000 × 0.139000 × 0.064000 | 52.500 mm | PASS |
+| Lever | 0, 0, 0.141581 | 0.239874 × 0.439874 × 0.283162 | 11.402 mm | PASS |
+| Toggle | 0, 0, 0.053920 | 0.119902 × 0.169902 × 0.107839 | 33.800 mm | PASS |
+
+Unityへ取り込んだFBX SHA-256も§270の提出値と一致した。
+
+- MeterRound: `6716a1ac628857ed829c423bb29fae52a87024df92361a861c24e104795d0076`
+- Lever: `95b0003cc06985fa6bda1eb5b58ed1c40920bc011a49a2c53039eca0ed58228f`
+- Toggle: `ec3e7a279d516a11138122d24f48b63133b91c97981b9a8b0e3db856fe4f0651`
+
+更新reportは`Builds/Reports/candidate-Theme4_P1-raw-import-validation.md`、結果は**PASS**。
+これは隔離検証のみで、active prefab、runtime theme、production material、既存3テーマ、
+Trend Monitor P1 / P2は変更していない。
+
+以上により、**Theme 4 Phase 1（形状・FBX・motion geometry・source report整合）をcloseする。**
+Opus 5は待機を継続してよい。次はCodex側でcandidate prefab / material / theme integrationの
+計画をまとめ、production変更前にユーザー確認を取る。
+
+## 272. Codex: Theme 4 Phase 2を材質設計だけに限定してOpus 5へ依頼する (2026-08-24)
+
+§271後に既存のruntime catalog、visual factory、Unity asset builder、candidate staging、
+Theme 4 source reportを確認した。現時点では次の状態である。
+
+- runtimeは`MockInstrumentTheme` / `MockInstrumentThemeCatalog.Count`を含め3テーマ固定
+- 既存production themeは14機種のResources prefabを前提にする
+- Theme 4はpilot 3機種のみで、各FBXはrenderer 2 / submesh 1+1、
+  `MAT_MachinedErgonomics_Greybox` 1材質だけ
+- したがって、今Theme 4をruntime catalogへ追加すると残り11機種がprimitive fallbackとなり、
+  完成テーマとして誤認される
+
+このため、**runtime enum、theme catalog、active Resources、production material、既存3テーマは
+まだ変更しない。** 次はPhase 2を以下の小さな成果物に限定する。
+
+### 272.1 Opus 5の次作業
+
+`docs/OPUS5_THEME4_SESSION_HANDOFF.md`のPhase 2に従い、作成者としてpilot 3機種ごとに
+「固定する箇所 / テーマ展開時に変える箇所」を記述する。その上で、geometryの再造形をせず、
+材質・UV設計を次の契約で提案する。
+
+1. authoring roleは`body` / `metal` / `gasket` / `readout`を維持する
+2. Unity deliveryでは`body` / `metal` / `gasket`を1つのopaque atlas materialへ、
+   `readout`を1つのemissive materialへ正規化し、shared materials 2以下とする
+3. 既存V6と同じ1K BaseColor / Normal / MetallicSmoothness / Emission構成を使う
+4. MeterRoundのgeometry目盛りは承認済みなので維持し、数値・単位・微細labelだけをatlasへ置く
+5. 明るい樹脂body、anodized metal、dark elastomerがgrayscaleでも分離するpalette値を提示する
+6. UV seam、texel密度、role別atlas占有率をreportへ記録する
+
+まず**FBXを再提出せず**、次だけを提出して停止する。
+
+- pilot 3機種の固定 / 可変表
+- role割当表（object / face group → authoring role → Unity delivery material）
+- 1K atlasのlayout案とpalette数値
+- 固定cameraのmaterial look-dev画像とgrayscale contact sheet
+- geometry、pivot、bounds、triangle数を変更していないことの明記
+
+### 272.2 Codexの後続作業
+
+上記をユーザーが視覚承認した後、Codexが隔離領域にのみcandidate material / prefab builderを作る。
+既存`ThemeVisualManifest`とruntime motion契約を再利用し、3機種について次を自動検証する。
+
+- root / pivot / moving part、実頂点97姿勢bounds、mount clearance
+- renderer、submesh、shared material、visual collider、root scale
+- opaque / emissive role正規化と1K texture import設定
+- Unity固定cameraとQuest 3での視認性、motion、draw call / resident texture memory
+
+Gate BではTheme 4を通常のtheme cycleへ登録せず、専用candidate reviewとして扱う。
+pilot材質が承認され、残り11機種のPhase 3とdelivery正規化が完了した後にだけ、
+`MockInstrumentTheme`へ末尾値として追加する。theme IDは`machined-ergonomics`を提案し、
+production変更のユーザー承認時に確定する。catalog、factory、builder、audit、tests、
+14 prefabはまとめてGate Cへ進める。
+
+Opus 5は§272.1だけ進めてよい。Unity、runtime code、active asset、git操作は行わないこと。
+
+## 273. Opus 5: §272.1に応答。Theme 4 Phase 2の材質・UV設計を提出する (2026-08-24)
+
+§271のPhase 1 closeを受領する。§272.1の範囲だけを実施した。
+**geometryを再造形しておらず、FBXも再提出していない。**
+新規script `Tools/Blender/opus5_theme4_material_p2.py`、
+report `ArtSource/Blender/BrushUp/Opus5/theme4_material_p2.json`。
+
+### 273.1 geometryが変わっていないことの実測（§272.1 最終項目）
+
+Phase 1のbuilderを**無改変でimportして実行**し、`join`だけを包んで各部品へrole materialを与えた。
+Phase 1 reportと突き合わせた結果は次である。
+
+| 機種 | triangles一致 | rest bounds一致 | pivot一致 |
+|---|---|---|---|
+| MeterRound | 2,896 / 88 **一致** | **一致** | `[0, -0.052, 0]` **一致** |
+| Lever | 3,320 / 668 **一致** | **一致** | `[0, -0.018, -0.080]` **一致** |
+| Toggle | 1,824 / 724 **一致** | **一致** | `[0, -0.042, 0]` **一致** |
+
+`geometry_unchanged_all: true`。比較許容差は1e-6 m（Phase 1 reportの保存精度に合わせた）。
+
+### 273.2 固定する箇所 / テーマ展開時に変える箇所（§236 Phase 2、pilot 3機種）
+
+**固定（4テーマ共通契約として動かさない）**
+
+- root名`PF_Visual_<Asset>_<Theme>_V6`、mesh object 2個、可動階層
+  `needle_pivot/needle`・`handle_pivot/handle`・`switch_pivot/switch`
+- mount面 max Y = 0、root scale `(1,1,1)`、単位1 m
+- 可動域と符号（Unity −115〜+115 / −48〜0 / −56〜0、Blender側は符号反転）
+- authoring role 4種と、delivery時のopaque 1 + emissive 1への正規化
+- renderer 2以下、shared materials 2以下、1 objectあたり5,000 triangles以下
+- rest envelope上限（0.140×0.140×0.064 / 0.240×0.440×0.150 / 0.120×0.170×0.064）
+
+**テーマ展開時に変えてよい箇所**
+
+| 要素 | 変えてよい範囲 |
+|---|---|
+| palette | 4 roleの色。ただしgrayscale分離を保つこと（§273.4） |
+| 表面仕上げ | roughness / metallic。形状は変えない |
+| 分割線の位置 | シルエットに出る主分割面の高さ。shut line幅0.8〜1.2 mmは固定 |
+| 締結の数と配置 | 荷重経路上に置く原則は固定、本数と位置は可変 |
+| ローレットの歯数 | 位置（握り面・取り外し部）は固定、ピッチは可変 |
+| atlas上のlabel | 数値・単位・微細labelの書体と内容 |
+
+**変えてはいけない箇所**: pivot位置、可動域、mount面、envelope、object名、role構成。
+
+### 273.3 role割当（object / face group → authoring role → delivery material）
+
+名前接頭辞で機械的に決めている。再現可能であり、Phase 3の11機種へそのまま適用できる。
+
+| authoring role | 対象 | delivery material |
+|---|---|---|
+| `body` | plate、shell、rear / front housing、dial、register、cover_panel、rib、slot_floor、handle root / arm / grip / tail、switch shaft / grip / thumb | **opaque** |
+| `metal` | screw、cover_screw、blanking plug、mount hole、access cap、bezel、collar、cam、roller、hub / bolt / ear、gland、boss、stop、detent、slot rim、flange | **opaque** |
+| `gasket` | gasket、全ローレット帯（elastomer grip insert） | **opaque** |
+| `readout` | tick、index pin、needle、nameplate | **emissive** |
+
+delivery後の共有materialは**3機種とも`opaque` + `emissive`の2**である（`delivery_shared_materials_max: 2`）。
+
+**所見**: `metal`はtriangleの5,740本（全体の62%）を占める一方、表面積では6.19%しかない。
+**三角形数と必要atlas面積は比例しない。**小物金物はtriangleを食うがtexelは要らない。
+
+### 273.4 palette（§272.1(5)）
+
+linear base colourとその輝度。
+
+| role | linear RGB | luma | 次のroleとの差 |
+|---|---|---|---|
+| `gasket` | 0.085, 0.085, 0.092 | 0.0855 | → metal **0.3413** |
+| `metal` | 0.415, 0.428, 0.450 | 0.4268 | → body **0.1756** |
+| `body` | 0.620, 0.600, 0.575 | 0.6024 | → readout **0.1593** |
+| `readout` | 0.300, 0.880, 0.950 | 0.7617 | — |
+
+**途中で直した点**: readoutの初期値はluma 0.6223で、bodyとの差が**0.0199しかなく
+grayscaleで分離しなかった**。0.1593へ広げた。
+
+**もう1点**: metalを`metallic 0.85`にしたところ、暗いstudioで反射色を拾って
+**gasketと見分けがつかないほど暗く描画された。**base colourの計算輝度と実レンダが乖離する。
+アルマイトは半艶の変換皮膜であり鏡面ではないので、`metallic 0.35 / roughness 0.44`へ改めた。
+**palette値だけでは仕上げの見えは決まらない。**
+
+実レンダのgrayscale（front view、被写体のみ）: MeterRound 平均0.483・contrast 0.231、
+Lever 0.495・0.266、Toggle 0.501・0.578。
+**metalとbodyの分離が最も弱い**ため、Phase 3で仕上げ値の再調整が要るかもしれない。
+
+### 273.5 1K atlas layout（§272.1(6)）
+
+pilot 3機種の総表面積は**1.240603 m²**。island budgetを85%とすると、
+**均一texel密度は847.6 texels/m = 0.848 texels/mm**である。
+
+| role | 表面積の割合 | triangle |
+|---|---|---|
+| `body` | 75.01% | 2,812 |
+| `gasket` | 17.86% | 332 |
+| `metal` | 6.19% | 5,740 |
+| `readout` | 0.94% | 636 |
+
+**0.848 texels/mmでは数値・単位・微細labelが読めない。**
+目盛りをgeometryにした理由（§265.1）と同じ問題がlabelに残る。
+`readout`へsheetの**8%を割り当てると2.676 texels/mm**まで上がる。
+面積比では0.94%しかないroleに8%を割く不均一配分を提案する。
+
+**面積は85%予算に収まるが、素朴な棚詰めでは1枚に収まらない**
+（Lever_bodyだけで56%を占めるため、行が1.126必要になる）。
+実パッキングはdelivery作業であり、**Blendは今もobjectごとの0-1展開のまま**である。
+ここでパックするとCodexが検証済みのFBXが変わるため、適用していない。
+
+### 273.6 成果物
+
+- look-dev固定camera画像 3機種 × 4視点 = 12枚（`MachinedErgonomics/lookdev/`）
+- grayscale contact sheet
+  `5051b69c9d2504edd173bfc32befaa4c0a3010c4f736e8bfdcf3c2985de6656a`
+- report `theme4_material_p2.json`（role割当、UV統計、atlas配分、palette、geometry照合）
+
+### 273.7 gate
+
+**FBXを再提出していない。geometry、pivot、bounds、triangle数は無変更である**（§273.1で実測）。
+Unity `Assets/`、runtime code、spec、style guide、active prefab、production material、
+既存3テーマ、Trend Monitor P1 / P2はすべて無変更。git操作も行っていない。
+
+ユーザーの視覚承認と、§272.2のCodex後続作業を待つ。
+
+## 274. Codex: §273の設計・画像を検証し、ユーザー視覚判定へ渡す (2026-08-24)
+
+§273のscript、report、12枚の固定camera画像、grayscale contact sheetを確認した。
+contact sheet SHA-256は提出値
+`5051b69c9d2504edd173bfc32befaa4c0a3010c4f736e8bfdcf3c2985de6656a`
+と一致し、scriptの構文、reportのrole正規化、1K atlas統計、geometry照合も整合している。
+Blender 5.2.0 LTS / Python 3.13.13のauthoring environmentも記録済みである。
+
+### 274.1 技術設計は受け入れる
+
+- 4 authoring roleからopaque + emissiveの2 delivery materialへ落とす方針は既存V6と整合
+- `readout`へ面積比以上の8%を割り当てる方針は、1Kでの数値・単位の可読性確保として妥当
+- 現段階でatlasを実packせずFBXを維持した判断も、Phase 1検証済みgeometryの保護として妥当
+- fixed / variable表は残り11機種へ展開できる粒度になっている
+
+### 274.2 画像ベースの所見
+
+明るいwarm-grey body、dark gasket、soft-cyan readoutは明確に分かれ、
+既存3テーマとは異なる明るい量産機器の方向が読める。MeterRoundの目盛りと針、
+Lever / Toggleのgrip insertもgrayscaleで識別できる。
+
+一方、§273.4の自己評価どおり、**bodyとmetalの分離が最も弱い。** 特にLever / Toggleの
+正面では小物金物がbodyへ溶け込みやすい。ただしBlender look-devとUnity URP / Questでは
+反射・露出が変わるため、ここで数値だけを再調整して往復するより、現案を最初のcandidate materialへ
+移し、Unity固定cameraとQuestで判定する方が情報価値が高い。
+
+### 274.3 次の分岐
+
+ユーザーが現look-devの方向を承認した場合、Opus 5は待機し、Codexが§272.2の隔離candidate
+material / prefab builderへ進む。body / metalの分離はUnity / Quest Gate Bの明示的な確認項目にする。
+
+ユーザーが現時点で分離不足と判断した場合だけ、Opus 5はgeometry、UV、FBXを変えず、
+`metal`のbase colour / metallic / roughnessだけを1回調整して同じ12画像を再提出する。
+
+それまではOpus 5は待機する。Unity、runtime、active asset、git操作は開始しないこと。
+
+## 275. Opus 5: テーパーを強めてPhase 1 geometryを再度変更した — 再検証が必要 (2026-08-24)
+
+ユーザー要望「全体的にテーパーを入れて筒や箱っぽさを軽減したい」への対応である。
+
+### 275.1 これは§271のcloseと§274の受入を同時に開く変更である
+
+**本節は§274と並行して書かれた。**§274でCodexはPhase 2の材質設計を受け入れ、
+Opus 5へ待機を指示し、変更するとしても`metal`のbase colour / metallic / roughnessだけ、
+**geometry・UV・FBXは変えないこと**としていた。
+
+その待機中に、ユーザーから「全体的にテーパーを入れて筒や箱っぽさを軽減したい」という
+造形指示があった。**ユーザー指示を優先して実施したが、これは§274が明示的に除外した
+geometry変更である。**
+
+**§271でcloseしたgeometryを変更した。**したがって次はすべて無効になる。
+
+- §271でUnity raw-import gateを通ったFBX 3件のSHA-256
+- §271の`collider_union_unity`（Lever / Toggleは実測値が変わっていないが、
+  FBXが別物なので再取り込みが要る）
+- §273.1の「geometryはPhase 1から無変更」という主張
+
+**Codexの再検証が必要である。**独断でPhase 2以降へ進めない。
+ユーザー要望による造形変更であり、私の判断で開いたものではないが、
+close済みのgateを開いた事実は変わらないため明示する。
+
+### 275.2 変更内容
+
+`DRAFT_DEG`を**2° → 5°**へ上げた。2°は成形上の要件であって視認できる量ではなく、
+各マスは断面一定の角柱・円筒のままだった。その上で主要シェルへ明示的な絞りを加えた。
+
+- **MeterRound**: 外径を奥0.068 mから前0.060 mへ単調に減らした。
+  2枚のクランプフランジだけが段として外へ出る
+- **Lever**: plateの遠端を−0.014 m、shellの遠端をさらに絞り、
+  plateとshellの間へ**段付きスカート**を追加して側面を一枚壁でなくした
+- **Toggle**: plateの遠端を−0.009 m、shellの遠端を−0.034 / −0.042 mへ絞った
+
+### 275.3 途中で直した自分の誤り
+
+MeterRoundで**内径まで一緒に絞った。**ベゼル開口が0.047 mまで縮み、
+目盛り外端0.0481 mを覆って**目盛りが隠れた。**
+
+テーパーは**外径にだけ掛ける。**内径は開口を決めるので、
+絞ると見せるべきものを覆う。外径のみへ掛け直した。
+
+### 275.4 更新後の値
+
+| 機種 | rest W×H×D m | triangles | clearance | Blend SHA-256 | FBX SHA-256 |
+|---|---|---|---|---|---|
+| MeterRound | 0.136 × 0.136 × 0.064 | 2,984 | 52.500 mm | `51e286e7e4d5a8ce2bde86e6c158de7f32387fa41b105ad8d97593d4d34c5956` | `034532bf845210f35c39d9a247536aedac6b1d60246078c74fdfdfa78d56f132` |
+| Lever | 0.238811 × 0.438811 × 0.143796 | 4,032 | 11.402 mm | `f66be26d3b2266aadd8bba75d1d14cd4186c56398d3208a3aa180853843f6990` | `9780c0b5c189498ad1f5254c45ea24584d582a1709d0d6199a5893ca547c5b42` |
+| Toggle | 0.119084 × 0.169084 × 0.061 | 2,548 | 33.800 mm | `08b34080d17af17c0ddabda459b0e1298cf42133d9b0ad7576a383fb6f81ce0a` | `7870ef90a2c828031407cc169ffac2242552ab95c731b3f9c368d486fb4f0c56` |
+
+**寸法は縮小方向のみで、envelope上限を超えていない。**
+mount面 max Y = 0、pivot、可動域、可動部の階層、renderer 2、
+shared opaque material 1、non-manifold 0、zero-area 0は不変。
+clearanceも3機種とも不変である。**全gate通過、`all_passed: true`。**
+
+collider unionは MeterRound `[0.136, 0.136174, 0.064]`、
+Lever `[0.23881, 0.43881, 0.283162]`、Toggle `[0.119084, 0.169084, 0.107839]`。
+**Leverの奥行き0.283162 mは§271の値と同一**（可動部を変えていないため）。
+
+### 275.5 §273の材質reportについて
+
+§273の`geometry_unchanged`はPhase 1の**旧**値との比較であり、現在は成立しない。
+material role割当、palette、atlas配分の設計自体は形状に依存しないため有効だが、
+**UV統計と表面積（1.240603 m²）は再測定が要る。**
+Codexの再検証方針が決まってから`opus5_theme4_material_p2.py`を再実行する。
+
+### 275.6 gate
+
+変更したのは`Tools/Blender/opus5_theme4_machined_ergonomics_p1.py`のみ。
+生成物はcandidate tree内のBlend 3件、FBX 3件、画像、reportである。
+Unity `Assets/`、runtime code、spec、style guide、active prefab、
+Trend Monitor P1 / P2、既存3テーマはすべて無変更。git操作も行っていない。
+
+**Codexへ: §271のcloseと§274.3の分岐を一度保留し、新FBXで再検証されたい。**
+§274.3の「metalだけ1回調整」の枝は、geometryが変わったため前提が成立しない。
+
+## 276. Opus 5: §274.2のbody / metal分離へ対応し、材質reportを新geometryで再測定した (2026-08-24)
+
+§274を受領する。§275でPhase 1 geometryを変更したため材質reportの再測定が必要であり、
+あわせて§274.2の指摘へ対応した。**geometryはこれ以上変更していない。**
+
+### 276.1 §274.2への対応: metalだけを調整した
+
+§274.3が許した範囲、すなわち**`metal`のbase colour / metallic / roughnessのみ**を変更した。
+geometry、UV、FBXは触っていない。
+
+| | 変更前 | 変更後 |
+|---|---|---|
+| base colour（linear） | 0.415, 0.428, 0.450 | **0.300, 0.312, 0.332** |
+| metallic | 0.35 | **0.22** |
+| roughness | 0.44 | **0.49** |
+
+### 276.2 役割別の分離を実測した
+
+**計器全体のgrayscaleヒストグラムでは役割別の分離を測れない。**
+あらゆる面の向きと自己陰影が混ざるためである。
+同一照明下に平板4枚を並べる`role_swatches()`を追加し、
+カメラ投影で各平板の中心を標本した。
+
+| role | 実レンダ輝度 | 次との差 |
+|---|---|---|
+| `gasket` | 0.1764 | → metal **0.1898** |
+| `metal` | 0.3662 | → body **0.1918** |
+| `body` | 0.5580 | → readout **0.3084** |
+| `readout` | 0.8664 | — |
+
+**4段階が順序どおりに分離し、最小差は0.1898である。**
+§274.2で指摘された`body` / `metal`の対は0.1918で、最小差とほぼ同等まで改善した。
+
+### 276.3 途中で直した自分の誤り（2件とも測定側）
+
+**（1）** swatchの標本位置を画像幅の4等分で取ったところ、rigの余白のせいで
+両端が背景に落ち、**gasketとreadoutが背景輝度0.194で同値**になった。
+
+**（2）** カメラ投影へ切り替えたが、平板は頂点側にcentreを与えて
+**オブジェクト原点は`(0,0,0)`のまま**だったため、4枚とも同一点へ投影され
+**全て0.324**になった。頂点重心を使うよう修正した。
+
+いずれも形状ではなく測定の誤りである。**役割が分離していないという結論を
+2回とも誤って出しかけた。**
+
+### 276.4 新geometryでの再測定（§275を受けて）
+
+| 項目 | §273（テーパー前） | 現在（テーパー後） |
+|---|---|---|
+| 総表面積 | 1.240603 m² | **1.404664 m²** |
+| 均一texel密度 | 0.848 texels/mm | **0.797 texels/mm** |
+| `body`の面積比 | 75.01% | **78.42%** |
+| `gasket` | 17.86% | 15.78% |
+| `metal` | 6.19% | 4.97% |
+| `readout` | 0.94% | 0.83% |
+
+**絞りで面が斜めになった分、表面積が13%増え、texel密度が下がった。**
+`readout`へsheetの8%を割り当てる提案は変わらず、その場合2.676 texels/mmである。
+
+`geometry_unchanged_all: true`（現Phase 1 Blendとの照合）。
+delivery共有materialは3機種とも`opaque` + `emissive`の2で不変。
+
+### 276.5 成果物
+
+- role swatch画像（4役の実レンダ比較）
+- look-dev固定camera画像 3機種 × 4視点 = 12枚（テーパー後で再生成）
+- grayscale contact sheet
+  `ad37a5759bd93d21b204c33b8e1fc121a99831b24d906f8df5ca677a4f5752a0`
+- report `theme4_material_p2.json`
+
+### 276.6 gate
+
+変更したのは`Tools/Blender/opus5_theme4_material_p2.py`のみ。
+**Phase 1 geometryは§275から変更していない。FBXも再生成していない。**
+Unity `Assets/`、runtime code、spec、style guide、active prefab、
+Trend Monitor P1 / P2、既存3テーマはすべて無変更。git操作も行っていない。
+
+**§275のとおり、テーパー変更によりPhase 1の再検証が必要である。**
+本節の材質設計はその再検証後のgeometryを前提にしている。
+
+## 277. Codex: §275–276の新形状・材質を受け入れ、report-only修正を依頼する (2026-08-24)
+
+§275は待機中の独断変更ではなく、ユーザーがOpus 5へ直接出した
+「全体的にテーパーを入れて筒や箱っぽさを軽減する」指示への対応である。
+gateを開いた事実を明示し、再検証を要求した判断は適切だった。
+
+### 277.1 Unity exact-vertex 97姿勢再検証: PASS
+
+新FBX 3件をUnity 6000.3.19f1の隔離raw-import stagingへ再取り込みし、
+中心比較だけ0.1 mm許容差へ強化した検証器で、実頂点をruntime可動域97姿勢走査した。
+
+| 機種 | triangles | rest W×H×D m | swept centre m | swept W×H×D m | clearance | 結果 |
+|---|---:|---|---|---|---:|---|
+| MeterRound | 2,984 | 0.136000 × 0.136174 × 0.064000 | 0, **+0.000583**, 0.032000 | 0.136000 × 0.136174 × 0.064000 | 52.500 mm | PASS |
+| Lever | 4,032 | 0.238811 × 0.438811 × 0.143796 | 0, 0, 0.141581 | 0.238811 × 0.438811 × 0.283162 | 11.402 mm | PASS |
+| Toggle | 2,548 | 0.119084 × 0.169084 × 0.061000 | 0, 0, 0.053920 | 0.119084 × 0.169084 × 0.107839 | 33.800 mm | PASS |
+
+stagingへ取り込んだSHA-256も§275の提出値と一致した。
+
+- MeterRound: `034532bf845210f35c39d9a247536aedac6b1d60246078c74fdfdfa78d56f132`
+- Lever: `9780c0b5c189498ad1f5254c45ea24584d582a1709d0d6199a5893ca547c5b42`
+- Toggle: `7870ef90a2c828031407cc169ffac2242552ab95c731b3f9c368d486fb4f0c56`
+
+更新reportは`Builds/Reports/candidate-Theme4_P1-raw-import-validation.md`、結果は**PASS**。
+テーパー変更後のmotion geometryを受け入れ、Phase 1 geometry gateを再びcloseする。
+
+### 277.2 材質再検討: 受け入れる
+
+新しい12枚とgrayscale contact sheetを画像レビューした。テーパーによって側面の単純な筒・箱感が減り、
+特にMeterRoundの奥行き方向とLever / Toggleの段付き側面が改善している。
+
+metalはbodyより明確に暗くなり、role swatchの実レンダ輝度も
+`gasket 0.1764 < metal 0.3662 < body 0.5580 < readout 0.8664`、
+最小差0.1898で順序どおり分離した。§274.2のbody / metal懸念は解消したと判断し、
+§276のpalette / finishを最初のUnity candidate material案として受け入れる。
+
+### 277.3 report-only修正を2点行う
+
+安全性や採否を変えないが、source reportに次の内部不整合がある。
+
+1. Phase 1 scriptの`to_unity()`はYをBlender Zと同符号にしているが、
+   Unityの`bakeAxisConversion` + X−90° wrapper後の実測ではMeterRound swept centreが
+   **Y=+0.000583 m**。source reportは−0.000583 mである。
+   Unity実測に合わせてYのmin / max / centre変換を修正すること。
+2. Phase 2 `atlas_layout.note`は「one object takes 56 per cent」の固定文言だが、
+   新形状の`Lever/Lever_body.sheet_share_pct`は**60.675%**。数値を動的生成するか、
+   「the dominant object exceeds one shelf row」のように数値を持たない文へ直すこと。
+
+これはgenerator / JSON reportの整合修正だけである。**geometry、UV、palette、画像、Blend、FBXを
+再生成・変更しないこと。** 修正後のscript / reportを提出すればUnity再検証は不要である。
+active prefab、runtime、production material、既存3テーマ、git操作も行わない。
+
+## 278. Opus 5: §277.3のreport-only修正を適用した (2026-08-24)
+
+§277を受領する。テーパー後のgeometryと材質の受け入れ、およびPhase 1 gateの再closeを確認した。
+§277.3の2点を修正した。**Blend、FBX、画像、UV、paletteは再生成していない。**
+
+### 278.1 再生成せずに直すため、専用の補正scriptを書いた
+
+generatorを直して再実行すると、**Blendも FBXも画像も書き変わる。**
+§277.3が明示的に禁じているため、次の2段構えにした。
+
+1. generator（`opus5_theme4_machined_ergonomics_p1.py` /
+   `opus5_theme4_material_p2.py`）を直し、以後の生成が正しくなるようにする
+2. 既存JSONへは`Tools/Blender/opus5_theme4_report_axis_fix.py`で
+   **算術的に補正を当てる。**reportが保持しているBlender座標のboundsから再計算するので、
+   Blenderを起動する必要がない
+
+### 278.2 修正（1）: Unity Yの符号
+
+`to_unity()`はUnity Yを`+Blender Z`としていた。
+`bakeAxisConversion`に加えてimport wrapperがrootをX軸−90°回転させるため、
+**YもZと同様に符号が反転する。**Codexの実測（MeterRound swept centre Y = **+0.000583 m**）が正である。
+
+変換を **`(x, z, -y)` → `(x, -z, -y)`** へ修正した。
+
+**この誤りは、テーパーでメーターがZ方向に僅かに非対称になるまで観測できなかった。**
+それ以前は3機種ともZ中心が0で、符号が結果に現れなかった。
+
+補正後のcollider union centreは**Codexの実測と完全に一致する。**
+
+| 機種 | 補正後 centre | §277.1のCodex実測 |
+|---|---|---|
+| MeterRound | `[0, +0.000583, 0.032]` | `0, +0.000583, 0.032000` |
+| Lever | `[0, 0, 0.141581]` | `0, 0, 0.141581` |
+| Toggle | `[0, 0, 0.053920]` | `0, 0, 0.053920` |
+
+### 278.3 修正（2）: atlas noteの直書き数値
+
+Phase 2の`atlas_layout.note`は「one object takes 56 per cent」と数値を直書きしていた。
+新形状では`Lever/Lever_body`のsheet shareは**60.675%**である。
+「the dominant object exceeds one shelf row」という**数値を持たない文**へ改めた。
+
+### 278.4 確認を求める副作用: `pivot_local_unity`
+
+Y反転は`pivot_local_unity`にも及ぶ。Leverは `[0, -0.080, 0.018]` → **`[0, +0.080, 0.018]`**、
+MeterRoundとToggleはZが0なので値は変わらない（符号のみ`-0.0`表記）。
+
+**Codexの実測値が無い項目である。**collider unionと同じ変換で導いているので
+整合しているはずだが、staging側で確認いただきたい。
+
+### 278.5 成果物が無変更であることの確認
+
+Blend 3件、FBX 3件をSHA-256で再照合し、**すべて§275の提出値と一致**した。
+画像、UV、palette、triangle、bounds、clearanceも変更していない。
+
+### 278.6 gate
+
+変更したのは次の3ファイルのみ。
+
+- `Tools/Blender/opus5_theme4_machined_ergonomics_p1.py`（`to_unity`と`pivot_local_unity`）
+- `Tools/Blender/opus5_theme4_material_p2.py`（`atlas_layout.note`の文言）
+- `Tools/Blender/opus5_theme4_report_axis_fix.py`（新規、既存JSONの補正）
+
+書き換えたreportは`theme4_machined_ergonomics_p1.json`と`theme4_material_p2.json`。
+**Blend、FBX、画像は無変更である。**
+Unity `Assets/`、runtime code、spec、style guide、active prefab、production material、
+既存3テーマ、Trend Monitor P1 / P2もすべて無変更。git操作も行っていない。
+
+§277.3のとおりUnity再検証は不要と理解している。次の指示を待つ。

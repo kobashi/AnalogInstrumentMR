@@ -54,13 +54,14 @@ Geometryで作る:
 - 座ぐり穴の窪みとボスの立ち上がり
 - ガスケット溝、軸受カラー、end stop
 - グリップの断面変化と指かかり
+- 計器としての読取りに必要で、1K atlasでは解像度が不足する主・副目盛り
 
 Normal mapまたはtextureへ委ねる:
 
 - 副次的なシャットラインと細いパネル目地
 - ねじ頭の溝、刻印、型式表記、警告表示
 - シボ（表面グレイン）と微細なwear
-- 目盛り、数値、label
+- 微細な補助目盛り、数値、単位、label
 
 シャットラインをすべてgeometry化しない。三角形は主分割面と可動部の
 clearanceへ優先配分する。
@@ -78,8 +79,13 @@ clearanceへ優先配分する。
 
 ## Runtime limits
 
-1 objectあたり1,500 triangles以下、mesh renderer 3以下（meterのみ4以下）、
-shared materials 2以下、visual colliderなし。配置、anchor、interactionは
-`InstrumentRoot`と共通socket側の責務とする。共通visual envelope、pivot、
-可動範囲は既存3テーマと同一にし、テーマ差はsilhouette detail、palette、
+1 objectあたり5,000 triangles以下、mesh renderer 3以下（meterのみ4以下）、
+shared materials 2以下、visual colliderなし。
+上限は2026-08-22にユーザー承認で1,500から`GREYBOX_INSTRUMENT_SPEC.md`の
+Final P0 ceilingである5,000へ引き上げた。分割面、座ぐり、ガスケット溝、
+軸受、締結、面取りという本テーマの語彙が1,500では成立しないためである。
+配置、anchor、interactionは`InstrumentRoot`と共通socket側の責務とする。
+pivotと可動範囲は既存3テーマと同一にする。visual envelopeは種類ごとの共通最大上限とし、
+`control.lever`は4テーマを包含する0.240 × 0.440 × 0.150 mを使う。
+既存テーマの小さいvisualを拡大する必要はない。テーマ差はsilhouette detail、palette、
 label、audio、VFXへ限定する。
