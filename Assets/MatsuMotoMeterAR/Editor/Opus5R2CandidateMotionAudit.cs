@@ -106,7 +106,7 @@ namespace MatsuMotoMeterAR.Editor
                 MockInstrumentMotion.MotionKind.Meter,
                 5,
                 Vector3.forward,
-                55f,
+                InstrumentGreyboxSpecification.MeterSweepDegrees,
                 0f,
                 AuditMode.Rotation),
             new(
@@ -114,7 +114,7 @@ namespace MatsuMotoMeterAR.Editor
                 MockInstrumentMotion.MotionKind.Meter,
                 5,
                 Vector3.forward,
-                42f,
+                InstrumentGreyboxSpecification.MeterSweepDegrees,
                 0f,
                 AuditMode.Rotation)
         };

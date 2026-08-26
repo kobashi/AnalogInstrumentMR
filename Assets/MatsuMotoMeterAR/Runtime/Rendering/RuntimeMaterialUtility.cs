@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -10,12 +11,17 @@ namespace MatsuMotoMeterAR.Rendering
             "Materials/MAT_RuntimeBuiltInUnlit";
         private const string UrpMaterialPath =
             "Materials/MAT_RuntimeUrpUnlit";
+        private const string DepthTestedTextMaterialPath =
+            "Materials/MAT_RuntimeDepthTestedText";
 
         private static readonly int ColorId = Shader.PropertyToID("_Color");
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
         private static readonly MaterialPropertyBlock SharedProperties = new();
         private static Material runtimeUnlitTemplate;
+        private static Material depthTestedTextTemplate;
+        private static readonly Dictionary<Texture, Material>
+            DepthTestedTextMaterials = new();
         private static bool? templateUsesUrp;
 
         public static Material CreateUnlit(Color color)
@@ -75,6 +81,53 @@ namespace MatsuMotoMeterAR.Rendering
 
             renderer.sharedMaterial = template;
             SetColor(renderer, color);
+        }
+
+        public static void ApplyDepthTestedText(TextMesh text)
+        {
+            if (text == null)
+                return;
+
+            var renderer = text.GetComponent<MeshRenderer>();
+            if (renderer == null)
+                return;
+
+            if (depthTestedTextTemplate == null)
+            {
+                depthTestedTextTemplate =
+                    Resources.Load<Material>(DepthTestedTextMaterialPath);
+            }
+            if (depthTestedTextTemplate == null)
+            {
+                Debug.LogError(
+                    $"Depth-tested text material could not be loaded: " +
+                    $"{DepthTestedTextMaterialPath}.");
+                return;
+            }
+
+            var sourceMaterial = renderer.sharedMaterial;
+            var fontTexture = sourceMaterial != null
+                ? sourceMaterial.mainTexture
+                : text.font?.material?.mainTexture;
+            if (fontTexture == null)
+            {
+                Debug.LogError("TextMesh font atlas could not be resolved.");
+                return;
+            }
+
+            if (!DepthTestedTextMaterials.TryGetValue(
+                    fontTexture,
+                    out var material) ||
+                material == null)
+            {
+                material = new Material(depthTestedTextTemplate)
+                {
+                    name = $"MAT_RuntimeDepthTestedText_{fontTexture.name}",
+                    mainTexture = fontTexture
+                };
+                DepthTestedTextMaterials[fontTexture] = material;
+            }
+            renderer.sharedMaterial = material;
         }
 
         public static void SetColor(Renderer renderer, Color color)

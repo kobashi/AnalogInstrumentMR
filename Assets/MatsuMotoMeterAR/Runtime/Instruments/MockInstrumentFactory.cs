@@ -1,4 +1,5 @@
 using MatsuMotoMeterAR.Rendering;
+using MatsuMotoMeterAR.Signals;
 using UnityEngine;
 
 namespace MatsuMotoMeterAR.Instruments
@@ -57,6 +58,14 @@ namespace MatsuMotoMeterAR.Instruments
                 audioSocket,
                 vfxSocket);
 
+            if (!preview && kind == MockInstrumentKind.TrendMonitor)
+            {
+                var displaySurface = visualSocket
+                    .GetComponentInChildren<ThemeVisualManifest>(true)
+                    ?.MotionTarget;
+                SignalMonitorView.Create(labelSocket, displaySurface);
+            }
+
             if (preview)
             {
                 RemoveColliders(root);
@@ -71,6 +80,15 @@ namespace MatsuMotoMeterAR.Instruments
             return (kind != MockInstrumentKind.ThrottleLever &&
                     kind != MockInstrumentKind.PowerSlider) ||
                    InstrumentThemeVisualFactory.HasVisualPrefab(kind, theme);
+        }
+
+        public static bool HasProductionVisual(
+            MockInstrumentKind kind,
+            MockInstrumentTheme theme)
+        {
+            return InstrumentThemeVisualFactory.HasVisualPrefab(
+                kind,
+                MockInstrumentThemeCatalog.Normalize(theme));
         }
 
         public static bool ApplyTheme(
@@ -107,6 +125,15 @@ namespace MatsuMotoMeterAR.Instruments
                 contract.VisualSocket,
                 contract.Logic,
                 preview);
+            if (!preview && contract.Kind == MockInstrumentKind.TrendMonitor)
+            {
+                var displaySurface = contract.VisualSocket
+                    .GetComponentInChildren<ThemeVisualManifest>(true)
+                    ?.MotionTarget;
+                var monitor = contract.LabelSocket
+                    .GetComponentInChildren<SignalMonitorView>(true);
+                monitor?.AlignToDisplay(displaySurface);
+            }
             if (!preview && contract.InstrumentInteraction != null)
             {
                 contract.InstrumentInteraction.Configure(
@@ -192,6 +219,14 @@ namespace MatsuMotoMeterAR.Instruments
                     break;
                 case MockInstrumentKind.WindowPanel:
                     BuildWindowPanel(
+                        visualSocket,
+                        logic,
+                        preview,
+                        theme,
+                        palette);
+                    break;
+                case MockInstrumentKind.TrendMonitor:
+                    BuildTrendMonitorCodeContract(
                         visualSocket,
                         logic,
                         preview,
@@ -646,7 +681,7 @@ namespace MatsuMotoMeterAR.Instruments
                     MockInstrumentMotion.MotionKind.Meter,
                     pivot,
                     Vector3.forward,
-                    55f,
+                    InstrumentGreyboxSpecification.MeterSweepDegrees,
                     0.12f);
             }
         }
@@ -725,8 +760,49 @@ namespace MatsuMotoMeterAR.Instruments
                     MockInstrumentMotion.MotionKind.Meter,
                     pivot,
                     Vector3.forward,
-                    42f,
+                    InstrumentGreyboxSpecification.MeterSweepDegrees,
                     0.1f);
+            }
+        }
+
+        private static void BuildTrendMonitorCodeContract(
+            Transform visual,
+            Transform logic,
+            bool preview,
+            MockInstrumentTheme theme,
+            MockInstrumentThemeCatalog.Palette palette)
+        {
+            var root = new GameObject(
+                $"PF_Visual_TrendMonitor_{RuntimeThemeName(theme)}");
+            root.transform.SetParent(visual, false);
+
+            CreatePrimitive(
+                PrimitiveType.Cube,
+                "static_opaque",
+                root.transform,
+                new Vector3(0f, 0f, 0.04f),
+                new Vector3(0.44f, 0.28f, 0.08f),
+                Quaternion.identity,
+                ColorFor(preview, palette.Housing));
+            var display = CreatePrimitive(
+                PrimitiveType.Cube,
+                "display_surface",
+                root.transform,
+                new Vector3(0f, 0f, 0.083f),
+                new Vector3(0.36f, 0.18f, 0.006f),
+                Quaternion.identity,
+                ColorFor(preview, palette.Dark));
+
+            root.AddComponent<ThemeVisualManifest>().Configure(
+                display.transform);
+            if (!preview)
+            {
+                GetOrAddMotion(logic).Configure(
+                    MockInstrumentMotion.MotionKind.Display,
+                    display.transform,
+                    Vector3.forward,
+                    0f,
+                    0f);
             }
         }
 
@@ -744,6 +820,8 @@ namespace MatsuMotoMeterAR.Instruments
             {
                 MockInstrumentTheme.ForgeBrass => "ForgeBrass",
                 MockInstrumentTheme.KineticSafety => "KineticSafety",
+                MockInstrumentTheme.MachinedErgonomics =>
+                    "MachinedErgonomics",
                 _ => "OrbitalAnalog"
             };
         }

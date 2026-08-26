@@ -50,6 +50,8 @@ namespace MatsuMotoMeterAR.Tests
 
         [TestCase("OrbitalAnalog", MockInstrumentTheme.OrbitalAnalog)]
         [TestCase("forgebrass", MockInstrumentTheme.ForgeBrass)]
+        [TestCase("MachinedErgonomics", MockInstrumentTheme.MachinedErgonomics)]
+        [TestCase("machined-ergonomics", MockInstrumentTheme.MachinedErgonomics)]
         [TestCase("invalid", MockInstrumentTheme.OrbitalAnalog)]
         public void ParseTheme_UsesKnownThemeOrDefault(string value, MockInstrumentTheme expected)
         {
@@ -58,9 +60,10 @@ namespace MatsuMotoMeterAR.Tests
 
         [TestCase(60, 60)]
         [TestCase(600, 600)]
+        [TestCase(1800, 1800)]
         [TestCase(0, 600)]
         [TestCase(120, 600)]
-        public void NormalizeDuration_AllowsSmokeOrFullGate(int requested, int expected)
+        public void NormalizeDuration_AllowsSmokeFullOrLongGate(int requested, int expected)
         {
             Assert.That(
                 PerformanceGateConfiguration.NormalizeDuration(requested),

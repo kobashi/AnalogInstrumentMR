@@ -13,11 +13,11 @@ namespace MatsuMotoMeterAR.Signals
             IReadOnlyList<SignalConnectionRecord> connections,
             IReadOnlyDictionary<string, MockInstrumentInteraction> instruments)
         {
+            sums.Clear();
+            counts.Clear();
             if (connections == null || instruments == null)
                 return;
 
-            sums.Clear();
-            counts.Clear();
             foreach (var connection in connections)
             {
                 if (connection == null ||
@@ -44,6 +44,25 @@ namespace MatsuMotoMeterAR.Signals
                     continue;
                 target.SetNormalizedValue(pair.Value / counts[pair.Key]);
             }
+        }
+
+        public bool TryGetOutput(
+            string targetPlacementId,
+            out float value,
+            out int inputCount)
+        {
+            if (!string.IsNullOrEmpty(targetPlacementId) &&
+                sums.TryGetValue(targetPlacementId, out var sum) &&
+                counts.TryGetValue(targetPlacementId, out inputCount) &&
+                inputCount > 0)
+            {
+                value = sum / inputCount;
+                return true;
+            }
+
+            value = 0f;
+            inputCount = 0;
+            return false;
         }
     }
 }

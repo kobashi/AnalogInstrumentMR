@@ -23,11 +23,14 @@ MR計器環境にすることである。機能追加と並行して、Quest 3�
 
 ## Priority 1: monitor MVP
 
-最初に数値表示と低頻度trend graphを実装する。図形表示は同じ表示基盤を使うが、MVPの
-完了条件には含めない。
+最初に独立配置型のTrend Monitorとして数値表示と低頻度trend graphを実装する。
+既存計器へのoverlay案は、表示面の向きと機種ごとの面積差が大きいため撤回する。
+図形表示は同じ表示基盤を使うが、MVPの完了条件には含めない。
 
-- 1入力の現在値、単位、min / max、接続状態を表示
-- 固定長ring bufferによる短時間trend graph
+- 最大4入力の現在値、min / max、接続状態を色分け表示
+- 入力ごとの固定長ring bufferによる短時間trend graph
+- 通常の操作sourceに加え、読取専用meterの値を観測専用入力として接続可能
+- Trend Monitorをtargetとして先に選び、その後に入力元を選ぶ接続UX
 - 表示更新頻度を信号評価頻度から分離し、Quest向けに上限を設定
 - per-frame allocation、動的Material生成、無制限mesh rebuildを禁止
 - monitorが未接続・無効値・範囲外を明確に表示
@@ -66,6 +69,30 @@ monitorを先に置くことで、parameter編集の結果をQuest内で直接�
 各候補は、形状contract、triangle / renderer / material予算、全可動域、固定画像、Quest
 近接・1 m表示、48 / 64構成への影響を確認する。透明glassは現状のQuest負荷と描画順問題を
 増やすため標準要件にせず、必要性が実機画像で示された場合だけ別検討する。
+
+### Deferred visual and instrument redesign backlog
+
+次の3件は後工程で扱う。第4テーマproduction Gate、48 / 64 objects長時間試験、現在のrelease作業を
+止めて着手しない。実装開始時には個別candidate、固定画像、Quest Gateを設ける。
+
+1. **既存3テーマのTrend Monitorをテーマ固有形状へ再設計する。**
+   現状のKinetic Safety / Forge Brass / Orbital Analogは同一筐体形状で色だけが変わる。
+   各style guideに沿った筐体、bezel、取付方法、操作・保守意匠と専用textureへ作り直す。
+   display plane寸法・正面方向・overlay fit・最大4入力・LineRenderer契約は共通化し、
+   テーマ差によって表示面座標やruntime signal処理を分岐させない。
+2. **Orbital Analog meterのカバーガラス上の目盛を除去する。**
+   対象meterを画像とPrefab Previewで特定し、目盛をdial / scale面へ一意に置く。
+   glass相当の前面部品には読み取り目盛を持たせず、二重目盛、coplanar overlap、ちらつき、
+   針との奥行き競合を0にする。全可動域と正面・斜視・1 m表示で確認する。
+3. **Window Panelを4テーマ共通で非メーター型graphic instrumentへ再設計する。**
+   meter、針、vane、アナログ目盛を使わず、2Dの幾何学的なparametric図形を表示する。
+   複数入力を受け付け、入力ごとに位置、回転、scale、色、位相、変形量など明示されたparameterへ
+   割り当て、連続animationとして描画する。入力欠損・無効値・停止時の表示方針、parameter範囲、
+   合成順序、保存schemaを定義する。図形はテーマ固有frame / textureの内側で共通座標系を使い、
+   Quest向けにallocation、更新Hz、頂点数、material数へ上限を設ける。
+
+Window Panelの再設計は単なる3D置換ではなく、複数入力compositionと新しい表示runtimeを伴う。
+Priority 4の入力合成モデルと整合させ、外観制作をsignal / persistence契約より先行させない。
 
 ## Priority 4: multiple-input composition
 
@@ -113,7 +140,8 @@ toolへ切り出す。新しいvalidator研究を3Dモデル改善より優先�
 
 ## Proposed v0.3 exit criteria
 
-- monitor MVPがQuest 3で数値・trendを表示し、保存済み接続を観測できる
+- 独立Trend MonitorがQuest 3で最大4入力の数値・trendを表示し、操作sourceと
+  読取専用meterの保存済み接続を観測できる
 - Range / Threshold parameterをQuest内で編集・保存・復元できる
 - 優先3D候補のうち少なくとも1 familyがGate Cと実機視覚受入を完了する
 - EditMode、39 prefab、motion、signal visual、Quest 48 gateがPASSする

@@ -166,6 +166,57 @@ namespace MatsuMotoMeterAR.Tests
         }
 
         [Test]
+        public void Normalize_AllowsMeterObservationOnlyForTrendMonitor()
+        {
+            var document = CreateDocument(3);
+            document.placements[0].instrumentTypeId = "meter.round";
+            document.placements[1].instrumentTypeId = "meter.window";
+            document.placements[2].instrumentTypeId = "monitor.trend";
+            document.connections.Add(Connection(
+                "meter-to-meter",
+                document.placements[0].placementId,
+                document.placements[1].placementId));
+            document.connections.Add(Connection(
+                "meter-to-monitor",
+                document.placements[0].placementId,
+                document.placements[2].placementId));
+
+            var normalized = PlacementJsonCodec.Normalize(document);
+
+            Assert.That(normalized.connections, Has.Count.EqualTo(1));
+            Assert.That(
+                normalized.connections[0].connectionId,
+                Is.EqualTo("meter-to-monitor"));
+        }
+
+        [Test]
+        public void Normalize_CapsTrendMonitorAtFourInputs()
+        {
+            var document = CreateDocument(6);
+            for (var index = 0; index < 5; index++)
+                document.placements[index].instrumentTypeId = "meter.round";
+            document.placements[5].instrumentTypeId = "monitor.trend";
+            for (var index = 0; index < 5; index++)
+            {
+                document.connections.Add(Connection(
+                    $"monitor-input-{index}",
+                    document.placements[index].placementId,
+                    document.placements[5].placementId));
+            }
+
+            var normalized = PlacementJsonCodec.Normalize(document);
+
+            Assert.That(
+                normalized.connections,
+                Has.Count.EqualTo(
+                    InstrumentSignalPolicy.MaximumTrendMonitorInputs));
+            Assert.That(
+                normalized.connections[
+                    normalized.connections.Count - 1].connectionId,
+                Is.EqualTo("monitor-input-3"));
+        }
+
+        [Test]
         public void Json_MigratesLegacySchemasToV4AndRequiresCommit()
         {
             foreach (var schemaVersion in new[] { 1, 2, 3 })

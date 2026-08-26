@@ -47,6 +47,12 @@ namespace MatsuMotoMeterAR.Editor
         private const string MeterM2n8ManifestPath =
             "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
             "Meter_M2n8.json";
+        private const string TrendMonitorP1ManifestPath =
+            "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
+            "TrendMonitor_P1.json";
+        private const string TrendMonitorP2ManifestPath =
+            "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
+            "TrendMonitor_P2.json";
 
         private static readonly ThemeEntry[] Themes =
         {
@@ -78,7 +84,8 @@ namespace MatsuMotoMeterAR.Editor
             new("MeterMedium", "needle_pivot"),
             new("MeterLarge", "needle_pivot"),
             new("WindowMeter", "needle_pivot"),
-            new("WindowPanel", "vane_pivot")
+            new("WindowPanel", "vane_pivot"),
+            new("TrendMonitor", "display_surface")
         };
 
         private static readonly ModelEntry[] Opus5R2Models =
@@ -168,6 +175,22 @@ namespace MatsuMotoMeterAR.Editor
             BuildCandidateManifest(MeterM2n8ManifestPath);
         }
 
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Build Trend Monitor P1 Manifest Candidate Staging")]
+        public static void BuildTrendMonitorP1ManifestCandidate()
+        {
+            BuildCandidateManifest(TrendMonitorP1ManifestPath);
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Build Trend Monitor P2 Manifest Candidate Staging")]
+        public static void BuildTrendMonitorP2ManifestCandidate()
+        {
+            BuildCandidateManifest(TrendMonitorP2ManifestPath);
+        }
+
         internal static string BuildCandidateManifest(string manifestPath)
         {
             var manifest = CandidateStagingManifest.Load(manifestPath);
@@ -225,7 +248,10 @@ namespace MatsuMotoMeterAR.Editor
                     useSolidRoleMaterials:
                         manifest.candidateId == "Meter_M2n5" ||
                         manifest.candidateId == "Meter_M2n7" ||
-                        manifest.candidateId == "Meter_M2n8");
+                        manifest.candidateId == "Meter_M2n8" ||
+                        manifest.candidateId.StartsWith(
+                            "TrendMonitor_",
+                            StringComparison.Ordinal));
             }
 
             AssetDatabase.SaveAssets();
@@ -724,6 +750,22 @@ namespace MatsuMotoMeterAR.Editor
                 mediumOpaque = opaque;
                 mediumEmissive = emissive;
             }
+            Material trendMonitorOpaque = null;
+            Material trendMonitorReadout = null;
+            foreach (var model in models)
+            {
+                if (model.Key != "TrendMonitor")
+                    continue;
+                trendMonitorOpaque = BuildTrendMonitorRoleMaterial(
+                    materialRoot,
+                    theme,
+                    emissive: false);
+                trendMonitorReadout = BuildTrendMonitorRoleMaterial(
+                    materialRoot,
+                    theme,
+                    emissive: true);
+                break;
+            }
             foreach (var model in models)
             {
                 BuildPrefab(
@@ -731,12 +773,16 @@ namespace MatsuMotoMeterAR.Editor
                     prefabRoot,
                     theme.Folder,
                     model,
-                    IsLargeAsset(model.Key)
+                    model.Key == "TrendMonitor"
+                        ? trendMonitorOpaque
+                        : IsLargeAsset(model.Key)
                         ? largeOpaque
                         : IsMediumAsset(model.Key)
                             ? mediumOpaque
                             : opaque,
-                    IsLargeAsset(model.Key)
+                    model.Key == "TrendMonitor"
+                        ? trendMonitorReadout
+                        : IsLargeAsset(model.Key)
                         ? largeEmissive
                         : IsMediumAsset(model.Key)
                             ? mediumEmissive
@@ -844,6 +890,60 @@ namespace MatsuMotoMeterAR.Editor
             return material;
         }
 
+        private static Material BuildTrendMonitorRoleMaterial(
+            string materialRoot,
+            ThemeEntry theme,
+            bool emissive)
+        {
+            var role = emissive ? "Readout" : "Opaque";
+            var material = LoadOrCreateMaterial(
+                $"{materialRoot}/MAT_{theme.Folder}_V6_TrendMonitor_" +
+                $"{role}_Staging.mat");
+            foreach (var property in new[]
+                     {
+                         "_BaseMap", "_MainTex", "_BumpMap",
+                         "_MetallicGlossMap", "_EmissionMap"
+                     })
+            {
+                if (material.HasProperty(property))
+                    material.SetTexture(property, null);
+            }
+            material.DisableKeyword("_NORMALMAP");
+            material.DisableKeyword("_METALLICSPECGLOSSMAP");
+
+            var baseColor = (theme.Folder, emissive) switch
+            {
+                ("OrbitalAnalog", false) =>
+                    new Color(0.09f, 0.12f, 0.14f, 1f),
+                ("OrbitalAnalog", true) =>
+                    new Color(0.02f, 0.42f, 0.50f, 1f),
+                ("ForgeBrass", false) =>
+                    new Color(0.20f, 0.16f, 0.12f, 1f),
+                ("ForgeBrass", true) =>
+                    new Color(0.58f, 0.31f, 0.035f, 1f),
+                ("KineticSafety", false) =>
+                    new Color(0.11f, 0.13f, 0.14f, 1f),
+                _ => new Color(0.62f, 0.25f, 0.025f, 1f)
+            };
+            material.color = baseColor;
+            if (material.HasProperty("_BaseColor"))
+                material.SetColor("_BaseColor", baseColor);
+            material.SetFloat("_Metallic", emissive ? 0.05f : 0.42f);
+            material.SetFloat("_Smoothness", emissive ? 0.34f : 0.48f);
+            if (emissive)
+            {
+                material.SetColor("_EmissionColor", baseColor * 3.2f);
+                material.EnableKeyword("_EMISSION");
+            }
+            else
+            {
+                material.SetColor("_EmissionColor", Color.black);
+                material.DisableKeyword("_EMISSION");
+            }
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
         private static void ConfigureLitMaterial(
             Material material,
             string textureRoot,
@@ -930,8 +1030,7 @@ namespace MatsuMotoMeterAR.Editor
             var root = new GameObject(prefabName);
             imported.transform.SetParent(root.transform, false);
             imported.transform.localPosition = Vector3.zero;
-            imported.transform.localRotation =
-                Quaternion.Euler(-90f, 0f, 0f);
+            ConfigureImportedOrientation(imported, model);
             imported.transform.localScale = Vector3.one;
 
             try
@@ -1012,6 +1111,49 @@ namespace MatsuMotoMeterAR.Editor
             }
             throw new MissingReferenceException(
                 $"{root.name} is missing {expectedName}.");
+        }
+
+        private static void ConfigureImportedOrientation(
+            GameObject imported,
+            ModelEntry model)
+        {
+            if (model.Key != "TrendMonitor")
+            {
+                imported.transform.localRotation =
+                    Quaternion.Euler(-90f, 0f, 0f);
+                return;
+            }
+
+            imported.transform.localRotation = Quaternion.identity;
+            var displaySurface = FindNode(
+                imported.transform,
+                model.MotionTarget);
+            var mesh = displaySurface.GetComponent<MeshFilter>()?.sharedMesh;
+            if (mesh == null || mesh.normals.Length == 0)
+            {
+                throw new MissingReferenceException(
+                    "TrendMonitor display_surface has no mesh normals.");
+            }
+            var currentNormal = displaySurface.TransformDirection(
+                mesh.normals[0]).normalized;
+            imported.transform.rotation =
+                Quaternion.FromToRotation(currentNormal, Vector3.forward) *
+                imported.transform.rotation;
+            var currentUp = Vector3.ProjectOnPlane(
+                displaySurface.up,
+                Vector3.forward).normalized;
+            if (currentUp.sqrMagnitude < 0.000001f)
+            {
+                throw new InvalidOperationException(
+                    "TrendMonitor display_surface has no usable up axis.");
+            }
+            var roll = Vector3.SignedAngle(
+                currentUp,
+                Vector3.up,
+                Vector3.forward);
+            imported.transform.rotation =
+                Quaternion.AngleAxis(roll, Vector3.forward) *
+                imported.transform.rotation;
         }
 
         internal static bool IsEmissiveMaterialRole(string materialName)

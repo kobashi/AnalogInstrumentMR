@@ -27,6 +27,8 @@ namespace MatsuMotoMeterAR.Instruments
         public const int TriangleBudgetPerInstrument = 5000;
         public const int LargeInstrumentTriangleBudget = 25000;
         public const int SharedMaterialBudgetPerInstrument = 2;
+        public const int SignalMonitorRendererBudget = 9;
+        public const int SignalMonitorMaterialBudget = 2;
         public const int GuaranteedInstrumentsPerRoom = 24;
         public const int StressTestInstrumentsPerRoom = 40;
         public const float MeterSweepDegrees = 115f;
@@ -104,6 +106,11 @@ namespace MatsuMotoMeterAR.Instruments
                     new Vector3(0f, 0f, 0.11f),
                     new Vector3(1.60f, 0.90f, 0.22f),
                     4),
+                MockInstrumentKind.TrendMonitor => new InstrumentGreyboxSpec(
+                    new Vector3(0.44f, 0.28f, 0.10f),
+                    new Vector3(0f, 0f, 0.05f),
+                    new Vector3(0.44f, 0.28f, 0.10f),
+                    3),
                 _ => new InstrumentGreyboxSpec(
                     new Vector3(0.17f, 0.17f, 0.082f),
                     new Vector3(0f, 0f, 0.032f),
@@ -117,7 +124,8 @@ namespace MatsuMotoMeterAR.Instruments
             return kind == MockInstrumentKind.RoundMeterMedium ||
                    kind == MockInstrumentKind.RoundMeterLarge ||
                    kind == MockInstrumentKind.WindowMeter ||
-                   kind == MockInstrumentKind.WindowPanel
+                   kind == MockInstrumentKind.WindowPanel ||
+                   kind == MockInstrumentKind.TrendMonitor
                 ? LargeInstrumentTriangleBudget
                 : TriangleBudgetPerInstrument;
         }

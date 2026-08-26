@@ -73,6 +73,38 @@ def parse_args():
     parser.add_argument("--project-root", required=True)
     parser.add_argument("--theme", choices=THEMES)
     parser.add_argument("--object", dest="object_key", choices=OBJECTS)
+    parser.add_argument(
+        "--source-dir",
+        default=None,
+        help=(
+            "Read the Material blend from here instead of "
+            "ArtSource/Blender/ThemeHardSurfaceV6/<Theme>."
+        ),
+    )
+    parser.add_argument(
+        "--blend-output-dir",
+        default=None,
+        help=(
+            "Write the ProductionReady blend here instead of over the "
+            "production source. Use this for every candidate run."
+        ),
+    )
+    parser.add_argument(
+        "--fbx-output-dir",
+        default=None,
+        help=(
+            "Write the FBX and its report here instead of "
+            "Assets/.../RefinedCandidates/<Theme>/ThemeHardSurfaceV6Material."
+        ),
+    )
+    parser.add_argument(
+        "--name-suffix",
+        default="",
+        help=(
+            "Appended to the ProductionReady blend and FBX stems, so a "
+            "candidate never collides with a production filename."
+        ),
+    )
     return parser.parse_args(args)
 
 
@@ -301,9 +333,19 @@ def placeholder_materials(theme):
     return opaque, emissive
 
 
-def export_one(project_root, theme, key):
+def export_one(
+    project_root,
+    theme,
+    key,
+    source_dir=None,
+    blend_output_dir=None,
+    fbx_output_dir=None,
+    name_suffix="",
+):
     source_dir = (
-        project_root / "ArtSource/Blender/ThemeHardSurfaceV6" / theme
+        Path(source_dir)
+        if source_dir is not None
+        else project_root / "ArtSource/Blender/ThemeHardSurfaceV6" / theme
     )
     source_path = source_dir / f"BL_{key}_{theme}_V6_Material.blend"
     bpy.ops.wm.open_mainfile(filepath=str(source_path))
@@ -324,22 +366,35 @@ def export_one(project_root, theme, key):
     root["runtime_material_contract"] = "opaque + emissive"
     root["atlas_uv_contract"] = "body TL, metal TR, gasket BL, readout BR"
 
+    blend_dir = (
+        Path(blend_output_dir) if blend_output_dir is not None else source_dir
+    )
+    blend_dir.mkdir(parents=True, exist_ok=True)
     prepared_blend = (
-        source_dir / f"BL_{key}_{theme}_V6_ProductionReady.blend"
+        blend_dir
+        / f"BL_{key}_{theme}_V6{name_suffix}_ProductionReady.blend"
     )
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.wm.save_as_mainfile(filepath=str(prepared_blend), compress=True)
     prepared_blend.with_suffix(".blend1").unlink(missing_ok=True)
 
     output_dir = (
-        project_root
+        Path(fbx_output_dir)
+        if fbx_output_dir is not None
+        else project_root
         / "Assets/MatsuMotoMeterAR/Content/RefinedCandidates"
         / theme
         / "ThemeHardSurfaceV6Material"
     )
     output_dir.mkdir(parents=True, exist_ok=True)
-    fbx_path = output_dir / f"SM_{key}_{theme}_V6_Material.fbx"
+    fbx_path = output_dir / f"SM_{key}_{theme}_V6{name_suffix}_Material.fbx"
     common.export_fbx(root, fbx_path)
+
+    def describe(path):
+        try:
+            return str(Path(path).relative_to(project_root))
+        except ValueError:
+            return str(path)
 
     triangles = sum(
         len(mesh.data.polygons) for mesh in meshes
@@ -347,9 +402,9 @@ def export_one(project_root, theme, key):
     report = {
         "theme": theme,
         "object": key,
-        "source": str(source_path.relative_to(project_root)),
-        "prepared_blend": str(prepared_blend.relative_to(project_root)),
-        "fbx": str(fbx_path.relative_to(project_root)),
+        "source": describe(source_path),
+        "prepared_blend": describe(prepared_blend),
+        "fbx": describe(fbx_path),
         "triangles": triangles,
         "renderers": len(meshes),
         "material_slots": ["opaque", "emissive"],
@@ -357,7 +412,7 @@ def export_one(project_root, theme, key):
         "production_integrated": False,
         "authoring_environment": blender_compat.provenance(),
     }
-    report_path = output_dir / f"SM_{key}_{theme}_V6_Material.json"
+    report_path = output_dir / f"SM_{key}_{theme}_V6{name_suffix}_Material.json"
     report_path.write_text(
         json.dumps(report, indent=2) + "\n",
         encoding="utf-8",
@@ -373,7 +428,15 @@ def main():
     objects = (args.object_key,) if args.object_key else OBJECTS
     for theme in themes:
         for key in objects:
-            export_one(project_root, theme, key)
+            export_one(
+                project_root,
+                theme,
+                key,
+                args.source_dir,
+                args.blend_output_dir,
+                args.fbx_output_dir,
+                args.name_suffix,
+            )
 
 
 if __name__ == "__main__":

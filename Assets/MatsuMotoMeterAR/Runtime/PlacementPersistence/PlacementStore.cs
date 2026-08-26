@@ -191,6 +191,8 @@ namespace MatsuMotoMeterAR.PlacementPersistence
 
             var connectionIds = new HashSet<string>(StringComparer.Ordinal);
             var endpointPairs = new HashSet<string>(StringComparer.Ordinal);
+            var trendMonitorInputCounts = new Dictionary<string, int>(
+                StringComparer.Ordinal);
             foreach (var sourceConnection in source.connections)
             {
                 if (normalized.connections.Count >=
@@ -206,6 +208,22 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                         out var connection))
                 {
                     continue;
+                }
+
+                var targetKind = MockInstrumentCatalog.FromTypeId(
+                    activeTypeIds[connection.targetPlacementId]);
+                if (targetKind == MockInstrumentKind.TrendMonitor)
+                {
+                    trendMonitorInputCounts.TryGetValue(
+                        connection.targetPlacementId,
+                        out var inputCount);
+                    if (inputCount >=
+                        InstrumentSignalPolicy.MaximumTrendMonitorInputs)
+                    {
+                        continue;
+                    }
+                    trendMonitorInputCounts[connection.targetPlacementId] =
+                        inputCount + 1;
                 }
                 normalized.connections.Add(connection);
             }
@@ -235,9 +253,8 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                 !connectionIds.Add(connectionId) ||
                 !activeTypeIds.TryGetValue(sourceId, out var sourceTypeId) ||
                 !activeTypeIds.TryGetValue(targetId, out var targetTypeId) ||
-                !InstrumentSignalPolicy.CanSource(
-                    MockInstrumentCatalog.FromTypeId(sourceTypeId)) ||
-                !InstrumentSignalPolicy.CanTarget(
+                !InstrumentSignalPolicy.CanConnect(
+                    MockInstrumentCatalog.FromTypeId(sourceTypeId),
                     MockInstrumentCatalog.FromTypeId(targetTypeId)))
             {
                 return false;

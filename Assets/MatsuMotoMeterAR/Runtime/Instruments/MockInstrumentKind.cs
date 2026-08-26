@@ -14,6 +14,7 @@ namespace MatsuMotoMeterAR.Instruments
         ThrottleLever = 9,
         PowerSlider = 10,
         RoundMeterMedium = 11,
-        RoundMeterLarge = 12
+        RoundMeterLarge = 12,
+        TrendMonitor = 13
     }
 }

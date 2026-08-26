@@ -36,6 +36,12 @@ namespace MatsuMotoMeterAR.Editor
         private const string MeterM2n8ManifestPath =
             "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
             "Meter_M2n8.json";
+        private const string TrendMonitorP1ManifestPath =
+            "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
+            "TrendMonitor_P1.json";
+        private const string TrendMonitorP2ManifestPath =
+            "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
+            "TrendMonitor_P2.json";
 
         [MenuItem(
             "Tools/MatsuMotoMeterAR/Model Replacement/" +
@@ -142,6 +148,22 @@ namespace MatsuMotoMeterAR.Editor
         public static void BuildMeterM2n8Manifest()
         {
             BuildManifest(MeterM2n8ManifestPath);
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Build Trend Monitor P1 Manifest Quest Review APK")]
+        public static void BuildTrendMonitorP1Manifest()
+        {
+            BuildManifest(TrendMonitorP1ManifestPath);
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Build Trend Monitor P2 Manifest Quest Review APK")]
+        public static void BuildTrendMonitorP2Manifest()
+        {
+            BuildManifest(TrendMonitorP2ManifestPath);
         }
 
         internal static string BuildManifest(string manifestPath)

@@ -20,7 +20,8 @@ namespace MatsuMotoMeterAR.Instruments
             Pulse,
             Status,
             Throttle,
-            PowerSlider
+            PowerSlider,
+            Display
         }
 
         [SerializeField] private MotionKind motionKind;

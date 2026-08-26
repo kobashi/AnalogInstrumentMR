@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "Toggle_D5_D10_M2i",
+  "integrationStage": "GateB",
+  "entries": [
+    {
+      "theme": "OrbitalAnalog",
+      "model": "Toggle",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/OrbitalAnalog/staging/fbx/SM_Toggle_OrbitalAnalog_V6_Opus5_D5.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/OrbitalAnalog/reports/Toggle_OrbitalAnalog_V6_Opus5_D5_fbx_export.json",
+      "revision": "D5",
+      "includedRevisions": ["D5"],
+      "requiredRevisions": ["D5"]
+    },
+    {
+      "theme": "ForgeBrass",
+      "model": "Toggle",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/ForgeBrass/staging/fbx/SM_Toggle_ForgeBrass_V6_Opus5_D5_D10.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/ForgeBrass/reports/Toggle_ForgeBrass_V6_Opus5_D5_D10_fbx_export.json",
+      "revision": "D5_D10",
+      "includedRevisions": ["D5", "D10"],
+      "requiredRevisions": ["D5", "D10"]
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "Toggle",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/staging/fbx/SM_Toggle_KineticSafety_V6_Opus5_D5.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/reports/Toggle_KineticSafety_V6_Opus5_D5_fbx_export.json",
+      "revision": "D5",
+      "includedRevisions": ["D5"],
+      "requiredRevisions": ["D5"]
+    }
+  ]
+}

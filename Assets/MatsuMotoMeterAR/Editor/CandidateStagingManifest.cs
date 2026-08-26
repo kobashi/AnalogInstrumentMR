@@ -19,7 +19,8 @@ namespace MatsuMotoMeterAR.Editor
             {
                 "MeterRound", "Lever", "Toggle", "Rotary", "Button",
                 "Lamp", "Throttle", "PowerSlider", "StatusIndicator",
-                "MeterMedium", "MeterLarge", "WindowMeter", "WindowPanel"
+                "MeterMedium", "MeterLarge", "WindowMeter", "WindowPanel",
+                "TrendMonitor"
             },
             StringComparer.Ordinal);
 

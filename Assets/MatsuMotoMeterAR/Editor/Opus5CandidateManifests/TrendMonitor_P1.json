@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "TrendMonitor_P1",
+  "integrationStage": "GateB",
+  "entries": [
+    {
+      "theme": "OrbitalAnalog",
+      "model": "TrendMonitor",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/OrbitalAnalog/TrendMonitor/SM_TrendMonitor_OrbitalAnalog_V6_Opus5_P1.fbx",
+      "revision": "P1",
+      "includedRevisions": ["P1"],
+      "requiredRevisions": ["P1"]
+    },
+    {
+      "theme": "ForgeBrass",
+      "model": "TrendMonitor",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/ForgeBrass/TrendMonitor/SM_TrendMonitor_ForgeBrass_V6_Opus5_P1.fbx",
+      "revision": "P1",
+      "includedRevisions": ["P1"],
+      "requiredRevisions": ["P1"]
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "TrendMonitor",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/KineticSafety/TrendMonitor/SM_TrendMonitor_KineticSafety_V6_Opus5_P1.fbx",
+      "revision": "P1",
+      "includedRevisions": ["P1"],
+      "requiredRevisions": ["P1"]
+    }
+  ]
+}

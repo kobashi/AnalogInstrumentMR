@@ -47,7 +47,8 @@ namespace MatsuMotoMeterAR.Instruments
                     kind != MockInstrumentKind.PowerSlider &&
                     kind != MockInstrumentKind.StatusIndicator &&
                     kind != MockInstrumentKind.WindowMeter &&
-                    kind != MockInstrumentKind.WindowPanel)
+                    kind != MockInstrumentKind.WindowPanel &&
+                    kind != MockInstrumentKind.TrendMonitor)
                 {
                     Debug.LogWarning(
                         $"{theme} visual prefab is missing for {kind}; " +
@@ -468,6 +469,15 @@ namespace MatsuMotoMeterAR.Instruments
                 manifest.transform);
             switch (kind)
             {
+                case MockInstrumentKind.TrendMonitor:
+                    AddMotion(
+                        logic,
+                        MockInstrumentMotion.MotionKind.Display,
+                        motionTarget,
+                        Vector3.forward,
+                        0f,
+                        0f);
+                    break;
                 case MockInstrumentKind.RoundMeter:
                 case MockInstrumentKind.RoundMeterMedium:
                 case MockInstrumentKind.RoundMeterLarge:
@@ -572,7 +582,7 @@ namespace MatsuMotoMeterAR.Instruments
                         MockInstrumentMotion.MotionKind.Meter,
                         motionTarget,
                         Vector3.forward,
-                        55f,
+                        InstrumentGreyboxSpecification.MeterSweepDegrees,
                         0.12f);
                     break;
                 case MockInstrumentKind.WindowPanel:
@@ -581,7 +591,7 @@ namespace MatsuMotoMeterAR.Instruments
                         MockInstrumentMotion.MotionKind.Meter,
                         motionTarget,
                         Vector3.forward,
-                        42f,
+                        InstrumentGreyboxSpecification.MeterSweepDegrees,
                         0.1f);
                     break;
             }
@@ -667,6 +677,7 @@ namespace MatsuMotoMeterAR.Instruments
                 MockInstrumentKind.WindowPanel => "WindowPanel",
                 MockInstrumentKind.RoundMeterMedium => "MeterMedium",
                 MockInstrumentKind.RoundMeterLarge => "MeterLarge",
+                MockInstrumentKind.TrendMonitor => "TrendMonitor",
                 _ => "MeterRound"
             };
             return $"PF_Visual_{key}_{ThemeFolder(theme)}";
@@ -678,6 +689,8 @@ namespace MatsuMotoMeterAR.Instruments
             {
                 MockInstrumentTheme.ForgeBrass => "ForgeBrass",
                 MockInstrumentTheme.KineticSafety => "KineticSafety",
+                MockInstrumentTheme.MachinedErgonomics =>
+                    "MachinedErgonomics",
                 _ => "OrbitalAnalog"
             };
         }

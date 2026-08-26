@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using MatsuMotoMeterAR.Instruments;
+using MatsuMotoMeterAR.Signals;
 using UnityEditor;
 using UnityEngine;
 
@@ -19,6 +21,12 @@ namespace MatsuMotoMeterAR.Editor
         private const string MeterM2n8ManifestPath =
             "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
             "Meter_M2n8.json";
+        private const string TrendMonitorP1ManifestPath =
+            "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
+            "TrendMonitor_P1.json";
+        private const string TrendMonitorP2ManifestPath =
+            "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
+            "TrendMonitor_P2.json";
         private const int TileSize = 512;
 
         [MenuItem(
@@ -85,19 +93,50 @@ namespace MatsuMotoMeterAR.Editor
             RenderNeutralManifest(MeterM2n8ManifestPath);
         }
 
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Render Trend Monitor P1 Visual Review")]
+        public static void RunTrendMonitorP1()
+        {
+            RenderCandidateOnlyManifest(TrendMonitorP1ManifestPath);
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Render Trend Monitor P2 Visual Review")]
+        public static void RunTrendMonitorP2()
+        {
+            RenderCandidateOnlyManifest(TrendMonitorP2ManifestPath);
+        }
+
         internal static string RenderManifest(string manifestPath)
         {
-            return RenderManifest(manifestPath, neutralShapeReview: false);
+            return RenderManifest(
+                manifestPath,
+                neutralShapeReview: false,
+                candidateOnly: false);
         }
 
         internal static string RenderNeutralManifest(string manifestPath)
         {
-            return RenderManifest(manifestPath, neutralShapeReview: true);
+            return RenderManifest(
+                manifestPath,
+                neutralShapeReview: true,
+                candidateOnly: false);
+        }
+
+        internal static string RenderCandidateOnlyManifest(string manifestPath)
+        {
+            return RenderManifest(
+                manifestPath,
+                neutralShapeReview: false,
+                candidateOnly: true);
         }
 
         private static string RenderManifest(
             string manifestPath,
-            bool neutralShapeReview)
+            bool neutralShapeReview,
+            bool candidateOnly)
         {
             var manifest = CandidateStagingManifest.Load(manifestPath);
             var outputPath =
@@ -109,7 +148,7 @@ namespace MatsuMotoMeterAR.Editor
             var lightObject = new GameObject("[Review] Light");
             var camera = cameraObject.AddComponent<Camera>();
             var light = lightObject.AddComponent<Light>();
-            var columnCount = neutralShapeReview ? 2 : 4;
+            var columnCount = candidateOnly ? 4 : neutralShapeReview ? 2 : 4;
             var sheet = new Texture2D(
                 TileSize * columnCount,
                 TileSize * manifest.entries.Length,
@@ -122,9 +161,34 @@ namespace MatsuMotoMeterAR.Editor
                 for (var row = 0; row < manifest.entries.Length; row++)
                 {
                     var entry = manifest.entries[row];
+                    var candidatePath = manifest.CandidatePrefabPath(entry);
+                    if (candidateOnly)
+                    {
+                        var candidateFraming = CalculateFraming(candidatePath);
+                        RenderIntoSheet(
+                            sheet, camera, candidatePath, candidateFraming,
+                            emissionEnabled: false, column: 0, row: row,
+                            rowCount: manifest.entries.Length,
+                            showTrendGraph: true);
+                        RenderIntoSheet(
+                            sheet, camera, candidatePath, candidateFraming,
+                            emissionEnabled: false, column: 1, row: row,
+                            rowCount: manifest.entries.Length,
+                            viewYawDegrees: -32f);
+                        RenderIntoSheet(
+                            sheet, camera, candidatePath, candidateFraming,
+                            emissionEnabled: false, column: 2, row: row,
+                            rowCount: manifest.entries.Length,
+                            viewYawDegrees: 32f);
+                        RenderIntoSheet(
+                            sheet, camera, candidatePath, candidateFraming,
+                            emissionEnabled: false, column: 3, row: row,
+                            rowCount: manifest.entries.Length,
+                            viewYawDegrees: 72f);
+                        continue;
+                    }
                     var activePath =
                         CandidateStagingManifest.ActivePrefabPath(entry);
-                    var candidatePath = manifest.CandidatePrefabPath(entry);
                     var framing = CalculateFraming(activePath, candidatePath);
                     if (neutralShapeReview)
                     {
@@ -184,7 +248,10 @@ namespace MatsuMotoMeterAR.Editor
                 Debug.Log(
                     $"Candidate {manifest.candidateId} Unity visual review " +
                     "rendered. " +
-                    (neutralShapeReview
+                    (candidateOnly
+                        ? "Columns: candidate front, left oblique, right " +
+                          "oblique, side. "
+                        : neutralShapeReview
                         ? "Neutral material columns: active, candidate. "
                         : "Columns: active OFF, active ON, candidate OFF, " +
                           "candidate ON. ") +
@@ -256,6 +323,21 @@ namespace MatsuMotoMeterAR.Editor
             }
         }
 
+        private static Framing CalculateFraming(string candidatePath)
+        {
+            var candidate = Instantiate(candidatePath);
+            try
+            {
+                var bounds = RendererBounds(candidate);
+                var extent = Mathf.Max(bounds.extents.x, bounds.extents.y);
+                return new Framing(extent * 1.18f, bounds.size.z + 1f);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(candidate);
+            }
+        }
+
         private static void RenderIntoSheet(
             Texture2D sheet,
             Camera camera,
@@ -265,7 +347,9 @@ namespace MatsuMotoMeterAR.Editor
             int column,
             int row,
             int rowCount,
-            bool neutralMaterial = false)
+            bool neutralMaterial = false,
+            float viewYawDegrees = 0f,
+            bool showTrendGraph = false)
         {
             var instance = Instantiate(path);
             var target = new RenderTexture(
@@ -288,17 +372,21 @@ namespace MatsuMotoMeterAR.Editor
                     bounds.center.y,
                     0f);
                 bounds = RendererBounds(instance);
+                if (showTrendGraph)
+                    AddTrendGraph(instance);
                 if (neutralMaterial)
                     neutral = ConfigureNeutralMaterial(instance);
                 else
                     ConfigureEmission(instance, emissionEnabled);
                 camera.orthographicSize = framing.OrthographicSize;
+                var yawRadians = viewYawDegrees * Mathf.Deg2Rad;
                 camera.transform.SetPositionAndRotation(
                     new Vector3(
+                        Mathf.Sin(yawRadians) * framing.CameraDistance,
                         0f,
-                        0f,
-                        bounds.center.z + framing.CameraDistance),
-                    Quaternion.Euler(0f, 180f, 0f));
+                        bounds.center.z +
+                            Mathf.Cos(yawRadians) * framing.CameraDistance),
+                    Quaternion.Euler(0f, 180f + viewYawDegrees, 0f));
                 camera.targetTexture = target;
                 camera.Render();
                 RenderTexture.active = target;
@@ -323,6 +411,30 @@ namespace MatsuMotoMeterAR.Editor
                 UnityEngine.Object.DestroyImmediate(target);
                 UnityEngine.Object.DestroyImmediate(neutral);
                 UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        private static void AddTrendGraph(GameObject instance)
+        {
+            var displaySurface = instance
+                .GetComponentInChildren<ThemeVisualManifest>(true)
+                ?.MotionTarget;
+            if (displaySurface == null)
+            {
+                throw new MissingReferenceException(
+                    $"{instance.name}: TrendMonitor display surface missing.");
+            }
+            var monitor = SignalMonitorView.Create(
+                instance.transform,
+                displaySurface);
+            var sampleTime = 0f;
+            foreach (var value in new[] { 0.15f, 0.65f, 0.30f, 0.85f })
+            {
+                monitor.BeginRefresh();
+                monitor.AddSample("review-lever", value, sampleTime);
+                monitor.AddSample("review-meter", value, sampleTime);
+                monitor.EndRefresh();
+                sampleTime += SignalMonitorView.RefreshIntervalSeconds;
             }
         }
 

@@ -50,6 +50,21 @@ namespace MatsuMotoMeterAR.Tests
             Assert.That(manifest.entries, Has.Length.EqualTo(3));
         }
 
+        [Test]
+        public void Load_AcceptsTrendMonitorP2Manifest()
+        {
+            var manifest = CandidateStagingManifest.Load(
+                "Assets/MatsuMotoMeterAR/Editor/" +
+                "Opus5CandidateManifests/TrendMonitor_P2.json");
+
+            Assert.That(manifest.schemaVersion, Is.EqualTo(2));
+            Assert.That(manifest.candidateId, Is.EqualTo("TrendMonitor_P2"));
+            Assert.That(manifest.entries, Has.Length.EqualTo(3));
+            Assert.That(manifest.entries[0].includedRevisions,
+                Is.EqualTo(new[] { "P1", "P2" }));
+            Assert.That(manifest.entries[2].revision, Is.EqualTo("P1"));
+        }
+
         [TestCase("MAT_KineticSafety_V5_Readout", true)]
         [TestCase("MAT_KineticSafety_V6_Emissive", true)]
         [TestCase("MAT_KineticSafety_V5_Body", false)]

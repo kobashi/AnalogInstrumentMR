@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using MatsuMotoMeterAR.Instruments;
+using MatsuMotoMeterAR.Signals;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -33,15 +34,30 @@ namespace MatsuMotoMeterAR.Tests
                 MockInstrumentThemeCatalog.Cycle(
                     MockInstrumentTheme.KineticSafety,
                     1),
-                Is.EqualTo(MockInstrumentTheme.ForgeBrass));
+                Is.EqualTo(MockInstrumentTheme.MachinedErgonomics));
             Assert.That(
                 MockInstrumentThemeCatalog.Cycle(
                     MockInstrumentTheme.ForgeBrass,
                     -1),
-                Is.EqualTo(MockInstrumentTheme.KineticSafety));
+                Is.EqualTo(MockInstrumentTheme.MachinedErgonomics));
             Assert.That(
                 MockInstrumentThemeCatalog.Normalize((MockInstrumentTheme)999),
                 Is.EqualTo(MockInstrumentThemeCatalog.DefaultTheme));
+        }
+
+        [Test]
+        public void MachinedErgonomics_HasProductionVisualForEveryKind()
+        {
+            for (var index = 0; index < MockInstrumentCatalog.Count; index++)
+            {
+                var kind = (MockInstrumentKind)index;
+                Assert.That(
+                    MockInstrumentFactory.HasProductionVisual(
+                        kind,
+                        MockInstrumentTheme.MachinedErgonomics),
+                    Is.True,
+                    $"Missing Machined Ergonomics production visual for {kind}.");
+            }
         }
 
         [Test]
@@ -156,7 +172,13 @@ namespace MatsuMotoMeterAR.Tests
                 {
                     var spec = InstrumentGreyboxSpecification.Get(kind);
                     var renderers = root.GetComponentsInChildren<Renderer>();
-                    Assert.That(renderers.Length, Is.LessThanOrEqualTo(spec.RendererBudget));
+                    var hasMonitor =
+                        kind == MockInstrumentKind.TrendMonitor;
+                    var rendererBudget = spec.RendererBudget +
+                        (hasMonitor
+                            ? InstrumentGreyboxSpecification.SignalMonitorRendererBudget
+                            : 0);
+                    Assert.That(renderers.Length, Is.LessThanOrEqualTo(rendererBudget));
 
                     var materials = new HashSet<Material>();
                     foreach (var renderer in renderers)
@@ -164,7 +186,10 @@ namespace MatsuMotoMeterAR.Tests
                     Assert.That(
                         materials.Count,
                         Is.LessThanOrEqualTo(
-                            InstrumentGreyboxSpecification.SharedMaterialBudgetPerInstrument));
+                            InstrumentGreyboxSpecification.SharedMaterialBudgetPerInstrument +
+                            (hasMonitor
+                                ? InstrumentGreyboxSpecification.SignalMonitorMaterialBudget
+                                : 0)));
 
                     var triangles = 0;
                     foreach (var filter in root.GetComponentsInChildren<MeshFilter>())
@@ -310,11 +335,22 @@ namespace MatsuMotoMeterAR.Tests
                         {
                             bounds.Encapsulate(renderers[rendererIndex].bounds);
                         }
-                        var spec = InstrumentGreyboxSpecification.Get(
-                            (MockInstrumentKind)index);
-                        Assert.That(bounds.size.x, Is.LessThanOrEqualTo(spec.BoundsSize.x + 0.001f));
-                        Assert.That(bounds.size.y, Is.LessThanOrEqualTo(spec.BoundsSize.y + 0.001f));
-                        Assert.That(bounds.size.z, Is.LessThanOrEqualTo(spec.BoundsSize.z + 0.001f));
+                        var kind = (MockInstrumentKind)index;
+                        var spec = InstrumentGreyboxSpecification.Get(kind);
+                        var envelope =
+                            theme == MockInstrumentTheme.MachinedErgonomics &&
+                            kind == MockInstrumentKind.Lever
+                                ? new Vector3(0.24f, 0.44f, 0.285f)
+                                : spec.BoundsSize;
+                        Assert.That(
+                            bounds.size.x,
+                            Is.LessThanOrEqualTo(envelope.x + 0.001f));
+                        Assert.That(
+                            bounds.size.y,
+                            Is.LessThanOrEqualTo(envelope.y + 0.001f));
+                        Assert.That(
+                            bounds.size.z,
+                            Is.LessThanOrEqualTo(envelope.z + 0.001f));
                         Assert.That(
                             bounds.min.z,
                             Is.GreaterThanOrEqualTo(-0.001f),

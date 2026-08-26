@@ -13,7 +13,7 @@ namespace MatsuMotoMeterAR.Instruments
     public static class MockInstrumentCatalog
     {
         public const int PerformanceBaselineCount = 6;
-        public const int Count = 13;
+        public const int Count = 14;
         public const int CategoryCount = 4;
 
         private static readonly MockInstrumentKind[] OrderedKinds =
@@ -22,6 +22,7 @@ namespace MatsuMotoMeterAR.Instruments
             MockInstrumentKind.RoundMeterMedium,
             MockInstrumentKind.RoundMeterLarge,
             MockInstrumentKind.WindowMeter,
+            MockInstrumentKind.TrendMonitor,
             MockInstrumentKind.IndicatorLamp,
             MockInstrumentKind.StatusIndicator,
             MockInstrumentKind.WindowPanel,
@@ -50,6 +51,7 @@ namespace MatsuMotoMeterAR.Instruments
                 MockInstrumentKind.PowerSlider => "control.power_slider",
                 MockInstrumentKind.RoundMeterMedium => "meter.round.medium",
                 MockInstrumentKind.RoundMeterLarge => "meter.round.large",
+                MockInstrumentKind.TrendMonitor => "monitor.trend",
                 _ => "meter.round"
             };
         }
@@ -71,6 +73,7 @@ namespace MatsuMotoMeterAR.Instruments
                 MockInstrumentKind.PowerSlider => "POWER SLIDER",
                 MockInstrumentKind.RoundMeterMedium => "ROUND METER M",
                 MockInstrumentKind.RoundMeterLarge => "ROUND METER L",
+                MockInstrumentKind.TrendMonitor => "TREND MONITOR",
                 _ => "ROUND METER"
             };
         }
@@ -91,6 +94,7 @@ namespace MatsuMotoMeterAR.Instruments
                 "control.power_slider" => MockInstrumentKind.PowerSlider,
                 "meter.round.medium" => MockInstrumentKind.RoundMeterMedium,
                 "meter.round.large" => MockInstrumentKind.RoundMeterLarge,
+                "monitor.trend" => MockInstrumentKind.TrendMonitor,
                 _ => MockInstrumentKind.RoundMeter
             };
         }
@@ -109,7 +113,8 @@ namespace MatsuMotoMeterAR.Instruments
                    typeId == "control.throttle" ||
                    typeId == "control.power_slider" ||
                    typeId == "meter.round.medium" ||
-                   typeId == "meter.round.large";
+                   typeId == "meter.round.large" ||
+                   typeId == "monitor.trend";
         }
 
         public static MockInstrumentKind Cycle(MockInstrumentKind current, int direction)
@@ -131,6 +136,8 @@ namespace MatsuMotoMeterAR.Instruments
                 MockInstrumentKind.RoundMeterLarge =>
                     MockInstrumentCategory.Meters,
                 MockInstrumentKind.WindowMeter =>
+                    MockInstrumentCategory.Meters,
+                MockInstrumentKind.TrendMonitor =>
                     MockInstrumentCategory.Meters,
                 MockInstrumentKind.IndicatorLamp =>
                     MockInstrumentCategory.Indicators,
