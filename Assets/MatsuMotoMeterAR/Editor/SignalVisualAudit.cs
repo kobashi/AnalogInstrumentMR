@@ -24,7 +24,8 @@ namespace MatsuMotoMeterAR.Editor
         {
             MockInstrumentTheme.OrbitalAnalog,
             MockInstrumentTheme.ForgeBrass,
-            MockInstrumentTheme.KineticSafety
+            MockInstrumentTheme.KineticSafety,
+            MockInstrumentTheme.MachinedErgonomics
         };
 
         [MenuItem("Tools/MatsuMotoMeterAR/Audit Signal Visuals")]

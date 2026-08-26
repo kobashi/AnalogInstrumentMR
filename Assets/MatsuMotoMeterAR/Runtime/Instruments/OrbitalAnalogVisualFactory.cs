@@ -582,7 +582,7 @@ namespace MatsuMotoMeterAR.Instruments
                         MockInstrumentMotion.MotionKind.Meter,
                         motionTarget,
                         Vector3.forward,
-                        55f,
+                        InstrumentGreyboxSpecification.MeterSweepDegrees,
                         0.12f);
                     break;
                 case MockInstrumentKind.WindowPanel:
@@ -591,7 +591,7 @@ namespace MatsuMotoMeterAR.Instruments
                         MockInstrumentMotion.MotionKind.Meter,
                         motionTarget,
                         Vector3.forward,
-                        42f,
+                        InstrumentGreyboxSpecification.MeterSweepDegrees,
                         0.1f);
                     break;
             }
@@ -689,6 +689,8 @@ namespace MatsuMotoMeterAR.Instruments
             {
                 MockInstrumentTheme.ForgeBrass => "ForgeBrass",
                 MockInstrumentTheme.KineticSafety => "KineticSafety",
+                MockInstrumentTheme.MachinedErgonomics =>
+                    "MachinedErgonomics",
                 _ => "OrbitalAnalog"
             };
         }

@@ -82,6 +82,15 @@ namespace MatsuMotoMeterAR.Instruments
                    InstrumentThemeVisualFactory.HasVisualPrefab(kind, theme);
         }
 
+        public static bool HasProductionVisual(
+            MockInstrumentKind kind,
+            MockInstrumentTheme theme)
+        {
+            return InstrumentThemeVisualFactory.HasVisualPrefab(
+                kind,
+                MockInstrumentThemeCatalog.Normalize(theme));
+        }
+
         public static bool ApplyTheme(
             GameObject instrument,
             MockInstrumentTheme theme,
@@ -116,6 +125,15 @@ namespace MatsuMotoMeterAR.Instruments
                 contract.VisualSocket,
                 contract.Logic,
                 preview);
+            if (!preview && contract.Kind == MockInstrumentKind.TrendMonitor)
+            {
+                var displaySurface = contract.VisualSocket
+                    .GetComponentInChildren<ThemeVisualManifest>(true)
+                    ?.MotionTarget;
+                var monitor = contract.LabelSocket
+                    .GetComponentInChildren<SignalMonitorView>(true);
+                monitor?.AlignToDisplay(displaySurface);
+            }
             if (!preview && contract.InstrumentInteraction != null)
             {
                 contract.InstrumentInteraction.Configure(
@@ -663,7 +681,7 @@ namespace MatsuMotoMeterAR.Instruments
                     MockInstrumentMotion.MotionKind.Meter,
                     pivot,
                     Vector3.forward,
-                    55f,
+                    InstrumentGreyboxSpecification.MeterSweepDegrees,
                     0.12f);
             }
         }
@@ -742,7 +760,7 @@ namespace MatsuMotoMeterAR.Instruments
                     MockInstrumentMotion.MotionKind.Meter,
                     pivot,
                     Vector3.forward,
-                    42f,
+                    InstrumentGreyboxSpecification.MeterSweepDegrees,
                     0.1f);
             }
         }
@@ -802,6 +820,8 @@ namespace MatsuMotoMeterAR.Instruments
             {
                 MockInstrumentTheme.ForgeBrass => "ForgeBrass",
                 MockInstrumentTheme.KineticSafety => "KineticSafety",
+                MockInstrumentTheme.MachinedErgonomics =>
+                    "MachinedErgonomics",
                 _ => "OrbitalAnalog"
             };
         }

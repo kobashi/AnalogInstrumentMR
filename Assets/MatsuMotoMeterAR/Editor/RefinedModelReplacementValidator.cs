@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -41,6 +42,12 @@ namespace MatsuMotoMeterAR.Editor
         private const string MeterM2n8ManifestPath =
             "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
             "Meter_M2n8.json";
+        private const string TrendMonitorP1ManifestPath =
+            "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
+            "TrendMonitor_P1.json";
+        private const string TrendMonitorP2ManifestPath =
+            "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
+            "TrendMonitor_P2.json";
         private const float BoundsTolerance = 0.001f;
         private const float MountPlaneTolerance = 0.001f;
 
@@ -48,7 +55,8 @@ namespace MatsuMotoMeterAR.Editor
         {
             new("OrbitalAnalog", MockInstrumentTheme.OrbitalAnalog),
             new("ForgeBrass", MockInstrumentTheme.ForgeBrass),
-            new("KineticSafety", MockInstrumentTheme.KineticSafety)
+            new("KineticSafety", MockInstrumentTheme.KineticSafety),
+            new("MachinedErgonomics", MockInstrumentTheme.MachinedErgonomics)
         };
 
         private static readonly ModelEntry[] Models =
@@ -120,6 +128,12 @@ namespace MatsuMotoMeterAR.Editor
                 MockInstrumentKind.WindowPanel,
                 "vane_pivot",
                 "vane",
+                requiredActive: false),
+            new(
+                "TrendMonitor",
+                MockInstrumentKind.TrendMonitor,
+                "display_surface",
+                "display_surface",
                 requiredActive: false)
         };
 
@@ -263,6 +277,22 @@ namespace MatsuMotoMeterAR.Editor
         public static void ValidateSelectedCandidateManifest()
         {
             ValidateCandidateManifest(SelectedManifestPath());
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Validate Trend Monitor P1 Manifest Candidate Staging")]
+        public static void ValidateTrendMonitorP1CandidateManifest()
+        {
+            ValidateCandidateManifest(TrendMonitorP1ManifestPath);
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Validate Trend Monitor P2 Manifest Candidate Staging")]
+        public static void ValidateTrendMonitorP2CandidateManifest()
+        {
+            ValidateCandidateManifest(TrendMonitorP2ManifestPath);
         }
 
         [MenuItem(
@@ -722,9 +752,23 @@ namespace MatsuMotoMeterAR.Editor
                 var result = InspectVisual(
                     instance,
                     model,
-                    allowOptionalFallback
-                        ? null
-                        : V6ReplacementEnvelope(model.Kind));
+                    theme.Theme == MockInstrumentTheme.MachinedErgonomics
+                        ? MachinedErgonomicsEnvelope(model.Kind)
+                        : allowOptionalFallback
+                            ? null
+                            : V6ReplacementEnvelope(model.Kind),
+                    triangleBudgetOverride:
+                        theme.Theme == MockInstrumentTheme.MachinedErgonomics &&
+                        model.Kind == MockInstrumentKind.Lever
+                            ? 7000
+                            : null,
+                    materialBudgetOverride:
+                        theme.Theme == MockInstrumentTheme.MachinedErgonomics &&
+                        model.Kind == MockInstrumentKind.TrendMonitor
+                            ? 3
+                            : null,
+                    useDisplayPlaneContract:
+                        theme.Theme == MockInstrumentTheme.MachinedErgonomics);
                 if (instance.name != expectedName)
                     result.Problems.Add($"Root name must be {expectedName}.");
                 if (instance.transform.localScale != Vector3.one)
@@ -1009,7 +1053,10 @@ namespace MatsuMotoMeterAR.Editor
         private static InspectionResult InspectVisual(
             GameObject instance,
             ModelEntry model,
-            Vector3? boundsEnvelope = null)
+            Vector3? boundsEnvelope = null,
+            int? triangleBudgetOverride = null,
+            int? materialBudgetOverride = null,
+            bool useDisplayPlaneContract = false)
         {
             var result = new InspectionResult();
             var motionTarget = FindNode(
@@ -1030,6 +1077,18 @@ namespace MatsuMotoMeterAR.Editor
                 RequireNode(instance.transform, "status_safe", result);
                 RequireNode(instance.transform, "status_warn", result);
                 RequireNode(instance.transform, "status_danger", result);
+            }
+            if (model.Kind == MockInstrumentKind.TrendMonitor &&
+                motionTarget != null)
+            {
+                if (useDisplayPlaneContract)
+                    ValidateTrendMonitorDisplayPlane(motionTarget, result);
+                else
+                {
+                    ValidateTrendMonitorDisplay(motionTarget, result);
+                    RequireNode(instance.transform, "static_opaque", result);
+                    RequireNode(instance.transform, "static_readout", result);
+                }
             }
 
             if (instance.GetComponentsInChildren<Collider>(true).Length > 0)
@@ -1068,17 +1127,19 @@ namespace MatsuMotoMeterAR.Editor
                 }
             }
             result.Materials = materials.Count;
-            if (result.Materials >
+            var materialBudget = materialBudgetOverride ??
                 InstrumentGreyboxSpecification
-                    .SharedMaterialBudgetPerInstrument)
+                    .SharedMaterialBudgetPerInstrument;
+            if (result.Materials > materialBudget)
             {
                 result.Problems.Add(
                     $"Material count {result.Materials} exceeds budget " +
-                    $"{InstrumentGreyboxSpecification.SharedMaterialBudgetPerInstrument}.");
+                    $"{materialBudget}.");
             }
 
             result.Triangles = CountTriangles(instance);
-            var triangleBudget = TriangleBudget(model.Kind);
+            var triangleBudget = triangleBudgetOverride ??
+                TriangleBudget(model.Kind);
             if (result.Triangles > triangleBudget)
             {
                 result.Problems.Add(
@@ -1154,8 +1215,131 @@ namespace MatsuMotoMeterAR.Editor
                     new Vector3(1.20f, 0.75f, 0.202f),
                 MockInstrumentKind.WindowPanel =>
                     new Vector3(1.60f, 0.90f, 0.22f),
+                MockInstrumentKind.TrendMonitor =>
+                    new Vector3(0.44f, 0.28f, 0.10f),
                 _ => new Vector3(0.17f, 0.17f, 0.082f)
             };
+        }
+
+        private static Vector3 MachinedErgonomicsEnvelope(
+            MockInstrumentKind kind)
+        {
+            return kind == MockInstrumentKind.Lever
+                ? new Vector3(0.24f, 0.44f, 0.15f)
+                : V6ReplacementEnvelope(kind);
+        }
+
+        private static void ValidateTrendMonitorDisplay(
+            Transform displaySurface,
+            InspectionResult result)
+        {
+            var filter = displaySurface.GetComponent<MeshFilter>();
+            var renderer = displaySurface.GetComponent<Renderer>();
+            var mesh = filter?.sharedMesh;
+            if (renderer == null || mesh == null)
+            {
+                result.Problems.Add(
+                    "TrendMonitor display_surface must have a MeshRenderer " +
+                    "and MeshFilter.");
+                return;
+            }
+            if (renderer.bounds.size.x < 0.36f - BoundsTolerance ||
+                renderer.bounds.size.y < 0.18f - BoundsTolerance)
+            {
+                result.Problems.Add(
+                    $"TrendMonitor display surface " +
+                    $"{Format(renderer.bounds.size)} is smaller than " +
+                    "0.36 x 0.18 m.");
+            }
+            foreach (var normal in mesh.normals)
+            {
+                var worldNormal = displaySurface.TransformDirection(normal)
+                    .normalized;
+                if (Vector3.Dot(worldNormal, Vector3.forward) < 0.999f)
+                {
+                    result.Problems.Add(
+                        "TrendMonitor display normals must face local +Z.");
+                    break;
+                }
+            }
+            if (Vector3.Dot(displaySurface.up, Vector3.up) < 0.999f)
+            {
+                result.Problems.Add(
+                    "TrendMonitor display up axis must face local +Y.");
+            }
+        }
+
+        private static void ValidateTrendMonitorDisplayPlane(
+            Transform displaySurface,
+            InspectionResult result)
+        {
+            var filter = displaySurface.GetComponent<MeshFilter>();
+            var renderer = displaySurface.GetComponent<Renderer>();
+            var mesh = filter?.sharedMesh;
+            if (renderer == null || mesh == null)
+            {
+                result.Problems.Add(
+                    "TrendMonitor display_surface must have a MeshRenderer " +
+                    "and MeshFilter.");
+                return;
+            }
+            if (renderer.bounds.size.x < 0.36f - BoundsTolerance ||
+                renderer.bounds.size.y < 0.18f - BoundsTolerance)
+            {
+                result.Problems.Add(
+                    $"TrendMonitor display surface " +
+                    $"{Format(renderer.bounds.size)} is smaller than " +
+                    "0.36 x 0.18 m.");
+            }
+
+            var vertices = mesh.vertices
+                .Select(displaySurface.TransformPoint)
+                .ToArray();
+            var maximumZ = vertices.Max(vertex => vertex.z);
+            var triangles = mesh.triangles;
+            var frontTriangles = 0;
+            const float planeTolerance = 0.00001f;
+            for (var index = 0; index < triangles.Length; index += 3)
+            {
+                var a = vertices[triangles[index]];
+                var b = vertices[triangles[index + 1]];
+                var c = vertices[triangles[index + 2]];
+                if (Mathf.Abs(a.z - maximumZ) > planeTolerance ||
+                    Mathf.Abs(b.z - maximumZ) > planeTolerance ||
+                    Mathf.Abs(c.z - maximumZ) > planeTolerance)
+                    continue;
+                var normal = Vector3.Cross(b - a, c - a).normalized;
+                if (Vector3.Dot(normal, Vector3.forward) < 0.999f)
+                {
+                    result.Problems.Add(
+                        "TrendMonitor front face must point local +Z.");
+                    return;
+                }
+                frontTriangles++;
+            }
+            if (frontTriangles != 2)
+            {
+                result.Problems.Add(
+                    $"TrendMonitor front face must contain 2 triangles; " +
+                    $"actual={frontTriangles}.");
+            }
+
+            var size = mesh.bounds.size;
+            var axes = new[]
+            {
+                (extent: size.x, axis: Vector3.right),
+                (extent: size.y, axis: Vector3.up),
+                (extent: size.z, axis: Vector3.forward)
+            };
+            var heightAxis = axes.OrderByDescending(item => item.extent)
+                .Skip(1).First().axis;
+            if (Vector3.Dot(
+                    displaySurface.TransformDirection(heightAxis).normalized,
+                    Vector3.up) < 0.999f)
+            {
+                result.Problems.Add(
+                    "TrendMonitor display up axis must face local +Y.");
+            }
         }
 
         private static int CountTriangles(GameObject root)

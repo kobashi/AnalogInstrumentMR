@@ -148,7 +148,6 @@ namespace MatsuMotoMeterAR.Placement
         private float modeLockHoldTime;
         private float connectStatusHoldUntil;
         private float nextCurrentRoomPollTime;
-        private float nextSignalMonitorRefreshTime;
         private float pendingCurrentRoomSince;
         private PlacementSurfaceHit stablePlacementSurfaceHit;
         private PlacementSurfaceHit pendingPlacementSurfaceHit;
@@ -2870,11 +2869,6 @@ namespace MatsuMotoMeterAR.Placement
             signalGraphEvaluator.Evaluate(
                 connections,
                 signalInteractions);
-
-            if (Time.unscaledTime < nextSignalMonitorRefreshTime)
-                return;
-            nextSignalMonitorRefreshTime =
-                Time.unscaledTime + SignalMonitorView.RefreshIntervalSeconds;
 
             signalMonitors.Clear();
             foreach (var placement in placements)

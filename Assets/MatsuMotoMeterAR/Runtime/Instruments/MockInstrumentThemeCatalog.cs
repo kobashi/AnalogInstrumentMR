@@ -4,7 +4,7 @@ namespace MatsuMotoMeterAR.Instruments
 {
     public static class MockInstrumentThemeCatalog
     {
-        public const int Count = 3;
+        public const int Count = 4;
         public const MockInstrumentTheme DefaultTheme = MockInstrumentTheme.OrbitalAnalog;
 
         public readonly struct Palette
@@ -40,6 +40,7 @@ namespace MatsuMotoMeterAR.Instruments
             {
                 MockInstrumentTheme.ForgeBrass => "forge-brass",
                 MockInstrumentTheme.KineticSafety => "kinetic-safety",
+                MockInstrumentTheme.MachinedErgonomics => "machined-ergonomics",
                 _ => "orbital-analog"
             };
         }
@@ -51,6 +52,8 @@ namespace MatsuMotoMeterAR.Instruments
             {
                 MockInstrumentTheme.ForgeBrass => "FORGE BRASS",
                 MockInstrumentTheme.KineticSafety => "KINETIC SAFETY",
+                MockInstrumentTheme.MachinedErgonomics =>
+                    "MACHINED ERGONOMICS",
                 _ => "ORBITAL ANALOG"
             };
         }
@@ -61,6 +64,8 @@ namespace MatsuMotoMeterAR.Instruments
             {
                 "forge-brass" => MockInstrumentTheme.ForgeBrass,
                 "kinetic-safety" => MockInstrumentTheme.KineticSafety,
+                "machined-ergonomics" =>
+                    MockInstrumentTheme.MachinedErgonomics,
                 _ => DefaultTheme
             };
         }
@@ -100,6 +105,13 @@ namespace MatsuMotoMeterAR.Instruments
                     new Color(1f, 0.25f, 0.035f),
                     new Color(1f, 0.72f, 0.04f),
                     new Color(0.08f, 1f, 0.58f)),
+                MockInstrumentTheme.MachinedErgonomics => new Palette(
+                    new Color(0.72f, 0.75f, 0.78f),
+                    new Color(0.18f, 0.24f, 0.28f),
+                    new Color(0.012f, 0.020f, 0.028f),
+                    new Color(0.05f, 0.88f, 0.92f),
+                    new Color(1f, 0.52f, 0.08f),
+                    new Color(0.18f, 1f, 0.58f)),
                 _ => new Palette(
                     new Color(0.12f, 0.14f, 0.16f),
                     new Color(0.72f, 0.75f, 0.7f),
