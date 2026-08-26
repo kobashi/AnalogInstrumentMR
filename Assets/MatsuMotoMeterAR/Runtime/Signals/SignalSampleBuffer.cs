@@ -31,6 +31,14 @@ namespace MatsuMotoMeterAR.Signals
             Count = 0;
         }
 
+        public void SetNewest(float value)
+        {
+            if (Count == 0)
+                throw new InvalidOperationException("The buffer is empty.");
+            var newest = (nextIndex - 1 + samples.Length) % samples.Length;
+            samples[newest] = value;
+        }
+
         public float GetOldestFirst(int index)
         {
             if (index < 0 || index >= Count)
