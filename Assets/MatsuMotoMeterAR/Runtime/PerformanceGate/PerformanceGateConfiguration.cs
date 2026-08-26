@@ -87,6 +87,15 @@ namespace MatsuMotoMeterAR.PerformanceGate
 
         public static MockInstrumentTheme ParseTheme(string value)
         {
+            var byId = MockInstrumentThemeCatalog.FromThemeId(value);
+            if (!string.IsNullOrWhiteSpace(value) &&
+                string.Equals(
+                    MockInstrumentThemeCatalog.GetThemeId(byId),
+                    value,
+                    System.StringComparison.OrdinalIgnoreCase))
+            {
+                return byId;
+            }
             if (!string.IsNullOrWhiteSpace(value) &&
                 System.Enum.TryParse(value, true, out MockInstrumentTheme parsed))
             {
@@ -98,7 +107,11 @@ namespace MatsuMotoMeterAR.PerformanceGate
 
         public static int NormalizeDuration(int requestedSeconds)
         {
-            return requestedSeconds == 60 ? 60 : 600;
+            return requestedSeconds == 60 ||
+                   requestedSeconds == 600 ||
+                   requestedSeconds == 1800
+                ? requestedSeconds
+                : 600;
         }
 
         public static float NormalizeDistance(float requestedMeters)

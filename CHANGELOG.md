@@ -8,6 +8,11 @@
 
 ### Added
 
+- 第4テーマ`Machined Ergonomics`。受入済み14機種のproduction model、1K atlas、
+  opaque／emissive／Trend Monitor暗色表示面material、独立prefabを追加し、
+  theme ID `machined-ergonomics`として通常runtimeへ登録
+- 候補領域からproductionへmesh／material参照を付け替え、candidate依存0を検査する
+  idempotentなTheme 4 production promoterと専用Quest Gate APK builder
 - 独立配置できる`monitor.trend`計器。最大4接続を色分けした現在値と32 sampleの
   短時間trendで同時表示し、通常の操作入力に加えて読取専用meterの出力も観測できる。
   信号評価とは分離した5 Hz更新、共有material、固定長bufferにより
@@ -31,10 +36,15 @@
 
 ### Validated
 
-- Unity EditMode 143 / 143、active visual prefab 39 / 39
+- Unity EditMode 154 / 154、Machined Ergonomics production prefab 14 / 14、
+  installed active visual prefab 53 / 53
+- 4テーマmotion 16 / 16、signal visual 8 / 8、candidate dependency 0
 - M2n8 Gate C readiness 16 / 16
 - Quest 3の48配置gate／64配置stress（各10分、baseline-relative）と
   M2n8 production smoke
+- Machined Ergonomics productionの48配置30分stability Gateと、ユーザー判断で
+  短縮した64配置10分stress。48はGC 0／delayed 0.017%、64はGC 15 `OBSERVE`／
+  delayed 0.047%、両runともfatal・thermal stop・frame allocation 0
 
 ## [0.2.0-concept.1] - 2026-07-30
 

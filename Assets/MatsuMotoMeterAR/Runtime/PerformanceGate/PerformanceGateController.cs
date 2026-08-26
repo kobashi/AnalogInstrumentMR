@@ -10,7 +10,9 @@ namespace MatsuMotoMeterAR.PerformanceGate
     public sealed class PerformanceGateController : MonoBehaviour
     {
         private const float WarmupSeconds = 15f;
-        private const int MaximumSamples = 50000;
+        // 30 minutes at 72 Hz is about 129,600 frames. Keep enough headroom so
+        // the final percentile and delayed-frame result cover the full run.
+        private const int MaximumSamples = 150000;
         private const double VsyncMilliseconds = 1000.0 / 72.0;
 
         private readonly FrameTiming[] latestTiming = new FrameTiming[1];
@@ -37,7 +39,7 @@ namespace MatsuMotoMeterAR.PerformanceGate
                 return;
             }
 
-            var host = new GameObject("[Performance Gate] 12-24-40 Scenario");
+            var host = new GameObject("[Performance Gate] Quest Scenario");
             DontDestroyOnLoad(host);
             host.AddComponent<PerformanceGateController>();
         }

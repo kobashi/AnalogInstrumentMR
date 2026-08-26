@@ -12,13 +12,13 @@ APK="${APK:-Builds/Performance/AnalogInstrumentMR-v0.2.0-perfgate-quest3.apk}"
 INSTALL_APK="${INSTALL_APK:-1}"
 
 case "$THEME" in
-  OrbitalAnalog|ForgeBrass|KineticSafety) ;;
-  *) echo "theme must be OrbitalAnalog, ForgeBrass, or KineticSafety" >&2; exit 64 ;;
+  OrbitalAnalog|ForgeBrass|KineticSafety|MachinedErgonomics|machined-ergonomics) ;;
+  *) echo "theme must be a registered production theme" >&2; exit 64 ;;
 esac
 
 case "$MEASUREMENT_SECONDS" in
-  600) ;;
-  *) echo "matrix requires MEASUREMENT_SECONDS=600" >&2; exit 64 ;;
+  600|1800) ;;
+  *) echo "matrix requires MEASUREMENT_SECONDS=600 or 1800" >&2; exit 64 ;;
 esac
 
 case "$INSTALL_APK" in

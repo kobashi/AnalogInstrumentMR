@@ -423,3 +423,19 @@ T91. 検証。3機種のcollider union centreがCodexの実測と完全一致。
 Blend / FBXはSHA照合で無変更。
 **副作用として`pivot_local_unity`のYも反転した**（Lever: −0.080 → +0.080）。
 Codexの実測値が無い項目なので、staging側での確認を依頼する。
+
+T92. §279でCodexがpivotをUnity実測し3機種PASS。
+Lever `[0, 0.080, 0.018]`、MeterRound / Toggleはz成分のみ。§278.4の座標変換が確認された。
+
+T93. **私の見落としをCodexが2件直した。**
+(1) §278の補正scriptは`combined_unity`とcollider unionを再計算したが、
+`collider_union_matches_continuous_scan.continuous_scan_unity`を**再計算していなかった**ため、
+そこだけ旧Y符号が残っていた。
+(2) `agrees`が**sizeしか比較しておらず**、centreの不一致を見逃す実装だった。
+Codexはmin / max / size / centre全成分比較へ強化し、補正scriptからも再計算するようにした。
+
+T94. 照合。3機種ともunionとcontinuous scanのmin / max / size / centreが一致し`agrees: true`。
+MeterRound centreは両方`[0, +0.000583, 0.032]`。Blend / FBXはSHA照合で無変更。
+
+T95. **Theme 4 Phase 1 geometry、Phase 2材質設計、source report整合がcloseされた。**
+次はCodex側の隔離candidate material / prefab builder。Opus 5は待機。

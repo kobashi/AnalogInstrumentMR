@@ -7,7 +7,7 @@ retain saved placement data and permissions.
 An experimental Unity 6 Mixed Reality project for placing modular analog
 instruments and physical controls on walls, floors, and ceilings on Meta Quest.
 Placed objects use Spatial Anchors for local persistence and can switch among
-three original visual themes without recreating their anchor roots.
+four visual themes without recreating their anchor roots.
 
 This is an independent, unofficial open-source project. It is not affiliated
 with or endorsed by Meta, Unity, any artist, studio, publisher, or other rights
@@ -23,9 +23,11 @@ candidate Gate C validation, and the approved M2n8 Kinetic Safety meters.
 
 The application includes:
 
-- 13 instrument types in four functional categories: meters, indicators,
+- 14 instrument types in four functional categories: meters, indicators,
   switches, and motion controls
-- 39 V6 visual prefabs across Orbital Analog, Forge Brass, and Kinetic Safety
+- 53 authored visual prefabs across Orbital Analog, Forge Brass,
+  Kinetic Safety, and Machined Ergonomics; the original themes use the
+  runtime fallback for Trend Monitor
 - Operation, Edit, and Connect modes
 - two-hand beam/trigger interaction, contact buttons, and grip-motion lever,
   throttle, and power-slider controls
@@ -38,10 +40,11 @@ The application includes:
   runtime Current Room switching
 - shared Spatial Anchors, restoration, and automatic re-anchoring
 
-The current `main` baseline passes all 133 Unity EditMode tests and all 39
-active visual-prefab checks. Quest 3 passed the 48-object gate and 64-object
-stress scenario in 10-minute baseline-relative runs, as well as the M2n8
-production smoke review. Quest 3S remains unverified. See
+The current development baseline passes all 154 Unity EditMode tests and all
+53 installed production visual-prefab checks. Quest 3 passed the Machined Ergonomics
+48-object 30-minute stability gate and the shortened 64-object 10-minute stress
+characterization, as well as the earlier baseline-relative matrix and M2n8 production
+smoke review. Quest 3S remains unverified. See
 [`docs/releases/v0.2.0-concept.1.md`](docs/releases/v0.2.0-concept.1.md).
 
 The proposed next-development priorities are documented in

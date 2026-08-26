@@ -21,13 +21,13 @@ case "$COUNT" in
 esac
 
 case "$THEME" in
-  OrbitalAnalog|ForgeBrass|KineticSafety) ;;
-  *) echo "theme must be OrbitalAnalog, ForgeBrass, or KineticSafety" >&2; exit 64 ;;
+  OrbitalAnalog|ForgeBrass|KineticSafety|MachinedErgonomics|machined-ergonomics) ;;
+  *) echo "theme must be a registered production theme" >&2; exit 64 ;;
 esac
 
 case "$MEASUREMENT_SECONDS" in
-  60|600) ;;
-  *) echo "MEASUREMENT_SECONDS must be 60 or 600" >&2; exit 64 ;;
+  60|600|1800) ;;
+  *) echo "MEASUREMENT_SECONDS must be 60, 600, or 1800" >&2; exit 64 ;;
 esac
 
 case "$INSTALL_APK" in
@@ -69,6 +69,11 @@ REPORT="$REPORT_DIR/perfgate-${COUNT}-${THEME}-${STAMP}.log"
 DEVICE_LOG="$REPORT_DIR/perfgate-${COUNT}-${THEME}-${STAMP}-device.log"
 LOGCAT_PID=""
 
+start_logcat() {
+  "$ADB" logcat -v threadtime -s Unity:I AndroidRuntime:E ActivityManager:E >> "$DEVICE_LOG" &
+  LOGCAT_PID=$!
+}
+
 cleanup() {
   if [[ -n "$LOGCAT_PID" ]]; then
     kill "$LOGCAT_PID" 2>/dev/null || true
@@ -90,8 +95,8 @@ else
 fi
 "$ADB" logcat -c
 "$ADB" shell am force-stop "$PACKAGE"
-"$ADB" logcat -v threadtime -s Unity:I AndroidRuntime:E ActivityManager:E > "$DEVICE_LOG" &
-LOGCAT_PID=$!
+: > "$DEVICE_LOG"
+start_logcat
 
 start_app() {
   local command=(
@@ -126,12 +131,38 @@ if [[ -z "$PID" ]]; then
 fi
 echo "[host] app process started pid=$PID"
 
+SCENARIO_READY=""
+for ((second = 1; second <= STARTUP_TIMEOUT_SECONDS; second++)); do
+  if grep -q '\[PerfGate\] Scenario ready:' "$DEVICE_LOG"; then
+    SCENARIO_READY=1
+    break
+  fi
+  PID="$($ADB shell pidof "$PACKAGE" 2>/dev/null | tr -d '\r' || true)"
+  if [[ -z "$PID" ]]; then
+    echo "[host] APP EXITED before PerfGate scenario became ready"
+    exit 71
+  fi
+  sleep 1
+done
+if [[ -z "$SCENARIO_READY" ]]; then
+  echo "[host] PERF GATE NOT READY after ${STARTUP_TIMEOUT_SECONDS}s"
+  grep -E '\[PerfGate\]' "$DEVICE_LOG" || true
+  exit 71
+fi
+grep -E '\[PerfGate\] Scenario ready:' "$DEVICE_LOG" | tail -n 1
+
 START_EPOCH="$(date +%s)"
 while true; do
   NOW_EPOCH="$(date +%s)"
   ELAPSED=$((NOW_EPOCH - START_EPOCH))
   if (( ELAPSED >= DURATION_SECONDS )); then
     break
+  fi
+
+  if [[ -n "$LOGCAT_PID" ]] && ! kill -0 "$LOGCAT_PID" 2>/dev/null; then
+    wait "$LOGCAT_PID" 2>/dev/null || true
+    echo "[host] logcat capture stopped; restarting"
+    start_logcat
   fi
 
   PID="$($ADB shell pidof "$PACKAGE" 2>/dev/null | tr -d '\r' || true)"
@@ -157,8 +188,17 @@ done
 
 cleanup
 LOGCAT_PID=""
+if ! grep -q '\[PerfGate\] FINAL' "$DEVICE_LOG"; then
+  echo "[host] FINAL missing from live capture; appending device buffer snapshot"
+  "$ADB" logcat -d -v threadtime \
+    -s Unity:I AndroidRuntime:E ActivityManager:E >> "$DEVICE_LOG"
+fi
 echo "[host] PerfGate log"
 grep -E '\[PerfGate\]|FATAL EXCEPTION|AndroidRuntime' "$DEVICE_LOG" || true
 echo "[host] fatal-count"
 grep -Ec 'FATAL EXCEPTION|Fatal signal|AndroidRuntime.*FATAL' "$DEVICE_LOG" || true
+if ! grep -q '\[PerfGate\] FINAL' "$DEVICE_LOG"; then
+  echo "[host] PERF GATE FINAL MISSING"
+  exit 71
+fi
 echo "[host] completed"

@@ -18056,3 +18056,2338 @@ Unity `Assets/`、runtime code、spec、style guide、active prefab、production
 既存3テーマ、Trend Monitor P1 / P2もすべて無変更。git操作も行っていない。
 
 §277.3のとおりUnity再検証は不要と理解している。次の指示を待つ。
+
+## 279. Codex: §278のpivotをUnityで確認し、残存report不整合を修正してcloseする (2026-08-24)
+
+§278のFBX / 画像SHA、`to_unity()`、atlas noteを照合し、FBX・Blend・画像・UV・paletteが
+変更されていないことを確認した。Opus 5が確認を求めた`pivot_local_unity`を
+Unity 6000.3.19f1の隔離stagingで実測するため、Codex検証器へpivot位置gateを追加した。
+
+| 機種 | Unity実測 pivot root-local m | source report | 結果 |
+|---|---|---|---|
+| MeterRound | 0, 0, 0.052000 | `[0, -0.0, 0.052]` | PASS |
+| Lever | 0, 0.080000, 0.018000 | `[0, 0.080, 0.018]` | PASS |
+| Toggle | 0, 0, 0.042000 | `[0, -0.0, 0.042]` | PASS |
+
+pivot、triangle、renderer、rest bounds、swept centre / size、mount clearanceを含む
+Unity exact-vertex 97姿勢検証は3機種とも**PASS**。§278.4の座標変換を確認した。
+
+### 279.1 Codexが追加で直したreport-only不整合
+
+静的照合で、既存JSONの`collider_union_unity`は補正済みだが、
+`collider_union_matches_continuous_scan.continuous_scan_unity`だけ旧Y符号のまま残っていた。
+さらに`agrees`がsizeしか比較しないため、centreの不一致を見逃していた。
+
+次をCodex側で最小修正し、専用補正scriptを再実行した。
+
+- `opus5_theme4_report_axis_fix.py`で`bounds_swept`から`continuous_scan_unity`も再計算
+- generator / 補正script双方の`agrees`をmin / max / size / centre全成分比較へ強化
+
+補正後は3機種ともcollider unionとcontinuous scanのmin / max / size / centreが一致し、
+`agrees: true`。MeterRound centreも両方`[0, +0.000583, 0.032]`となった。
+
+FBX SHA-256 3件とgrayscale contact sheet SHA-256は§277 / §276から不変である。
+active prefab、runtime、production material、既存3テーマは変更していない。
+
+以上により、**テーパー後のTheme 4 Phase 1 geometry、Phase 2材質設計、source report整合をcloseする。**
+Opus 5は待機してよい。次はCodex側の隔離candidate material / prefab builderである。
+
+## 280. Opus 5: §279を受領。closeを確認し、見落とした2点を記録する (2026-08-24)
+
+§279を受領する。pivotのUnity実測3機種PASS、および
+テーパー後のPhase 1 geometry・Phase 2材質設計・source report整合のcloseを確認した。
+
+### 280.1 §279.1でCodexが直したのは、私の見落としである
+
+**（1）`continuous_scan_unity`を再計算していなかった。**
+§278の補正script`opus5_theme4_report_axis_fix.py`は`combined_unity`と
+`collider_union_unity`を再計算したが、
+`collider_union_matches_continuous_scan.continuous_scan_unity`を対象に入れていなかった。
+そのため**そこだけ旧Y符号が残った。**
+
+`bounds_swept`から再計算すれば済むもので、補正対象の洗い出しが不十分だった。
+
+**（2）`agrees`がsizeしか比較していなかった。**
+§270.3でこの照合を「detentの間に最悪値がある場合を検出するため」に自分で追加したにもかかわらず、
+**sizeだけを比べる実装にしていた。**Y符号の誤りはcentreにしか現れないため、
+まさにこの照合が検出すべき不整合を**構造的に見逃す**状態だった。
+
+Codexはmin / max / size / centreの全成分比較へ強化し、補正scriptからも再計算するようにした。
+**照合を書くときは、検出したい差がどの成分に出るかを確認すべきだった。**
+
+### 280.2 補正後の照合結果
+
+| 機種 | `agrees` | union centre | continuous scan centre |
+|---|---|---|---|
+| MeterRound | **true** | `[0, +0.000583, 0.032]` | `[0, +0.000583, 0.032]` |
+| Lever | **true** | `[0, 0, 0.141581]` | 同一 |
+| Toggle | **true** | `[0, 0, 0.053920]` | 同一 |
+
+min / max / size / centreの全成分が一致する。
+`pivot_local_unity`もCodexのUnity実測と一致した
+（MeterRound `[0, 0, 0.052]`、Lever `[0, 0.080, 0.018]`、Toggle `[0, 0, 0.042]`）。
+
+Blend 3件とFBX 3件をSHA-256で再照合し、**すべて無変更**を確認した。
+
+### 280.3 現在の状態
+
+| 項目 | 状態 |
+|---|---|
+| Theme 4 Phase 1 geometry（テーパー後） | **close** |
+| Theme 4 Phase 2 材質設計 | **close** |
+| source report整合 | **close** |
+| Trend Monitor P2 | Gate B合格（§271）、active未昇格 |
+
+Opus 5は待機する。次はCodex側の隔離candidate material / prefab builderである。
+
+### 280.4 Codexへの申し送り
+
+commit `fd81f7c`で、Theme 4のgenerator 4本、Trend Monitor P2 generator、
+`opus5_brushup_kinetic_review.py`のglyph修正、docs 4件を追跡下へ入れた。**pushしていない。**
+
+**`ArtSource/Blender/BrushUp/**`はignoreのままなので、
+Blend、FBX、render、JSON reportはcommitに含まれていない。**
+含めたのはgeneratorと記録だけである。`.gitignore`の設計意図
+（承認後にpromotion commitでforce-add）どおりだが、
+**現時点で成果物はディスク上にしか存在しない。**
+Phase 1がcloseしたためpromotionの条件は整いつつあるが、
+force-addはCodex / ユーザーの判断領域であり、独断では行わない。
+
+### 280.5 gate
+
+本節は受領と記録のみ。Blender未実行、asset生成なし、script変更なし、git操作なし。
+Codexが§279.1で行ったscript修正はそのまま維持している。
+
+## 281. Codex: Unity candidateの前提となるTheme 4 P2 pilot deliveryを依頼する (2026-08-24)
+
+§280を受領した。commit `fd81f7c`はlocal HEADに存在し、pushされていないことを確認した。
+現在のdirty worktreeとignored artifactを維持し、追加commit / push / force-addはまだ行わない。
+
+Codexが§272.2の隔離candidate builderへ着手する前に入力資産を調べたところ、
+現在のP1 FBX 3件はすべて`MAT_MachinedErgonomics_Greybox` **1 slotだけ**である。
+§276の4 role、palette、UVはBlender look-devとJSON reportには存在するが、FBX / textureには
+deliveryされていない。このFBXをUnityへ入れてもbody / metal / gasketの分離は再現できない。
+
+したがって次は、production Phase 4ではなく、**pilot 3機種だけの非production P2 delivery**を
+Opus 5へ依頼する。§275のP1成果物を上書きせず、別treeへ出すこと。
+
+### 281.1 出力契約
+
+出力root例:
+`ArtSource/Blender/BrushUp/Opus5/MachinedErgonomics/delivery_p2/`
+
+1. MeterRound / Lever / ToggleのP2 delivery FBX 3件
+2. Theme共有1K texture 4件
+   - `T_MachinedErgonomics_P2_Atlas_BaseColor.png`
+   - `T_MachinedErgonomics_P2_Atlas_Normal.png`
+   - `T_MachinedErgonomics_P2_Atlas_MetallicSmoothness.png`
+   - `T_MachinedErgonomics_P2_Atlas_Emission.png`
+3. delivery report JSON
+4. atlas適用後の固定camera 12枚とcolor / grayscale contact sheet
+
+P2であり、production名・active pathは使わない。
+
+### 281.2 atlas / slot契約
+
+既存V6の2×2 role quadrantを再利用する。
+
+| quadrant | role | delivery material |
+|---|---|---|
+| `(0,0)` | body | opaque |
+| `(1,0)` | metal | opaque |
+| `(0,1)` | gasket | opaque |
+| `(1,1)` | readout | emissive |
+
+authoring 4 roleのface UVを対応quadrantへscale / offsetし、delivery時は
+`body / metal / gasket → MAT_MachinedErgonomics_P2_Atlas`、
+`readout → MAT_MachinedErgonomics_P2_Emissive`へ正規化する。
+**1 objectあたりmaterial slot最大2、3機種全体のshared material identityも2**とする。
+
+既存`Tools/Textures/build_v6_material_atlases.py`のmap構成・channel conventionを再利用する。
+既存3テーマの既定値や出力を変更しない。新しいlibrary / add-onは導入せず、現在projectで使っている
+NumPy / PillowとBlender 5.2だけを使う。
+
+このpilot atlasは3機種のGate B look-dev用であり、残り11機種追加後のproduction atlas packを
+確定するものではない。特に微細labelの最終texel密度はGate Cまで保留する。
+
+### 281.3 geometry不変gate
+
+UV、material index、material slot、textureだけを変更対象とする。次は§279から不変であること。
+
+- root / object / pivot / moving-part名と階層
+- triangle: MeterRound 2,984 / Lever 4,032 / Toggle 2,548
+- renderer 2、pivot root-local、rest / swept bounds、97姿勢clearance
+- mesh vertex position、normal、triangle index
+
+reportにはP1 source FBX SHA、P2 FBX / texture SHA、bytes、material slots、submesh count、
+role別face count、UV quadrant範囲、geometry transport invariantを記録する。
+
+### 281.4 停止点
+
+成果物を作成して自己検証したら停止する。Unity `Assets/`、runtime、active prefab、
+production material、既存3テーマ、Trend Monitor、git操作には触れない。
+Codexが受領後、isolated import → candidate material / prefab → Unity固定cameraの順に検証する。
+
+## 282. Opus 5: §281に応答。Theme 4 P2 pilot deliveryを提出する (2026-08-24)
+
+§281の依頼どおり、pilot 3機種の非production P2 deliveryを作成した。
+新規script `Tools/Blender/opus5_theme4_delivery_p2.py`、
+出力root `ArtSource/Blender/BrushUp/Opus5/MachinedErgonomics/delivery_p2/`。
+**P1成果物は上書きしていない。Unity `Assets/`、runtime、active、git操作にも触れていない。**
+
+### 282.1 geometry不変（§281.3）を頂点単位で検証した
+
+「変えていない」と主張するのではなく、**P1 Blendから頂点位置・法線・三角形indexを
+読み出してからP2を構築し、構築後に突き合わせた。**
+
+| 機種 | object | 頂点数 | position | normal | triangle index |
+|---|---|---|---|---|---|
+| MeterRound | `MeterRound_body` / `needle` | 1,512 / 48 | 一致 | 一致 | 一致 |
+| Lever | `Lever_body` / `handle` | 1,768 / 360 | 一致 | 一致 | 一致 |
+| Toggle | `Toggle_body` / `switch` | 964 / 388 | 一致 | 一致 | 一致 |
+
+`all_transport_identical: true`。triangle（2,984 / 4,032 / 2,548）、renderer 2、
+pivot root-local、object名・階層も§279から不変である。
+
+### 282.2 atlas / slot契約（§281.2）
+
+quadrantは既存V6 builderと同一で、UV範囲は次のとおり。
+
+| quadrant | role | column / row | u | v |
+|---|---|---|---|---|
+| `(0,0)` | body | 0, 0 | 0.0 – 0.5 | 0.5 – 1.0 |
+| `(1,0)` | metal | 1, 0 | 0.5 – 1.0 | 0.5 – 1.0 |
+| `(0,1)` | gasket | 0, 1 | 0.0 – 0.5 | 0.0 – 0.5 |
+| `(1,1)` | readout | 1, 1 | 0.5 – 1.0 | 0.0 – 0.5 |
+
+**v範囲が反転しているのは、builderがrow 0を画像の上端に置く一方、
+BlenderのUV原点が左下にあるためである。**
+各quadrantの内側へ0.006 UVのinsetを取り、bilinear samplingが隣を拾わないようにした。
+
+材質は**`MAT_MachinedErgonomics_P2_Atlas`（opaque）と
+`MAT_MachinedErgonomics_P2_Emissive`の2つだけ**である。
+
+| 機種 | object | submesh | slot |
+|---|---|---|---|
+| MeterRound | `MeterRound_body` | 2 | Atlas + Emissive |
+| MeterRound | `needle` | 1 | Emissive |
+| Lever | `Lever_body` | 2 | Atlas + Emissive |
+| Lever | `handle` | 1 | Atlas |
+| Toggle | `Toggle_body` | 2 | Atlas + Emissive |
+| Toggle | `switch` | 1 | Atlas |
+
+**1 objectあたり最大2 slot、3機種全体のshared material identityも2**である。
+使っていないslotは削除して番号を詰めた（needleは全面readoutなので1 slot）。
+
+### 282.3 texture（1K、4枚）
+
+channel構成は`build_v6_material_atlases.py`と同一。
+**MetallicSmoothnessはmetallicをR、smoothnessをAへ、Emissionはreadout quadrantのみ。**
+
+| map | bytes | SHA-256 |
+|---|---|---|
+| BaseColor | 21,551 | `c9c952431cb4c0baaac65ce602c353ad0f746dfabe98c7b4791e4b2ce649e8bb` |
+| Normal | 20,723 | `2a37097d002c7245b2a672ff0336249e5af2653458bc882bd86d30d9558ab784` |
+| MetallicSmoothness | 21,130 | `b1fe9ce80ddc7f5c170eeb3c9a78fd388efe008fd8a60faf1848750da883fd88` |
+| Emission | 21,149 | `1a0810ff8b05d65a564e17dbd272e27800fbcd69f79cf898e230d4b7e197ca6c` |
+
+**mapはquadrantごとに単色である。**greyboxには焼くべき表面ディテールが無く、
+ここで作り込むとpilotの実体を偽ることになる。metallic / smoothnessは
+§277.2で受け入れられた仕上げ値（body 0.00/0.48、metal 0.22/0.51、
+gasket 0.00/0.22、readout 0.00/0.60）である。
+
+**PillowはBlenderのPythonに無い**（既存atlas builderはシステム側interpreterで動く）。
+Blenderの画像APIで書き出し、`Non-Color`で保存して**渡した値がそのままbyteになる**ようにした。
+Blenderのbufferは下から上なので縦に反転している。
+
+### 282.4 成果物
+
+| 機種 | P1 source FBX SHA-256 | P2 FBX SHA-256 | bytes |
+|---|---|---|---|
+| MeterRound | `034532bf…` | `6f68b63c068f0e32b538b540d69c771aeb80ea9f263414c353bc84e511cf864d` | 114,924 |
+| Lever | `9780c0b5…` | `8fff0d07d7b983803f27068e6907784a7671b911e4647086dc30d85a085e5723` | 144,972 |
+| Toggle | `7870ef90…` | `c17ea362dbc184f50dfed355e1e4680268c30fd710b907b716c583fd6f389525` | 101,212 |
+
+固定camera画像12枚（`delivery_p2/review/`）、
+colour contact sheet `d195e44ecfcf56e51291bd03af2b87ee6cceb083c5d254d80c9411f7cbec5f15`、
+grayscale contact sheet `89a5da3e5ce95c4fefc69292b256726ba2755086b3c71475c0d363a99b8df796`、
+report `theme4_delivery_p2.json`。
+
+### 282.5 途中で直した自分の誤り
+
+**（1）review画像にatlasが適用されていなかった。**delivery materialを単色Principledで作ったため、
+body / metal / gasketが同じ灰色に描画され、**UVが正しいquadrantへ入ったかを画像で確認できなかった。**
+BaseColor / MetallicSmoothness / Emissionをノードへ結線した。
+このdeliveryが示すべき唯一のことが確認できない画像では意味がない。
+
+**（2）未使用のmaterial slotが残っていた。**needleは全面readoutだが、
+opaque slotを空のまま保持しており、Unityでは三角形0のsubmeshになる。
+未使用slotを削除して番号を詰めるようにした。
+
+**（3）slot削除時にpolygonのmaterial indexが失われた。**
+`materials.clear()`が全polygonのindexをリセットするため、
+クリア後に読むとすべて0になる。クリア前に退避するよう修正した。
+
+### 282.6 gate
+
+書いたのは新規script 1本、`delivery_p2/`配下のFBX 3件・texture 4件・画像12枚・
+contact sheet 2件、report 1件、本節のみ。
+
+**P1のBlend / FBX / report / 画像は上書きしていない。**
+Unity `Assets/`、runtime code、spec、style guide、active prefab、production material、
+既存3テーマ、Trend Monitorはすべて無変更。**git操作も行っていない。**
+
+Codexのisolated import → candidate material / prefab → Unity固定camera検証を待つ。
+
+## 283. Opus 5: §282の受領監査に応答。欠陥1件を修正し、残りは契約どおりであることを実測した (2026-08-24)
+
+指示された範囲だけを自己監査した。**修正したのは実在した欠陥1件のみである。**
+
+### 283.1 再現確認: Codexの指摘は正しい
+
+`ArtSource/Blender/BrushUp/Opus5/MachinedErgonomics/delivery_p2/theme4_delivery_p2.json`は
+**存在しなかった。**scriptの`OUTPUT`が
+`ArtSource/Blender/BrushUp/Opus5/theme4_delivery_p2.json`、すなわち**delivery rootの1階層上**を
+指していた。§281.1はreport JSONを`delivery_p2/`の出力として列挙しており、
+**Codexが監査するディレクトリに、それを説明するreportが入っていなかった。**
+
+`OUTPUT`を`delivery_p2/`配下へ移し、上位に残っていた旧ファイルを削除した。
+
+### 283.2 監査結果: 他の4項目はすべて契約どおり
+
+**(1) ファイル実在・bytes・SHA-256** — 修正前21件、report追加後22件。全件を列挙して照合した。
+
+**(2) PNG 4枚** — 4枚とも**1024×1024、bit depth 8、colour type 6（RGBA）**。
+PNG IHDRを直接読んで確認した。quadrant中心の値は契約どおり。
+
+| map | body (0,0) | metal (1,0) | gasket (0,1) | readout (1,1) |
+|---|---|---|---|---|
+| BaseColor | 0.808, 0.796, 0.784 | 0.584, 0.596, 0.612 | 0.322, 0.322, 0.337 | 0.584, 0.945, 0.977 |
+| Normal | 0.502, 0.502, 1.000 | 同左 | 同左 | 同左 |
+| MetallicSmoothness | R 0.000 / A 0.478 | R **0.220** / A 0.510 | R 0.000 / A 0.220 | R 0.000 / A 0.600 |
+| Emission | 0, 0, 0 | 0, 0, 0 | 0, 0, 0 | 0.722, 1.000, 1.000 |
+
+BaseColorはlinear paletteのsRGB符号化値と一致し、
+MetallicSmoothnessは**metallicがR、smoothnessがA**、
+Emissionは**readout quadrantのみ**非ゼロである。§281.2の指定どおり。
+
+**(3) FBXのslot名・submesh数・zero-triangle submesh** — 3件を**再importして実測**した。
+
+| 機種 | object | slot | submesh | 三角形内訳 | zero-tri slot |
+|---|---|---|---|---|---|
+| MeterRound | `MeterRound_body` | Atlas + Emissive | 2 | 2,436 / 460 | **なし** |
+| MeterRound | `needle` | Emissive | 1 | 88 | **なし** |
+| Lever | `Lever_body` | Atlas + Emissive | 2 | 3,320 / 44 | **なし** |
+| Lever | `handle` | Atlas | 1 | 668 | **なし** |
+| Toggle | `Toggle_body` | Atlas + Emissive | 2 | 1,780 / 44 | **なし** |
+| Toggle | `switch` | Atlas | 1 | 724 | **なし** |
+
+**(4) geometry transport invariant** — §282ではexport前のin-memory meshと比較していたが、
+本監査は**納品FBXを再importして**P1 Blendの頂点位置・三角形indexと突き合わせた。
+6 objectすべてで**一致**（頂点数 1,512 / 48 / 1,768 / 360 / 964 / 388）。
+より強い検査で改めて確認できた。
+
+**(5) 非改変** — P1のBlend / FBX 6件はSHA照合で**無変更**。
+gitはHEAD `fd81f7c`、ahead 3のままで**commit / push / checkoutを行っていない**。
+Unity `Assets/`とruntimeには触れていない。
+
+### 283.3 再生成で変わったもの、変わらなかったもの
+
+report生成のためscriptを再実行した。**画素・geometryは変わっていない。**
+
+| 対象 | 状態 | 理由 |
+|---|---|---|
+| texture 4枚 | **byte一致** | 決定的に生成される |
+| contact sheet 2枚 | **byte一致** | 画素から合成するため |
+| 固定camera画像 12枚 | SHA変化 | PNGの`tEXt RenderTime`チャンクのみ。**画素は同一** |
+| P2 FBX 3件 | SHA変化 | FBXヘッダの`CreationTimeStamp`。bytesは同一 |
+
+**画素同一は推測ではなく実測である。**同一シーンを2回描画してbyte比較したところ、
+最初の相違はoffset 399の`tEXtRenderTime`チャンクで、
+`load_rgba`で読んだ画素配列は完全一致した。
+contact sheetがbyte一致するのはこのためである。
+
+### 283.4 更新後のSHA-256
+
+| 機種 | P2 FBX SHA-256 | bytes |
+|---|---|---|
+| MeterRound | `4e4d36e5d39f819b71b866f755dde814330f23276e2df6caaa12603bb15a79be` | 114,924 |
+| Lever | `94691ad49b3370bae222342cbd6e113121e67094d636e33abd91730414bd41ec` | 144,972 |
+| Toggle | `c5f9396e7055d3cfcf63dac005b5850716072e4595d45e6fe027b587a1ed118a` | 101,212 |
+
+texture 4件とcontact sheet 2件のSHA-256は**§282から不変**である。
+report `delivery_p2/theme4_delivery_p2.json`
+（`b6aa73e3d82c699c20999433275ea26308d30c7d70ae56ee7010eee19862d22b`）は
+**scriptが生成したものである。**手で書いていない。
+
+### 283.5 変更ファイル一覧
+
+| ファイル | 変更 |
+|---|---|
+| `Tools/Blender/opus5_theme4_delivery_p2.py` | `OUTPUT`を`delivery_p2/`配下へ |
+| `delivery_p2/theme4_delivery_p2.json` | **新規**（script生成） |
+| `delivery_p2/SM_*_P2.fbx` 3件 | 再生成（timestampのみ差分） |
+| `delivery_p2/review/*.png` 12件 | 再生成（`RenderTime`のみ差分、画素同一） |
+| `ArtSource/Blender/BrushUp/Opus5/theme4_delivery_p2.json` | **削除**（上位に残った旧位置の重複） |
+| `docs/OPUS5_CODEX_ALIGNMENT.md` | 本節 |
+
+texture 4件とcontact sheet 2件は再生成されたがbyte一致のため実質無変更。
+
+**触れていないもの**: Unity `Assets/`、runtime code、P1の全成果物とscript、既存3テーマ、
+Trend Monitor P1 / P2、spec、style guide、git（commit / push / checkout / stashのいずれも行っていない）。
+
+### 283.6 gate
+
+監査用scriptはscratchpadに置き、リポジトリへ追加していない。
+本節の記載をもって停止する。Codexの再確認を待つ。
+
+## 284. Codex: §283の限定自己監査を受領し、Theme 4 P2 deliveryをUnity候補入力として受け入れる (2026-08-24)
+
+ユーザーの指示により、CodexがClaude Desktopの同一セッションへ§282の
+限定自己監査を1回直接依頼し、完了まで監視した。§283を受領後、Codex側でも
+納品root、report JSON、実ファイルを再照合した。
+
+- `delivery_p2/`配下はreportを含む22ファイル。上位に旧reportは残っていない。
+- report SHA-256は`b6aa73e3d82c699c20999433275ea26308d30c7d70ae56ee7010eee19862d22b`。
+- report内のP2 FBX 3件とtexture 4件は、実ファイルのbytes / SHA-256と全件一致。
+- contact sheetをCodexが視覚確認し、body / metal / gasket / readoutの分離と
+  colour / grayscaleの対応を確認した。
+- ClaudeはP2 FBXを再importし、6 objectのzero-triangle submesh不在とP1対比の
+  vertex position / triangle index一致を確認した。
+- 再生成によるFBX / review PNGのSHA変化は、`CreationTimeStamp` / `RenderTime`だけ。
+  textureとcontact sheetはbyte一致、review PNGは画素配列一致である。
+- HEADは`fd81f7c`のまま。Claudeはcommit / push / checkout / stashを行っていない。
+
+したがって、**Theme 4 P2 pilot deliveryをCodexの隔離Unity candidateの入力として受け入れる。**
+Claudeは待機してよい。次はCodexが`Assets/MatsuMotoMeterAR/Content/RefinedCandidates/`
+配下だけにFBX / texture / material / prefabを展開し、Unity実import、97姿勢、
+material slot / submesh、固定camera表示を検証する。active prefabとproductionテーマには触れない。
+
+## 285. Opus 5: §284のUnity隔離候補を監査した。修正すべき実欠陥は無い (2026-08-24)
+
+指示された6項目を静的に監査した。**Unity Editorは起動していない。**
+Codexと共有中であり、batch起動はproject lockを奪って稼働中のEditorを壊す。
+検査はすべてasset / meta / prefab / C#ソースの読み取りと、
+納品済みFBXの再importで代替した（後者は§283で同一byteのファイルに対して実施済み）。
+
+**結論: 修正すべき実欠陥は見つからなかった。ファイルは1つも変更していない**（本節を除く）。
+
+### 285.1 監査結果
+
+**(1) SHA固定と書き込み範囲 — PASS**
+
+`RequireHash()`がコピー前にSHA-256を照合し、不一致で例外を投げる。
+staging上の実ファイルを`delivery_p2/theme4_delivery_p2.json`と突き合わせた結果、
+**FBX 3件・texture 4件すべて一致**した。
+
+書き込み先は`CandidateStaging/Theme4_P2_Delivery/`と
+`Builds/Reports/candidate-Theme4_P2-delivery-validation.md`のみで、
+`Directory.CreateDirectory` / `CreateAsset` / `WriteAllText`のいずれも隔離tree外を指していない。
+
+**(2) importer — PASS**
+
+FBXは`addCollider = false`。textureの永続化された`.meta`を直接読んだ。
+
+| map | textureType | sRGB | mipmap | Android format | maxTextureSize |
+|---|---|---|---|---|---|
+| BaseColor | 0（Default） | **1** | 1 | **50 = ASTC_6x6**、`overridden: 1` | 1024 |
+| Normal | **1（NormalMap）** | 0 | 1 | 同上 | 1024 |
+| MetallicSmoothness | 0 | **0（linear）** | 1 | 同上 | 1024 |
+| Emission | 0 | **1** | 1 | 同上 | 1024 |
+
+**(3) URP Lit構成 — PASS**
+
+両materialとも`Universal Render Pipeline/Lit`。
+`_WorkflowMode: 1`（Metallic）、`_Surface: 0`（Opaque）、
+`_SmoothnessTextureChannel: 0`（metallic alphaからsmoothnessを取る）で、
+本納品がsmoothnessをMetallicSmoothnessのAへ入れている構成と合う。
+
+| material | keyword | _EmissionMap | _EmissionColor | LightmapFlags |
+|---|---|---|---|---|
+| Atlas | `_METALLICSPECGLOSSMAP`, `_NORMALMAP` | 無し | 黒 | 4（EmissiveIsBlack） |
+| Emissive | 上記 + **`_EMISSION`** | 有り | 白 | 1（RealtimeEmissive） |
+
+**(4) slot対応・Collider・manifest — PASS**
+
+prefabはFBXの`PrefabInstance`で、`m_Materials`のoverrideを実測した。
+
+| 機種 | body renderer | 可動部 renderer |
+|---|---|---|
+| MeterRound | slot0 Atlas / slot1 Emissive | slot0 **Emissive** |
+| Lever | slot0 Atlas / slot1 Emissive | slot0 Atlas |
+| Toggle | slot0 Atlas / slot1 Emissive | slot0 Atlas |
+
+**納品FBXのslot構成と完全に一致する**（needleのみ全面readoutなのでEmissive単独）。
+`Collider`は3 prefabとも0件で、builderは`GetComponentsInChildren<Collider>`で破棄し
+検証でも0件を要求している。`ThemeVisualManifest`は3件とも`motionTarget`を保持する。
+
+zero-triangle submeshは、**staging FBXが納品FBXとSHA一致**であり、
+§283で同一byteを再importして6 objectすべて空submesh無しを確認済みである。
+reportのsubmesh 3（body 2 + 可動部 1）もこれと整合する。
+
+**(5) 97姿勢検証 — PASS、P1 gateと同等**
+
+`for (var index = 0; index <= 96; index++)`で**97姿勢**、
+`Mathf.Lerp(MinimumAngle, MaximumAngle, index / 96f)`と`Quaternion.AngleAxis`、
+boundsは`sharedMesh.vertices`から取る。**renderer boundsではなく実頂点である。**
+§269.1でCodex自身が是正した方式と同じで、P1 gateと同等である。
+
+reportのpivot / rest bounds / swept collider / clearanceは、
+`delivery_p2`のreport値と**全桁一致**する。
+
+**(6) 非改変 — PASS**
+
+active prefab（`Resources/`）、runtime code、production material、既存3テーマ、
+Trend Monitor、P1 staging（`Theme4_P1_Raw`）に本buildによる変更は無い。
+`Runtime/`と`Content/Themes/`にあるmodifiedは**セッション開始時のsnapshotに既出**で、
+Codexのmonitor MVP作業由来である。
+gitはHEAD `fd81f7c`、ahead 3のままで、**本監査でgit操作を一切行っていない。**
+
+### 285.2 私が出しかけた誤検知を撤回する
+
+監査の途中で「**両materialの`m_ValidKeywords`が空**であり、URP Litがmapを
+サンプルせず全面が完全金属・完全鏡面になる」と判断しかけた。**これは誤りである。**
+
+原因は私のgrepパターンで、`m_ValidKeywords:`の見出し行だけを拾い、
+その下の`- _METALLICSPECGLOSSMAP`のような**リスト項目を拾っていなかった。**
+正しく読めば3 keywordとも入っている。
+
+**「無いことを確認した」と言う前に、あるものが見えるフィルタかを確かめるべきだった。**
+§276.3で同種の誤りを2件出しており、同じ型の失敗である。
+
+### 285.3 欠陥ではないが記録する2点
+
+**（a）builderがzero-triangle submeshを検査していない。**
+`subMeshCount`を合計するだけで、各submeshが三角形を持つかは見ていない。
+**成果物には空submeshが無いので現時点の欠陥ではない**が、gateとしては穴である。
+
+`Theme4Phase2CandidateBuilder.cs`は変更可の対象だが、**あえて変更していない。**
+Unity Editorをcodexと共有しており、compileを検証できないC#変更を入れると、
+万一の構文誤りで**稼働中のEditorを止める。**成果物に欠陥が無い以上、その危険は釣り合わない。
+Codexが次にbuilderへ触れる際、`sharedMesh.GetTriangles(i).Length == 0`を
+submeshごとに確認する2行を足すことを推奨する。
+
+**（b）Emissiveの`LightmapFlags`が1（RealtimeEmissive）である。**
+既存3テーマのEmissive materialは`_EMISSION` keyword自体を持たない別構成なので直接比較できない。
+本projectはbaked GIを使っていないため実害は無いが、
+Quest向けにはBakedEmissiveまたはNoneの方が意図が明確である。**判断はCodexに委ねる。**
+
+### 285.4 固定camera視覚検証について（Gate Bへの最小追加）
+
+**Gate Bには必要である。**理由は本監査そのものが示している。
+
+現在の検証はtriangle、renderer、submesh、material数、bounds、clearance、
+importer設定という**数えられる量だけ**を見ている。これらは全てPASSしていても、
+**materialのkeywordが1つ欠けるだけで見た目は完全に別物になる**
+（§285.2で私が誤検知しかけたのは、まさにその失敗が起きたと考えたためである）。
+数値gateはこの種の破綻を検出できない。
+
+最小追加として次を提案する。
+
+1. staging prefabを空sceneへ置き、既存の固定camera規約（front / oblique左右 / side）で
+   3機種を撮る。**新しいcamera規約を作らない**
+2. 4 roleの実レンダ輝度が§276.2の順序（gasket < metal < body < readout）を保つことを
+   数値で確認する。目視だけにしない
+3. 出力はcolor / grayscaleのcontact sheet 2枚と、role別輝度のreport追記
+
+**本監査では実装していない。**Unity Editorを共有しており、
+新規Editor scriptの追加とcompileはCodex側の作業を止め得る。
+Codexが自分のEditorで実行するのが安全である。
+
+### 285.5 変更ファイル一覧
+
+| ファイル | 変更 |
+|---|---|
+| `docs/OPUS5_CODEX_ALIGNMENT.md` | 本節のみ |
+
+**他は1件も変更していない。**
+`Theme4Phase2CandidateBuilder.cs`とそのmeta、`Theme4_P2_Delivery/`配下、
+専用reportは変更可の対象だったが、**修正すべき実欠陥が無かったため触れていない。**
+active / runtime / production / P1 / 既存3テーマ / Trend Monitor / gitにも触れていない。
+
+Codexの確認を待つ。
+
+## 286. Codex: §285を受領し、Unity固定cameraで発見したreadout破綻を修正してGate Bをcloseする (2026-08-24)
+
+§285の6項目PASSを受領した。Opus 5は限定監査中にファイルを変更せず、
+Unityを重複起動しなかった。Codexは提案されたGate Bの穴を埋めるため、
+`Theme4Phase2CandidateBuilder`へ次を追加し、稼働中のUnity 6000.3.19f1で再実行した。
+
+- 各submeshの`indexCount > 0`を個別検査
+- front / oblique left / oblique right / sideの4固定camera×3機種、12 PNG
+- colour / grayscale contact sheet各1枚
+- Error Shaderの完全magenta画素数とcyan readout画素数のgate
+- BaseColor 4 roleの輝度順序とEmission quadrantの数値gate
+
+### 286.1 画像ベースreviewが実際の不具合を発見した
+
+最初のUnity固定cameraでは、triangle、renderer、submesh、SHA、importer、
+pivot / bounds / 97姿勢がすべてPASSしていたにもかかわらず、
+**readout専用materialが完全なmagentaで描画された。**
+
+texture実画素はcyan、UV / slot / keywordも正常であることを切り分けた。
+原因は、readout専用のURP Lit + `_EMISSION`構成が実レンダで
+Error Shaderとなることであった。readout submeshにPBR反射は不要なため、
+**opaqueはURP Lit + Base / Normal / MetallicSmoothnessを維持し、readoutは
+URP Unlit + Emission atlas**へ限定変更した。Questでも単純で安定する構成である。
+
+同時に、固定cameraの`RenderTexture`解放前に`camera.targetTexture = null`とし、
+解放警告も除去した。
+
+### 286.2 最終Unity実測
+
+| 機種 | triangle | renderer / submesh | material | 97姿勢 / mount | 結果 |
+|---|---:|---:|---:|---|---|
+| MeterRound | 2,984 | 2 / 3 | 2 shared | 52.500 mm | **PASS** |
+| Lever | 4,032 | 2 / 3 | 2 shared | 11.402 mm | **PASS** |
+| Toggle | 2,548 | 2 / 3 | 2 shared | 33.800 mm | **PASS** |
+
+固定camera・数値視覚gate:
+
+- Error Shader完全magenta画素: **0**
+- cyan readout画素: **21,622**
+- atlas輝度: gasket **0.323** < metal **0.595** < body **0.798** < readout **0.871**
+- colour contact sheet SHA-256:
+  `12b3185c3b62ae39282e06120f99d8ee5c42050ac5f518181c84a87e231ea9b0`
+- grayscale contact sheet SHA-256:
+  `af0790cb9643fdd358679c1d79c2f576d976a818705b805d2aa296356c296755`
+
+Codexがcolour / grayscaleの両sheetを視覚確認し、3機種×4視点で形状欠落、
+magenta、向きの逆転、フレーミング外れが無く、cyan readoutとrole分離を確認した。
+
+### 286.3 gate
+
+**Theme 4 P2 pilotのUnity隔離candidate、形状 / motion / material / importer /
+画像ベースGate Bをcloseする。**active prefab、runtime registration、production material、
+既存3テーマは無変更。commit / pushは行っていない。
+
+Opus 5は待機してよい。次の判断は、この3機種pilotをQuest実機でGate C確認するか、
+残りのTheme 4機種へgeometry / atlas作成を拡張するかである。
+
+## 287. Codex: Theme 4 P2 pilotを既存テーマ非改変のままQuest Gate Cへ送る (2026-08-24)
+
+Codex主導で§286の次工程をQuest 3実機Gate Cとした。Opus 5には既存の
+candidate manifest / Quest review基盤を**読み取り専用**で調査させ、変更・Unity操作・
+docs記入・git操作を禁止した。調査結果はCodexの事前解析と一致した。
+
+### 287.1 既存manifest経路を使わない理由
+
+`CandidateStagingManifest`、`V6ModelReplacementStagingBuilder`、
+`RefinedModelReplacementValidator`は既存3テーマを前提とし、manifest buildは
+FBXからproduction V6規約でprefab/materialを再生成する。従って、
+`MachinedErgonomics`を単に許可すると、§286で画像検証済みのP2 atlas、
+URP Lit opaque + URP Unlit readout、3つの隔離prefabを保持できない。
+
+Theme 4を`MockInstrumentTheme`へ追加することも、catalog、factory、既存テスト、
+全機種prefabへ波及し、pilotのGate Cより大きな変更になるため行わない。
+
+### 287.2 専用の隔離review経路
+
+次を追加した。
+
+- `Theme4Phase2CandidateBuilder.PrepareQuestReviewResources()`
+- `Theme4Phase2QuestReviewBuilder`
+- menu: `Tools/MatsuMotoMeterAR/Theme 4/Build Phase 2 Quest Review APK`
+
+builderは§286のGate Bを再実行した後、検証済み3 prefabを
+`CandidateStaging/Theme4_P2_Delivery/Resources/Theme4_P2_Delivery/`
+`MachinedErgonomics/Prefabs/`へコピーする。
+
+review APKでは`ANALOGMR_CANDIDATE_REVIEW`をそのbuildだけに定義し、
+`CandidateReviewConfiguration`で次の3キーだけを差し替える。
+
+| 通常prefab key | Theme 4 P2 resource |
+|---|---|
+| `PF_Visual_MeterRound_OrbitalAnalog` | `PF_Visual_MeterRound_MachinedErgonomics` |
+| `PF_Visual_Lever_OrbitalAnalog` | `PF_Visual_Lever_MachinedErgonomics` |
+| `PF_Visual_Toggle_OrbitalAnalog` | `PF_Visual_Toggle_MachinedErgonomics` |
+
+Forge Brass、Kinetic Safety、Orbital Analogの他機種はproductionのままである。
+これにより同一APK・同一空間でpilotと既存モデルを比較できる。
+
+### 287.3 build / cleanup / regression
+
+- APK: `Builds/QuestReview/AnalogInstrumentMR-Theme4-P2-review-quest3.apk`
+- size: **89,792,675 bytes**
+- SHA-256: `6ca2faa36efaf01a45529cca4366e76f3b1437a1dd01aa845ab2ddb3b314ddf2`
+- Quest 3 `2G0YC1ZG2J02HL`: `adb install -r` **Success**
+- EditMode: **149 passed / 0 failed / 0 skipped / 0 inconclusive**
+- 一時`CandidateReviewConfiguration.json`: build後に削除済み
+- `DevAgentSettings.asset`: build後に復元済み
+- Theme 4専用quarantine file: 残存なし
+
+Questは起動時にcontroller必須のsystem dialogを表示し、headset側の操作待ちである。
+したがって、この時点ではAPK生成・隔離・installまでPASS、**人間による視覚・操作Gate Cは未判定**。
+
+### 287.4 実機受入
+
+Orbital AnalogでMeterRound / Lever / Toggleを配置し、次を確認する。
+
+1. gasket < metal < body < cyan readoutの見分けと白飛びの有無
+2. 近距離と遠距離でUV境界の色滲み、ちらつき、z-fightingがない
+3. MeterRound ±115°、Lever −48〜0°、Toggle −56〜0°で筐体貫通がない
+4. 把持・操作点・照準beamの当たり方が既存モデルと同等
+5. Forge Brass / Kinetic Safetyへ切り替えると既存production外観である
+
+この5項目を通過するまで残りTheme 4機種へのP2展開は開始しない。
+
+## 288. Quest Gate C: Theme 4 P2 pilotを形状不合格としてP3へ戻す (2026-08-24)
+
+Quest 3でreview APKを前面起動し、runtime logで
+`candidateId=Theme4_P2_Delivery, entries=3`および
+`Manifest Resources override is active`を確認した。ユーザーがOrbital Analogの
+MeterRound / Lever / Toggleを実機確認し、3件とも修正要求を出した。
+
+### 288.1 実機フィードバック
+
+| 機種 | 判定 | 指摘 |
+|---|---|---|
+| MeterRound | **FAIL** | 副目盛にちらつき。テーパーが弱く厚い。時計のように薄くし、台座・ringへ明確なテーパーを付ける。正面の可読径を縮めず、台座側を拡大する方針 |
+| Lever | **FAIL** | armと軸の接合部材が見えない。gripが角張り、握ると痛そうでergonomicsが感じられない |
+| Toggle | **FAIL** | gripが角張り、指に痛そう。指に優しい形状が必要 |
+
+### 288.2 Codexのちらつき一次診断
+
+generatorでは`scale_land`のviewer側surfaceが`dial_face - 0.0011`、
+tickのbase faceも`dial_face - 0.0011`である。従って23本の目盛geometryと
+scale landの間に**同一平面上の重複面**があり、特に幅1.3 mmの副目盛で
+Questの深度判定が不安定になる。Gate Bの固定camera静止画では見逃したが、
+実機の頭部移動で現れるz-fightingとして説明できる。
+
+P3ではtickとlandをunion / trimするか、tick baseをlandへ僅かに埋めて
+同一平面を廃止する。単に発光を弱める、幅だけを増す、materialを変える対応は
+原因除去にならない。
+
+### 288.3 P3 gate
+
+既存`delivery_p2`は実機不合格の証跡として不変に保つ。P3は新規出力へ隔離し、
+次を満たすまでUnity再取込を行わない。
+
+1. MeterRoundの副目盛を含む全tickでcoplanar overlap 0
+2. MeterRoundの正面可読径を維持しつつ、全奥行きを明確に薄型化
+3. 台座側の外形拡大とring外周の強いdraftをside / oblique画像で確認可能
+4. Leverにarm / shaftを連続して読ませるhub / collar / yoke相当を表示
+5. Lever gripは楕円・膨らみ・くびれ・大きいedge radiusで掌に馴染む形状
+6. Toggle gripはrounded capsule / mushroom相当で指腹に角が当たらない形状
+7. pivot、motion range、mount plane、role、2 delivery material契約を維持
+
+残りTheme 4機種への展開は停止を継続する。
+
+## 289. Codex: Theme 4 P3をUnity Gate Bで検証し、Quest Gate Cへ送る (2026-08-24)
+
+Opus 5のP3成果物をfreezeしたまま、CodexがP2と本番資産を変更しない専用経路を追加した。
+
+- `Theme4Phase3CandidateBuilder`
+- `Theme4Phase3QuestReviewBuilder`
+- `CandidateStaging/Theme4_P3_Delivery/`（生成物、非production）
+
+P3はP2 atlasの4 texture SHAと2 material契約を維持し、FBXだけをP3へ差し替える。
+Unity 6000.3.19f1でSHA、importer、renderer / submesh、material identity、pivot、
+静止bounds、97姿勢のswept bounds、mount clearance、固定camera画像を再検証した。
+
+### 289.1 Unity実測
+
+| 機種 | triangle | renderer / submesh | pivot m | 97姿勢 / mount | 結果 |
+|---|---:|---:|---|---:|---|
+| MeterRound | 4,748 | 2 / 3 | 0 / 0 / 0.030 | 23.687 mm | **PASS** |
+| Lever | 7,852 | 2 / 3 | 0 / 0.080 / 0.033 | 14.800 mm | **PASS** |
+| Toggle | 2,820 | 2 / 3 | 0 / 0 / 0.042 | 32.000 mm | **PASS** |
+
+固定camera 4視点×3機種の画像gateもPASSした。
+
+- Error Shader完全magenta画素: **0**
+- cyan readout画素: **18,404**
+- atlas輝度: gasket **0.323** < metal **0.595** < body **0.798** < readout **0.871**
+- colour contact sheet SHA-256:
+  `08aee2d224abc89ff4b1253b65a6efdccc7e2803a48956cfd2711bf39296e184`
+- grayscale contact sheet SHA-256:
+  `b0d73428ab84c0fd9f3af12fc6d92fd7fbb67cf9956c251c48a20c8167834d4b`
+- EditMode: **149 passed / 0 failed / 0 skipped / 0 inconclusive**
+
+目視では、MeterRoundの薄型化とring / 台座のdraft、Leverのhub / collar / yokeと
+丸いgrip、Toggleのrounded gripを確認した。静止画像では新たな形状欠落、向き反転、
+material破綻は見つからなかった。
+
+### 289.2 Quest review APK
+
+- APK: `Builds/QuestReview/AnalogInstrumentMR-Theme4-P3-review-quest3.apk`
+- size: **90,124,579 bytes**
+- SHA-256: `bfb40ea4c6f63b47b202a51387c5d334874e0b8834297ff824174dfdce58302f`
+- Quest 3 `2G0YC1ZG2J02HL`: `adb install -r` **Success**
+- `am start`要求: **受理**。ただしheadsetはShell表示を継続し、app processは保持されなかったため、
+  controller / headset側からの起動操作待ち
+- 一時`CandidateReviewConfiguration.json`: build後に削除済み
+- `DevAgentSettings.asset`: build後に復元済み
+- P3 quarantine file: 残存なし
+
+差し替えはOrbital AnalogのMeterRound / Lever / Toggleだけであり、既存3テーマの
+production prefab / material、runtime registration、P2証跡は変更していない。
+
+### 289.3 人間が確認するQuest Gate C
+
+1. MeterRound副目盛に頭部移動時のちらつきがない
+2. MeterRoundが正面可読径を保ちつつ時計のように薄く、外周draftが自然に見える
+3. Leverの0.9 mm flat knurlが強すぎず、握りやすい外観である
+4. Leverの約122 mm slotが全rangeで機構として自然に見える
+5. Leverの2組、Toggleの5組のhidden near-coplanar pair由来のちらつきがない
+6. Lever −48〜0°、Toggle −56〜0°、MeterRound ±115°で貫通・干渉がない
+
+**Unity Gate Bはclose、Quest Gate Cはユーザー確認待ち。**
+Opus 5はP3を変更せず待機し、実機結果が出るまで残りTheme 4機種へ展開しない。
+
+## 290. Quest Gate C: Theme 4 P3を3件の形状不合格としてP4へ戻す (2026-08-24)
+
+ユーザーがQuest 3でP3 review APKを起動し、Orbital Analog差し替え3機種を確認した。
+P3は次の理由でGate C **FAIL**とする。
+
+| 機種 | 指摘 | 一次診断 |
+|---|---|---|
+| Toggle | knobの回転軸が欠落し、knobと軸受を接合する部品がない | `switch_hub`は存在するが、左右のbearing boss / capまで届く明示的なthrough axleがmoving assemblyにない。設計欠落 |
+| Lever | ローレット溝が造形できず、mesh解像度が不足 | 40周segmentと集中rowでmesh knurlを試したが、Quest表示とtriangle予算の両方に対して成立しない。mesh凹凸方式を撤回する |
+| MeterRound | 針が表示されない、または欠落 | `needle` object / submeshはFBXに存在するが、Unity固定camera front画像でもbladeが見えていない。Quest固有ではなくGate Bの検出漏れ |
+
+### 290.1 Gate Bの検出漏れ
+
+P3固定camera gateはError Shader 0と全画像中のcyan画素総数を検査したが、
+cyan tick / index / hubが閾値を満たすため、**needle bladeが0画素でもPASSできた。**
+したがって「readoutが何か描画される」と「必須moving partが読める」を分離する必要がある。
+
+P4ではMeterRoundについて最低3姿勢（−115 / 0 / +115°）を固定cameraで描画し、
+needleだけをisolation material / object maskで描画した画素数と、pivotからtipまでの
+連続silhouetteを個別gateにする。通常材質画像でも3姿勢の針が目視できることを必須とする。
+
+### 290.2 P4修正契約
+
+1. P3成果物とP3 Unity隔離candidateは不変の失敗証跡としてfreeze
+2. 新規`delivery_p4`、P4 generator / delivery scriptだけへ出力
+3. Toggle moving assemblyへ左右bearingを視覚的・幾何学的に結ぶthrough axleを追加
+4. axleは`switch_pivot`配下でknobと一体回転し、bearingとの適切なradial clearanceを持つ
+5. Leverのmesh knurl、flat-shaded knurl faces、0.9 mm silhouette変位を完全撤去
+6. Lever gripは滑らかな低ポリゴン外形を保ち、専用Normal mapのtangent-space凹凸でdiamond knurlを表現
+7. Normal mapはLever gripのUV領域だけに作用し、housing / readout / Toggle / Meterへ漏らさない
+8. MeterRound needleの座標、親子関係、面向き、material、depthを再構成し、3姿勢で必ず表示
+9. pivot / motion range / mount plane / 2 material上限 / 既存atlas role契約を維持
+10. P4のBlender reviewにはToggle axle close-up、Lever normal-map close-up、Meter needle 3姿勢を追加
+
+残りTheme 4機種への展開は引き続き停止する。CodexがP4の静的成果物を確認するまで、
+Unity、本番資産、docs、gitには触れない。
+
+## 291. Codex: Theme 4 P4をUnity Gate Bで検証し、Quest Gate Cへ送る (2026-08-24)
+
+Opus 5の初回P4回答はLever gripのknurl領域をmetal quadrantへ置いたため差し戻した。
+修正版P4ではknurlをbody quadrant内の専用UV領域へ移し、BaseColor、metallic、
+smoothnessはP2のbody roleを維持した。P3成果物は変更せずfreezeを継続している。
+
+CodexはP4専用の隔離経路を追加した。
+
+- `Theme4Phase4CandidateBuilder`
+- `Theme4Phase4QuestReviewBuilder`
+- `CandidateStaging/Theme4_P4_Delivery/`（生成物、非production）
+
+### 291.1 Unity Gate B
+
+| 機種 | triangle | renderer / submesh | pivot m | mount clearance | 結果 |
+|---|---:|---:|---|---:|---|
+| MeterRound | 4,796 | 2 / 3 | 0 / 0 / 0.030 | 33.500 mm | **PASS** |
+| Lever | 6,412 | 2 / 3 | 0 / 0.080 / 0.033 | 14.800 mm | **PASS** |
+| Toggle | 3,540 | 2 / 3 | 0 / 0 / 0.042 | 32.000 mm | **PASS** |
+
+固定camera 4視点×3機種の画像gateはPASSした。
+
+- Error Shader完全magenta画素: **0**
+- cyan readout画素: **21,019**
+- atlas輝度: gasket **0.323** < metal **0.595** < body **0.798** < readout **0.871**
+- MeterRound needle-only固定camera（−115 / 0 / +115°）: **1,079 / 1,460 / 1,089 px、PASS**
+- EditMode: **149 passed / 0 failed / 0 skipped / 0 inconclusive**
+
+P3の検出漏れを防ぐため、P4 builderには通常の全体画像とは別に、import後FBXの
+needle以外のrendererを無効化して3姿勢を描画する必須moving-part gateを追加した。
+各姿勢150 cyan px以上を要求し、tickやhubだけでneedle欠落を隠せない。
+
+### 291.2 Quest review APK
+
+- APK: `Builds/QuestReview/AnalogInstrumentMR-Theme4-P4-review-quest3.apk`
+- size: **90,434,123 bytes**
+- SHA-256: `1b4ed6adfbd0d41567f03032338704b1675291a107178087d46c3795b3e386cc`
+- Quest 3 `2G0YC1ZG2J02HL`: `adb install -r` **Success**
+- app activity: `com.DefaultCompany.MatsuMotoMeterAR/com.unity3d.player.UnityPlayerGameActivity`
+- `topResumedActivity`でapp本体の前面起動を確認
+- 一時candidate review config / P4 quarantine file: build後の残存なし
+
+### 291.3 人間が確認するQuest Gate C
+
+1. MeterRoundの針が全可動域で表示され、副目盛を含めちらつかない
+2. Toggleの横軸が左右軸受とknobを明確に接合し、動作中に欠落・貫通しない
+3. Lever gripのnormal-map knurlが縞ではなく細かなdiamond patternとして読める
+4. Lever gripのbody材質と人間工学的な丸い外形が維持されている
+5. MeterRound / Lever / Toggleの全rangeで新たな干渉・ちらつきがない
+
+**Unity Gate Bはclose、Quest Gate Cはユーザー確認待ち。**
+Opus 5はP4を変更せず待機し、実機結果が出るまで残りTheme 4機種へ展開しない。
+
+## 292. Quest Gate C: Theme 4 P4 Leverの作用点配置をP5へ戻す (2026-08-24)
+
+ユーザーがQuest 3でP4 review APKを確認し、LeverをGate C **FAIL**とした。
+
+- レバーが最も立つ姿勢で、本体側の作用点付近にある部品が筐体へめり込む
+- その部品はレバーの構造から離れて見える
+- レバー機構へ接続する位置へ移せば、構造上の不自然さと筐体侵入を同時に解消できる見込み
+
+生成コード上の最有力候補は、moving assemblyへ固定オフセットで追加されている
+`handle_roller`である。P5では画像だけで断定せず、Quest観察と最悪姿勢renderを照合して
+部品identityを確定する。
+
+### 292.1 P5修正契約
+
+1. P4成果物を不変の失敗証跡としてfreezeし、新規P5 generator / deliveryだけへ出力
+2. 変更対象はLeverだけ。MeterRound / ToggleとP4 atlas 4枚はbyte-identicalを維持
+3. `handle_roller`または該当作用部品を、ヨーク・カラー・アーム根元のいずれかへ
+   支持部を伴って接続し、視覚上も幾何学上もfloating gapを0にする
+4. 部品を小さくする、筐体へ埋める、非表示にするだけの修正は禁止
+5. Blender 0..48°（runtime −48..0°対応）の97姿勢で、moving作用部品 / 支持部と
+   static shell / slot floor / rim / cam plateの非意図的交差が0であることを検証
+6. 従来のswept bounds / slot marginに加え、moving対staticの実mesh clearanceまたは
+   intersection volumeを姿勢別に測定し、最小clearanceと最悪姿勢をJSONへ記録
+7. 最も立つ姿勢、中央、反対端のclose-upを同一cameraで描画し、接続とclearanceを目視可能にする
+8. Lever pivot、可動域、mount plane、body材質、normal-map knurl、2 material上限を維持
+9. P5の静的成果物をCodexが受領するまでUnity、docs、git、本番資産へ触れない
+
+Opus 5にはこの限定修正だけを依頼し、残りTheme 4機種への展開は停止を継続する。
+
+## 293. Codex: Theme 4 P5を受領し、Quest Gate Cへ送る (2026-08-24)
+
+Opus 5のP5成果物を独立検証した。P4 Gate Cでユーザーが指摘した部品は
+`handle_roller`で確定した。P4ではpivotからlocal `(y,z)=(-0.020,-0.028)`、
+hub表面から7.21 mm離れたfloating cylinderであり、姿勢によってplate / gasket /
+skirtへ侵入していた。
+
+P5ではrollerを左右yoke cheekを貫通するcross pinへ再構成し、両cheekへbearing bossを
+追加した。pinは可動域中央24°を位相として半径32 mmに配置され、floating gapは0、
+cheek外面から1.25 mm突出する。縮小、埋め込み、非表示による回避は行っていない。
+
+### 293.1 Blender静的検証
+
+- 97姿勢のmoving対static BVH triangle overlap: **0 intersection**
+- 最小clearance: **2.407 mm、rim_top、0°（最も立つ姿勢）**
+- slot floor: **3.403 mm**
+- shell: **5.122 mm**
+- slot opening: 74 × 122.0 mm → **74 × 128.9 mm**
+- slot footprint計算: vertex sampleからtriangle / slab clipへ修正
+- Lever moving triangles: 2,688 → **3,068**、body 3,724、合計 **6,792**
+- pivot、runtime −48..0°、mount、body材質、normal-map knurl、2 materialを維持
+
+plate / gasket / skirtはpivot、hub、yokeが内部を通る設計上の内側slabであるため
+一般交差gateから除外されている。ただし新cross pinのworld y sweepは
+−0.0712..−0.0560 mでshell前面−0.048 mより常に8 mm以上外側にあり、今回の作用部品の
+侵入をこの除外が隠していないことをCodexも確認した。
+
+P4 atlas 4枚はbyte-identical。MeterRound / ToggleのP5 FBXはBlender exporterのtimestamp / UIDで
+byte hashこそ変化したが、import後の頂点、法線、triangle index、UV、material、smooth flagは
+P4と一致する。P4 FBX / atlas自体のfreeze hashは不変。
+
+### 293.2 Unity Gate B
+
+| 機種 | triangle | renderer / submesh | mount | 結果 |
+|---|---:|---:|---:|---|
+| MeterRound | 4,796 | 2 / 3 | 33.500 mm | **PASS** |
+| Lever | 6,792 | 2 / 3 | 14.800 mm | **PASS** |
+| Toggle | 3,540 | 2 / 3 | 32.000 mm | **PASS** |
+
+- fixed-camera 4視点×3機種: **PASS**
+- Error Shader画素: **0**
+- cyan readout画素: **21,031**
+- MeterRound needle-only −115 / 0 / +115°: **1,079 / 1,460 / 1,089 px、PASS**
+- atlas luminance contract: **PASS**
+- EditMode: **149 passed / 0 failed / 0 skipped / 0 inconclusive**
+
+### 293.3 Quest review APK
+
+- APK: `Builds/QuestReview/AnalogInstrumentMR-Theme4-P5-review-quest3.apk`
+- size: **90,752,339 bytes**
+- SHA-256: `41eacb217aaab4b747f3739e0e430bb19cea39610e376d8ed93961c42b76b9d3`
+- Quest 3 `2G0YC1ZG2J02HL`: `adb install -r` **Success**
+- app本体の`topResumedActivity`を確認
+- 一時candidate review config / P5 quarantine file: build後の残存なし
+
+### 293.4 人間が確認するQuest Gate C
+
+1. Leverが最も立つ姿勢でcross pin / bearing bossが筐体へめり込まない
+2. cross pinが左右yokeへ接続され、floating partに見えない
+3. 0°から−48°の全rangeでrim top / bottom、slot floorへ接触して見えない
+4. grip外形、normal-map knurl、操作性に回帰がない
+5. MeterRound / ToggleにP4からの視覚回帰がない
+
+**Blender静的gateとUnity Gate Bはclose、Quest Gate Cはユーザー確認待ち。**
+Opus 5はP5をfreezeし、残りTheme 4機種への展開を停止したまま待機する。
+
+## 294. Quest Gate C: Theme 4 P5を全項目PASSとして受領 (2026-08-24)
+
+ユーザーがQuest 3上のP5 review APKで§293.4の全項目を確認し、いずれも **OK** と判定した。
+
+1. Lever最立ち姿勢でcross pin / bearing bossの筐体めり込みなし
+2. cross pinは左右yokeへ接続され、floating partに見えない
+3. runtime 0..−48°の全rangeでrim top / bottom、slot floorとの視覚的接触なし
+4. grip外形、normal-map knurl、操作性に回帰なし
+5. MeterRound / ToggleにP4からの視覚回帰なし
+
+これにより、P4で報告された`handle_roller`のfloating配置と筐体侵入、およびP4 gateが
+見逃していたrim / slot floor交差はP5で解消された。
+
+**Theme 4 P5 pilotはBlender静的gate、Unity Gate B、Quest Gate Cをすべてcloseし、受領済み。**
+P5成果物、検証report、Quest APKを受入証跡としてfreezeする。本番prefabへの適用、
+残りTheme 4機種へのデザイン展開、commit / pushは別工程として扱い、開始判断までは変更しない。
+
+## 295. Codex: Theme 4の本番統合順序を訂正し、Phase 3 Batch Aを開始する (2026-08-24)
+
+§294後の次工程を再確認した。`MachinedErgonomics`はOrbital Analogの恒久置換ではなく
+**新しい第4テーマ**である。Quest reviewでOrbital Analogのprefab keyへ差し込んだのは、
+runtime enum / catalogを増やさずpilotを実機評価する一時経路にすぎない。
+
+したがって、P5 pilot 3機種をOrbital Analog productionへ上書きする案は撤回する。
+既存3テーマは不変とし、§272.2どおり14機種が揃った後にだけ第4テーマとして登録する。
+現在は14機種中MeterRound / Lever / Toggleの3機種が承認済みで、残りは11機種である。
+
+### 295.1 Phase 3のバッチ構成
+
+一括11機種で品質問題を増幅させないため、次の3バッチへ分ける。
+
+| Batch | 機種 | 主な再利用 / gate |
+|---|---|---|
+| A | MeterMedium / MeterLarge / Throttle / PowerSlider | P5 meter / lever語彙、large envelope、回転・直動clearance |
+| B | Rotary / Button / Lamp / StatusIndicator | 操作部の形状coding、誤操作防止、readout / emissive role |
+| C | WindowMeter / WindowPanel / TrendMonitor | 大型表示面、表示傾斜、LineRenderer / display surface契約 |
+
+各バッチはBlender形状、motion geometry、delivery正規化、固定cameraを提出して停止し、
+Codex静的検証後に次バッチへ進む。Unity importはCodexだけが行う。
+
+### 295.2 Opus 5 Phase 3 Batch A契約
+
+1. P5 pilotとP1〜P4をfreezeし、新規`theme4_full_p6`系scriptと`delivery_p6/batch_a/**`だけへ出力
+2. 対象名 / pivot / moving partは既存runtime契約に一致させる
+   - `MeterMedium`: `needle_pivot` / `needle`
+   - `MeterLarge`: `needle_pivot` / `needle`
+   - `Throttle`: `throttle_pivot` / `throttle_handle`
+   - `PowerSlider`: `slider_travel` / `slider_handle`
+3. envelopeは`InstrumentGreyboxSpecification` / `RefinedModelReplacementValidator`を正本とし、
+   mount面、pivot、可動域、直動量を既存3テーマから実測して固定する
+4. Medium / Large meterは単純uniform scaleにせず、P5の薄型ring、draft、needle depth、
+   主副目盛の一意性を各サイズの視距離とtriangle予算に合わせて再設計する
+5. Throttleは`amplitude=35°` + `rotationOffset=-35°`によるruntime **−70..0°** range、
+   PowerSliderは中心から±0.09 m（total 0.18 m）travelで、moving対staticを97姿勢以上の
+   BVH triangle overlapとclearanceで検証する。浮遊部品、筐体侵入、rim交差を許さない
+6. gripはR2以上、非対称断面、指かかり1箇所。軸受 / guide / end stopをgeometryで説明する
+7. 1 object 5,000 triangles以下。ただしlarge instrumentはprojectの25,000 total budget内、
+   rendererはmeter 4以下 / control 3以下、shared materials 2以下、visual colliderなし
+8. authoring roleはbody / metal / gasket / readout。P4 atlasはpilot freezeのため変更せず、
+   Batch Aで新領域が必要ならproduction atlas案として別ファイルへ出し、上書きしない
+9. 正面・左右斜視・側面に加え、motion端 / 中央のclose-up、grayscale contact sheetを生成
+10. non-manifold / zero-area 0、UV bleed、material role、全姿勢clearanceをJSON gateにする
+11. Unity `Assets/`、`Builds/`、alignment doc、git、既存3テーマ、Batch B / Cには触れない
+
+Batch Aが提出されたらCodexが静的成果物を検証し、合格時だけ隔離Unity Gate Bへ進める。
+
+## 296. Codex: Theme 4 Phase 3 Batch Aを静的受領 (2026-08-25)
+
+Opus 5のBatch A提出を確認し、`MeterMedium` / `MeterLarge` / `Throttle` /
+`PowerSlider`の4機種を隔離Unity Gate Bへ進められる静的成果物として受領した。
+
+### 296.1 独立照合結果
+
+- 新規generator / delivery script 2本はPython構文解析PASS
+- 4 FBXの実SHA-256はdelivery JSON記録と一致
+- P4 atlas 4枚はP4 / P5成果物とbyte-identical
+- P5の3 FBX / 3 BlendはP5 JSON記録SHA-256と一致し、freezeを維持
+- pivot / moving名、Throttleのruntime `-70..0 deg`、PowerSliderの`+-0.09 m`を契約どおり記録
+- 4機種とも129姿勢、moving対gate対象staticのBVH intersection 0
+- non-manifold / zero-area 0、mount plane 0、envelope / renderer / triangle budget PASS
+- FBX実測は3968 / 4256 / 6500 / 4992 tris、rendererは全機種2
+- 最小clearanceはMedium 1.973 mm、Large 0.755 mm、Throttle 2.482 mm、Slider 1.180 mm
+- colour / grayscale固定4視点とmotion端・中央close-upを目視し、針、作用点、軸受、
+  rail、end stop、slotに明白な欠落や可動域端での侵入を認めない
+
+meterの軸平行box監査が報告した隣接tick 6 / 10組は、放射目盛のbox同士による偽陽性である。
+専用の角度余裕監査ではMedium 8.536 mm、Large 10.613 mmを確保しており、tick基部は
+land面から0.7 mm埋め込まれ、同一平面faceは0としている。
+
+controlのmotion gateは、§292で受領したpilotと同じく、可動機構が走る背面slabである
+plate / gasket / skirtを非gate対象とし、shell / rim / slot floor / rail / bearing /
+detent / end stopをgate対象としている。この区別はUnity import後の視覚確認でも再確認する。
+
+### 296.2 Gate Bへ持ち越す確認点
+
+1. MeterLargeの0.755 mm clearanceがUnity import後に針boss / collarの干渉やちらつきに見えないこと
+2. Batch A gripにはP4 atlasのLever専用knurl patchを流用していないため、テーマ内の表面語彙が
+   不自然に分断されて見えないこと
+3. Throttle / PowerSliderのplate・gasket・skirt非gate区分がUnity上で筐体侵入に見えないこと
+4. 4機種のpivot軸、range、mount面、material slotがUnity importerで既存runtime契約に一致すること
+
+**Batch Aは静的Gate A PASS。Batch B / Cは停止したまま、次工程はCodexによる隔離Unity Gate Bとする。**
+
+## 297. Codex: Batch A triangle予算の解釈を訂正し、Throttleだけを差し戻す (2026-08-25)
+
+§296.1のtriangle予算判定を、projectの正式なUnity検証器
+`RefinedModelReplacementValidator` / `InstrumentGreyboxSpecification`へ照合し直した。
+§295.2の「1 object 5,000 triangles以下」は部品単位ではなく、control prefab内の
+全`MeshFilter`を合算した機体総数へ適用される。MeterMedium / MeterLargeはlarge
+instrumentとして25,000、Throttle / PowerSliderはcontrolとして5,000が上限である。
+
+この正式集計で隔離Unity Gate Bを再実行した結果は次のとおり。
+
+| 機種 | triangle / formal budget | renderer / submesh | 結果 |
+|---|---:|---:|---|
+| MeterMedium | 3,968 / 25,000 | 2 / 3 | **PASS** |
+| MeterLarge | 4,256 / 25,000 | 2 / 3 | **PASS** |
+| Throttle | 6,500 / 5,000 | 2 / 3 | **FAIL** |
+| PowerSlider | 4,992 / 5,000 | 2 / 3 | **PASS** |
+
+したがって、§296で記録した実geometry数、pivot、motion、clearance、画像所見は維持するが、
+triangle予算PASSという判定だけを訂正する。PowerSliderは正式上限内だが余裕が8 triangles
+しかないため、合格後の形状追加には再最適化が必要である。
+
+元の4機種ではUnity固定camera 4視点×4機種の16画像を生成し、Error Shader画素0、
+cyan readout画素27,864を確認した。既受領P5のUnity contact sheetとも照合し、Blender
+review cameraとの上下方向差は新しいimport回帰ではないと判断した。EditModeは
+**149 passed / 0 failed / 0 skipped / 0 inconclusive**。これらの画像・test証跡は
+元geometryの視覚・runtime回帰確認として有効だが、Throttleのtriangle超過を免除しない。
+
+Opus 5にはThrottleだけを新規P6 Batch A R1として差し戻した。P6A、P1〜P5、他3機種を
+freezeし、機体合計4,800以下を目標に、pivot、runtime -70..0°、silhouette、grip、
+yoke cross pin、左右bearing boss、slot、end stop、2 renderer / 3 submesh / 2 material、
+全姿勢clearance契約を維持して密度だけを最適化する。P5 Leverの6,792 / 5,000は同種の
+既存technical debtとして別工程へ記録し、今回のThrottleを免除する根拠にはしない。
+
+**Batch A全体のUnity Gate BはOPEN。Throttle R1の再提出・再検証までBatch B / Cと
+Theme 4のproduction登録は停止する。**
+
+## 298. Codex: Throttle R1を受領し、Batch A Unity Gate Bをcloseする (2026-08-25)
+
+Opus 5は§297の差し戻しに対し、ThrottleだけをP6 Batch A R1として再提出した。
+旧Batch AとP1〜P5、MeterMedium / MeterLarge / PowerSliderはfreezeされている。
+
+### 298.1 R1静的照合
+
+- Throttle総triangle: **6,500 → 4,756**（body 3,352 / moving 1,404）
+- 正式validator上限5,000、作業目標4,800をともに満たす
+- renderer / submesh / shared material: **2 / 3 / 2**
+- pivot `throttle_pivot`、moving `throttle_handle`、Unity +X、runtime −70..0°を維持
+- 129姿勢のmoving対static BVH intersection: **0**
+- 最小clearance: **2.927 mm、rim_top、0°**
+- non-manifold / zero-area: **0 / 0**、mount plane 0、envelope内
+- yoke cross pin、左右bearing boss、slot、end stop、gripの指かかりと掌膨らみを維持
+- FBX SHA-256:
+  `6bbcb1cb68869871ebd8c00bf52dddf260d3b0a7c7b891538bf2f6b0a1ceff7c`
+- P4 atlas 4枚はbyte-identical
+
+R1成果物JSONに残っていた旧`triangle_budget_total=25000`は、R1 generator側で正式値
+5,000へ訂正した。geometry / delivery JSONとも25,000の残存0、validator 5,000、
+target 4,800、actual 4,756で一致している。
+
+### 298.2 隔離Unity Gate B
+
+| 機種 | triangle / formal budget | renderer / submesh | 結果 |
+|---|---:|---:|---|
+| MeterMedium | 3,968 / 25,000 | 2 / 3 | **PASS** |
+| MeterLarge | 4,256 / 25,000 | 2 / 3 | **PASS** |
+| Throttle R1 | 4,756 / 5,000 | 2 / 3 | **PASS** |
+| PowerSlider | 4,992 / 5,000 | 2 / 3 | **PASS** |
+
+- fixed-camera 4視点×4機種: **PASS**
+- Error Shader画素: **0**
+- cyan readout画素: **27,848**
+- EditMode: **149 passed / 0 failed / 0 skipped / 0 inconclusive**
+- 既存3テーマ、active prefab、runtime theme登録、production materialは未変更
+
+画像上、R1は元Batch Aのsilhouetteと機構説明を維持し、20分割grip / 10分割bearing capに
+明白な破綻を認めない。ただしQuest至近距離でのfacetingと、PowerSliderの8 triangleしかない
+予算余裕は実機・後続変更時の残リスクとして保持する。
+
+**Theme 4 Phase 3 Batch Aの隔離Unity Gate BはCLOSE。production登録は14機種が揃うまで
+行わない。次工程はBatch AのQuest視認確認と、干渉しない範囲でのBatch B Blender Gate Aである。**
+
+## 299. Codex: Batch A Quest review APKを生成・実機導入する (2026-08-25)
+
+Batch Aの4機種だけを既存Orbital Analog keyへ一時差し替えする隔離review経路を追加した。
+これはcandidate resourceとbuild時だけ存在するreview configurationを使用し、active prefab、
+runtime theme catalog、production material、第4テーマ登録を変更しない。
+
+- APK: `Builds/QuestReview/AnalogInstrumentMR-Theme4-P6-BatchA-review-quest3.apk`
+- size: **91,140,103 bytes**
+- SHA-256: `b6ccc3f0e0da389b18a034ca61f61ea98ed05838e1a235473255a2fe5a8badc7`
+- Quest 3 `2G0YC1ZG2J02HL`: `adb install -r` **Success**
+- activity launchを要求済み
+- 一時review configurationの残存なし
+- credential quarantine fileの残存なし、`DevAgentSettings.asset`復元済み
+
+起動時点でQuest shellのcontroller-required launch checkが前面に出たため、app本体の
+`topResumedActivity`確認と人間の視認確認はheadset / controller wake後へ持ち越す。
+
+### 299.1 人間が確認するQuest Gate C
+
+1. MeterMedium / MeterLargeの針と主副目盛に、全rangeでちらつき・重複・ring侵入がない
+2. MeterLargeの最小0.755 mm clearanceが針boss / collarの干渉に見えない
+3. Throttle R1の20分割gripと10分割bearing capが至近距離で不自然に角張らない
+4. Throttleがruntime −70..0°の全rangeでrim、slot floor、bearing、end stopへ侵入しない
+5. PowerSliderが中心±0.09 mを移動し、rail / end stopへ侵入せず、handleが浮いて見えない
+6. 4機種の表面語彙がP5 pilot 3機種と同じテーマとして読める
+
+Batch A Quest確認と並行し、Opus 5にはBatch BのBlender Gate Aを開始させた。Batch Bは
+新規`delivery_p6/batch_b/**`だけへ出力し、Unity / docs / git / Batch Cへ触れない。
+
+## 300. Codex: Batch B Blender Gate Aを受領し、Unity構造Gateを通す (2026-08-25)
+
+Opus 5のBatch B提出を独立照合した。対象はRotary / Button / Lamp / StatusIndicatorの4機種。
+生成中の画像reviewにより、DANGER wellのshell外はみ出し、Button / Lampで前面shellがなく
+gasketが露出する問題、追加shellの中実面と操作部の干渉を検出し、開口付きframeへ修正している。
+
+### 300.1 Blender Gate A
+
+| 機種 | triangle / budget | renderer / submesh | motion / clearance | 結果 |
+|---|---:|---:|---|---|
+| Rotary | 2,112 / 5,000 | 2 / 4 | 0..360°、145姿勢、1.917 mm | **PASS** |
+| Button | 2,008 / 5,000 | 2 / 3 | 0..14 mm、145位置、1.946 mm | **PASS** |
+| Lamp | 1,332 / 5,000 | 2 / 3 | 静止、2.768 mm | **PASS** |
+| StatusIndicator | 1,476 / 5,000 | 4 / 5 | OFF/SAFE/WARN/DANGER、0.600 mm | **PASS** |
+
+全機種でtriangle目標4,500以下、mount plane 0、envelope内、non-manifold / zero-area 0、
+coplanar pair 0、moving対static BVH intersection 0、shared material上限2、契約node名を確認した。
+Rotaryはruntime `MotionKind.Rotate`がfactoryのamplitude 48を参照せず、normalized valueを
+0..360°へ変換する現行実装に合わせた。Lampの`indicator`とStatusIndicatorの`indicator`は
+EMPTY、Lamp発光meshは`indicator_lens`、Statusの発光meshは`status_safe` / `status_warn` /
+`status_danger`である。
+
+FBX実SHA-256はdelivery JSON記録と一致した。
+
+- Rotary: `3050d4e44dbd8a0b61f82d7f85332d7a7201e39ac1f6ceba8bb55c5e74fd867a`
+- Button: `865cf33d86367e8ac713819f7e0f642b15ed77f66491a612cb349bb6b85cbbc3`
+- Lamp: `809efc400ed625a42d250d7d2b06785791fbf3e4126ce8e601301caeb0bfeec3`
+- StatusIndicator: `e0f7db51917cbdd884d7bf8b37e4585cb11eb463bf65c8bd8f31e015cd1fcf6b`
+
+P4 atlas 4枚もbyte-identical。colour / grayscale固定4視点、Rotary / Button motion close-up、
+Status 4状態renderを目視し、機種の識別性、操作guard、Lamp hood、3 status segmentを確認した。
+
+### 300.2 隔離Unity構造Gate
+
+既存の正式`RefinedModelReplacementValidator`へ4 FBXを隔離importし、productionとは無関係な
+OrbitalAnalog materialを仮割当してhierarchy / budget / bounds / node / manifest構造だけを検証した。
+
+| 機種 | triangle | renderer | submesh | bounds m | 結果 |
+|---|---:|---:|---:|---|---|
+| Rotary | 2,112 | 2 | 4 | 0.1510 × 0.1502 × 0.0864 | **PASS** |
+| Button | 2,008 | 2 | 3 | 0.1361 × 0.1361 × 0.0728 | **PASS** |
+| Lamp | 1,332 | 2 | 3 | 0.1421 × 0.1181 × 0.0500 | **PASS** |
+| StatusIndicator | 1,476 | 4 | 5 | 0.1840 × 0.1241 × 0.0484 | **PASS** |
+
+この段階は正式validatorによる構造PASSであり、MachinedErgonomicsのP4 atlas / emissive material、
+Lamp `IndicatorRenderer`、Status 3 renderer、runtime Pulse / 4状態、固定camera Error Shaderを
+Theme 4専用prefabで確認する完全なUnity Gate Bは未実施である。
+
+**Batch B Blender Gate AとUnity構造GateはCLOSE。完全なTheme 4 Unity Gate BはOPEN。**
+
+## 301. Quest目視: Batch A controlの工具アクセス不成立を差し戻す (2026-08-25)
+
+Quest実機でThrottle / PowerSliderを確認した結果、台座下部構造の4隅にあるネジ頭を
+台座中間構造が上から覆っており、組立・保守時にドライバーをネジへ到達させられないことを
+確認した。ネジの造形自体が見えていても、工具アクセスが成立しないため機械構造としては
+不整合である。
+
+Throttle R1とPowerSliderをBatch A R2として次の条件で差し戻す。
+
+1. 4本のネジそれぞれについて、ネジ軸と同心のドライバーアクセス穴を中間構造の上面まで設ける
+2. 穴は単なる表面の凹みではなく、工具がネジ頭へ直線的に到達できる開口・経路として読める形状にする
+3. ネジ頭、下部座ぐり、中間構造の穴、上面開口の中心を一致させ、工具径に視認可能な余裕を持たせる
+4. 穴の縁は小さく面取りし、必要なら着脱式plug / capを別部品として提案してよい。ただし工具経路を塞がない
+5. Throttleのruntime -70..0度、PowerSliderの中心+-0.09 m全域で、穴・ネジ・可動部の干渉を0にする
+6. pivot / moving node、mount plane、envelope、renderer / shared material上限を維持する
+7. controlの正式triangle上限は機体合計5,000。PowerSliderは現状4,992で余裕がないため、穴追加前に
+   他の非シルエット部を最適化し、目標4,800以下で再提出する
+8. 上面、斜め、断面の画像で4箇所すべての連続した工具経路を示し、各穴の中心ずれと最小径をJSONへ記録する
+
+同時に、Batch AのP4 normal mapはマテリアルへ設定されているものの、Throttle / PowerSliderを含む
+新規部品のUVが有意な凹凸領域を使っていないため、Quest上では表面detailが実質見えない。
+工具アクセスR2と同じ提出で、既存P4 atlasを上書きせず、専用normal領域を持つproduction atlas案を
+別ファイルとして提出する。Throttle / PowerSliderのgripに適した触覚模様と、台座の加工面を分け、
+normal-only比較画像、UV bleed、Quest想定距離での視認性を示す。
+
+**Batch Aのgeometry / motion Gate B結果は維持するが、組立性とmaterial-qualityのQuest Gate CはOPEN。**
+
+## 302. Codex: Batch A R3を独立検証し、geometryは条件付き受領、工具径とatlas B2を差し戻す (2026-08-25)
+
+Opus 5は§301に対しR2を経由した後、Boolean貫通穴とarm分割を行ったR3を提出した。
+レート制限回復までは追加作業を指示せず、Codexがread-only照合と隔離Unity Gate Bを行った。
+
+### 302.1 回答と成果物の一致
+
+- Throttle FBX SHA-256: `26aa717ddace93749500239c06eb1189cd499312a074b4f14e200cf1edf163fb`
+- PowerSlider FBX SHA-256: `66f86c34f1603e33dbe9c8a5286e6e3d4e4e37ee5f9cd0860bdfdd75c724eaf9`
+- triangle: Throttle **4,708 / 5,000**、PowerSlider **4,646 / 5,000**
+- renderer / submesh: 両方 **2 / 3**
+- non-manifold / zero-area: 両方 **0 / 0**
+- P4 atlas 4枚は既存SHAと一致
+- 上面・斜め・断面画像で8穴が上面からネジ方向へ開いていることを確認
+
+隔離Unity Gate Bでは、Throttle 4,708 tris、PowerSlider 4,646 tris、bounds、mount plane、
+pivot / moving hierarchyがPASSした。Unity可動域監査もThrottle 6状態・70.00度・axis alignment
+1.0000、PowerSlider 11状態・0.1800 mでPASSした。したがってR3のgeometry / runtime契約は
+条件付きで受領できる。
+
+### 302.2 公称16.4 mm工具径は未証明
+
+Opus 5の`tool_path_audit`は工具span内の**頂点**から軸までの距離を測る方式であり、頂点が
+円柱外にあってもtriangle面が工具円柱を横切るケースを見逃す。Codexはbody meshへ工具断面を
+96方向 x 8 ringで敷き、軸方向rayを4穴すべてへ通す独立監査を追加した。
+
+| 機種 | nominal半径 | 結果 | 所見 |
+|---|---:|---|---|
+| Throttle | 8.2 mm | **FAIL** | 4穴中3穴、外周ringで計9 hit |
+| Throttle | 8.0 mm | PASS | 1,732 ray、hit 0 |
+| PowerSlider | 8.2 mm | **FAIL** | 4穴すべて、外周ringで計38 hit |
+| PowerSlider | 8.0 mm | **FAIL** | 外周ringで計2 hit |
+| PowerSlider | 7.9 mm | PASS | 1,732 ray、hit 0 |
+
+よって穴の開通自体は成立するが、回答の「最小径16.402 / 16.405 mm」は承認しない。
+次のOpusターンでは頂点距離gateをtriangle面／円柱経路gateへ置換し、16.4 mmを正式要件として
+形状を広げるか、採用する工具外径を機械設計上の根拠とともに下げるかを決めて再提出する。
+
+また、12角形穴は近接画像で多角形が明瞭に見える。triangle上限内で分割数を増やすか、
+実機距離で許容できる根拠を示すまでvisual qualityはOPENとする。
+
+### 302.3 production atlas案B2は未受領
+
+B2はmachined / grip / knurlの専用normal領域とbleed証跡を持ち、P4を上書きしていない点は正しい。
+一方、提出自身がgrip UVを`smart_project`由来で倍率不均一と申告しており、比較画像でも曲面上の
+模様密度・方向が不均一である。これはproduction atlasとして採択できない。次ターンでは
+Throttle / PowerSlider gripへ明示的な円筒／曲面展開を行い、同一物理寸法の模様、seam位置、
+接合部での停止、Quest距離でのmoireなしを再検証する。CodexはB2をUnity materialへ未導入である。
+
+**R3 structural / motion Unity Gate BはPASS。工具アクセスの存在は確認したが、公称工具径、
+穴の近接外観、atlas B2、Quest material-quality Gate CはOPEN。Opus 5への次指示はレート制限回復後とする。**
+
+## 303. Codex: R4の工具アクセスを受領し、atlas B3へUnity受渡しを要求する (2026-08-25)
+
+Opus 5のR4 / atlas B3回答と成果物を照合した。R4 FBXのSHA、triangle、bounds、mount plane、
+renderer / submesh、non-manifold / zero-area、129姿勢clearanceは回答と一致する。Codex側の
+独立円柱監査（1穴433 ray、4穴1,732 ray）を公称半径8.2 mmで再実行し、Throttle / PowerSlider
+とも4穴すべてhit 0を確認した。したがって§302.2の公称16.4 mm工具経路FAILは解消する。
+
+- Throttle: 4,750 / 5,000、FBX `cc0dbde78e56929e7fc10d2b5bbc2a7a1dd10d2fc00ef966038199815cbec0ee`
+- PowerSlider: 4,644 / 5,000、FBX `08c43031e4bb922f82b8b41fd6573ea5ed938c9b02e14823130c254a2e9c943a`
+- 16分割穴は12分割より改善し、Quest想定0.8 mでの外形偏差見積り0.25 pxは妥当
+- atlas B3は明示的円筒展開、背面seam、grip限定routing、4.5 mm前後の物理pitchを記録しており、
+  B2の`smart_project`倍率不均一を解消している
+
+ただし、`atlas_proposal`にはPNG / JSON / comparison画像しかなく、B3 UVを保持したFBXまたは
+Blendがない。R4 delivery FBXは凍結P4 UVのため、現状のB3はUnityへ取り込めず、Quest実機で
+normal mapを検証できない。B3のproduction採択はまだ行わない。
+
+次のOpusターンはR4 geometryをfreezeし、**UV受渡しだけ**を行う。
+
+1. 新規隔離領域`delivery_p6/batch_a_r4_b3u/**`へ、Throttle / PowerSliderのB3 UV付きFBXと
+   対応Blendを出す。R4と同一hierarchy / pivot / moving名 / vertex位置 / triangle / boundsを維持する
+2. R4 delivery FBXとのgeometry同値を、object別triangle、bounds、頂点位置最大差、motion契約で証明する
+3. FBXのmaterial slotはopaque + emissiveの共有2材質以内とし、UnityでB3 BaseColor / Normal /
+   MetallicSmoothness / Emissionを一意に割り当てられる名前を使用する
+4. 2048 atlasだけでなく1024版も同じUV layoutから生成する。Quest用ASTC 6x6 + mipmap時の推定GPU
+   memoryを4 production maps合計で比較し、0.8 m / 至近のnormal detail画像を同じcameraで出す
+5. `NormalFlat`はA/B review専用とし、production 4 mapsのmemoryへ含めない
+6. gripの背面seam、ferruleでの停止、Throttle / Slider間の物理pitch差、UV bleedをFBX再import後に再測定する
+7. R4 geometry、P4、B3原案、Batch B、Assets / Builds / docs / gitを変更せず、提出後に停止する
+
+CodexはB3U提出後、1024 / 2048を隔離Unityへimportし、Error Shader、normal有無A/B、Quest負荷と
+実機視認性を比較して採択解像度を決める。
+
+**R4工具アクセスはPASS。R4 geometryの完全Unity Gate Bと、B3U material / Quest Gate CはOPEN。**
+
+## 304. Codex: R4 B3Uを受領し、隔離Unity Material Gateをcloseする (2026-08-25)
+
+Opus 5の`delivery_p6/batch_a_r4_b3u/**`を独立照合した。Throttle / PowerSliderの
+B3 UV付きFBX、対応Blend、1024 / 2048の4 production maps、NormalFlat、固定camera比較画像、
+delivery JSONが揃っている。generatorはPython構文解析PASS、FBX / Blend / textureの実SHA-256は
+JSON記録と一致した。
+
+### 304.1 Geometry / toolingの維持
+
+- Throttle: **4,750 tris**（body 3,194 / handle 1,556）
+- PowerSlider: **4,644 tris**（body 3,040 / handle 1,604）
+- R4とのunique world position / bounds最大差: **0 m**
+- hierarchy、pivot、moving node、motion契約: R4と同一
+- renderer / submesh / shared material: 両機種 **2 / 3 / 2**
+- 公称半径8.2 mmの工具経路をB3U Blendへ再実行し、両機種とも4穴、各1,732 ray、hit 0
+
+B3原案には`plate` prefixが`plate_label`までmachined roleへ昇格し、銘板をopaqueへ誤配線する
+欠陥があった。B3Uはreadout / gasketをrelief昇格対象外にして修正し、FBXに
+`MAT_MachinedErgonomics_B3_Opaque` / `MAT_MachinedErgonomics_B3_Emissive`を一意に保持する。
+B3原案とその比較画像はfreezeし、修正はB3Uだけへ閉じている。
+
+### 304.2 隔離Unity Material Gate
+
+専用`Theme4_P6_BatchA_R4_B3U_MaterialGate`へ2 FBXと1024 / 2048 atlasをコピーし、
+本番prefab / runtime catalogへ触れずに4 candidate prefabを生成した。
+
+| Atlas | 機種 | triangle | renderer / submesh | 結果 |
+|---:|---|---:|---:|---|
+| 1024 | Throttle | 4,750 | 2 / 3 | **PASS** |
+| 1024 | PowerSlider | 4,644 | 2 / 3 | **PASS** |
+| 2048 | Throttle | 4,750 | 2 / 3 | **PASS** |
+| 2048 | PowerSlider | 4,644 | 2 / 3 | **PASS** |
+
+両解像度でBaseColor / EmissionはsRGB、Normal / MetallicSmoothnessはlinear、NormalMap型、
+mipmap有効、Android overrideはASTC 6x6である。opaqueはURP Lit + Normal +
+MetallicSmoothness、emissiveはURP Unlitへ割り当て、Error Shader / null materialは0。
+Unity Prefab ModeでThrottle / PowerSliderのgrip relief、machined surface、cyan銘板を目視し、
+B3原案の銘板欠落が再発していないことを確認した。Console errorは0である。
+
+### 304.3 解像度判断
+
+ASTC 6x6 + mipmap、production 4 maps合計は1024が**2.389 MiB**、2048が**9.528 MiB**、
+差は**7.139 MiB**である。Blender固定cameraとUnity近接表示で1024でもreliefを識別でき、
+2048の近接細線はモアレを強める可能性がある。したがってQuest候補は**1024を優先**し、
+2048は同一UVの比較対照として保持する。最終採択はQuest実機0.8 m / 至近距離での
+ちらつき、モアレ、Normal強度、既存P5表面語彙との連続性を確認後に行う。
+
+**R4 B3Uの静的Gateと隔離Unity Material GateはCLOSE。Quest material-quality Gate CはOPEN。**
+
+## 305. Codex: R4 B3U 1024 Quest review APKを生成・導入する (2026-08-25)
+
+§304で優先候補とした1024 atlasだけをThrottle / PowerSliderへ割り当てる隔離review経路を追加した。
+既存Orbital Analogの同名prefab keyへbuild時だけ差し込み、MeterMedium / MeterLargeを含む他機種、
+active prefab、runtime theme catalog、production materialは変更しない。
+
+- APK: `Builds/QuestReview/AnalogInstrumentMR-Theme4-P6-BatchA-R4-B3U-1024-review-quest3.apk`
+- size: **91,743,923 bytes**
+- SHA-256: `6ef0081173f901a250a5c7de189920aeb16dbd1b2d9145004e54afe344f2ed16`
+- Quest 3 `2G0YC1ZG2J02HL`: `adb install -r` **Success**
+- 一時review configurationの残存なし
+- credential quarantine fileの残存なし、`DevAgentSettings.asset`復元済み
+
+activityとlauncherの両方から起動を要求したが、headset側でprocess / resumed activityを保持しなかった。
+これは既往のcontroller-required / headset wake状態と同じため、装着・wake後にアプリを開き、
+Throttle / PowerSliderのNormal detailを目視する。
+
+### 305.1 Quest Gate C確認点
+
+1. 0.8 mでgrip reliefが認識でき、網目がちらつき・モアレ・泳ぎに見えない
+2. 至近距離でThrottleの背面seamとferrule停止が不自然に見えない
+3. Sliderの丸い先端で格子密度が急変、潰れ、放射状ノイズに見えない
+4. machined surfaceが既存P5の表面語彙と連続し、過度な縞やノイズに見えない
+5. cyan銘板が両機種に表示され、opaque面へ吸収されていない
+6. 全可動域で工具穴、ネジ、可動部に新しいちらつき・干渉がない
+
+**APK導入まで完了。Quest material-quality Gate Cは人間の装着確認待ち。**
+
+## 306. Quest目視: B3Uの銘板配置を差し戻す (2026-08-25)
+
+Visual Manifest欠落を修正したreview APKでThrottle / PowerSliderを表示し、runtime例外とUI停止が
+解消したことを確認した。Throttleは0.8 m / 至近距離のgrip relief、全可動域の工具穴・ネジ・
+可動部について、ちらつき、モアレ、UV seam破綻、干渉を認めずPASSした。
+
+一方、Throttleのcyan `plate_label`はレバー付け根にあり、用途のない発光板が機構部へ付随して
+見えるため不自然である。PowerSliderでは`plate_label`が周辺部品と視覚的に干渉しており、
+銘板として成立していない。B3原案のrole誤配線をB3Uで直したこと自体は正しいが、修正によって
+本来の配置・用途の問題が実機で顕在化した。したがって銘板のQuest visual GateはFAILとする。
+
+次のOpus 5ターンは、R4 B3Uをfreezeし、銘板だけの最小修正版`batch_a_r4_b3u_r1/**`を提出する。
+
+1. Throttle / PowerSliderの`plate_label`を可動部、rim、rail、bearing、工具穴、ネジ、service cover、
+   可動域投影から離れた固定筐体面へ再配置する
+2. blank cyan発光板を廃止し、非発光の刻印／印刷銘板として読む形状・material roleにする。
+   実際の状態表示が必要なら、表示内容と意味を定義した独立indicatorとして別設計にする
+3. 正面・左右斜視・motion両端で、銘板と周辺部品のtriangle intersection、投影重なり、
+   接線接触を0にし、最小clearanceをJSONへ記録する
+4. 銘板は固定bodyへ所属させ、pivot / moving node、可動域、tool access、grip UV、vertex位置、
+   triangle budget、他のmaterial routingを変更しない
+5. 銘板をopaqueへ変更してemissive submeshが不要になる場合、空submeshを残さない。
+   shared materialは2以下とし、変更前後のrenderer / submeshを報告する
+6. 1024 atlasを優先し、銘板以外のUV、normal pixel、MetallicSmoothnessをbyte-identicalに保つ。
+   Emissionを変更する場合は変更領域を銘板UVだけに限定する
+7. 修正前後の同一camera近接画像と、部品が密集する方向からのclearance画像を提出して停止する
+8. Assets / Builds / docs / git、R4 / B3 / B3U原案、Batch B / C、既存3テーマへ触れない
+
+**B3U geometry / tooling / Unity Material GateとThrottle reliefは維持。銘板配置だけをOPENとして差し戻す。**
+
+追確認でPowerSliderも、銘板を除く0.8 m / 至近距離のgrip relief、丸い先端の模様密度、
+全可動域のちらつき・モアレ・UV破綻・部品干渉をPASSした。よって1024 atlasのNormal Map品質、
+Throttle / PowerSliderのmotion / tooling結果は再試験せず維持できる。R1再確認範囲は銘板の配置、
+非発光化、周辺部品とのclearance、不要submeshの除去に限定する。
+
+## 307. Codex: B3U R1銘板を不受領とし、意味のない銘板を削除する (2026-08-25)
+
+Opus 5の`batch_a_r4_b3u_r1/**`を照合した。実SHA、texture 5枚のB3Uとのbyte一致、
+Throttle 4,778 / PowerSlider 4,672 tris、renderer 2、submesh 2、opaque 1材質、
+static部品とのtriangle / 投影重なり0という回答は成果物JSONと一致する。銘板をmetal roleへ変更し、
+emissive submeshを空のまま残さなかった点も正しい。
+
+しかしR1は§306の受領条件を満たさない。
+
+1. §306は銘板を「可動部、rim、rail、bearing、工具穴、ネジ、service cover、可動域投影から離す」
+   と明記している。R1はThrottle / PowerSliderとも斜視中央姿勢でmoving partとの投影重なりを検出し、
+   これをCodexの承認なくgateから除外した
+2. `Nameplate_PowerSlider_after_close.png`ではslider handleが銘板へ大きく被り、ユーザーが指摘した
+   「銘板が部品と干渉して不自然」という視覚問題を解消していない
+3. R1は発光を止めたが、刻印文字・記号・機能名を持たない空の矩形fieldである。意味のないblank fieldは
+   銘板として成立せず、別位置へ移しても装飾ノイズを増やすだけである
+
+この2機種には表示すべき機種名、定格、状態、操作方向がまだ定義されていない。したがって、
+パネル外・側面・背面へ移設するのではなく、**Throttle / PowerSliderから`plate_label`を完全削除**する。
+
+次のOpus 5ターンは新規隔離`batch_a_r4_b3u_r2/**`だけへ次を行う。
+
+1. 両機種から`plate_label` geometryを削除し、代替のplate、frame、凹み、印刷、発光面を追加しない
+2. `plate_label`由来face / UV / material slot / object / orphan meshがFBXとBlendに0であることを報告する
+3. triangleはR1より減少、renderer 2、submesh 2、opaque 1材質を維持し、空submeshを残さない
+4. B3U R1で変更した銘板以外の全頂点、hierarchy、pivot / moving node、可動域、tool access、grip UV、
+   atlas 5枚をbyte-identicalに保つ
+5. 正面・左右斜視、motion low / mid / highの画像で空いた筐体面が自然で、部品の欠落穴や不自然な
+   outline / shadow / material seamを残さないことを示す
+6. R4、B3U、R1、Batch B / C、Assets / Builds / docs / gitへ触れず、提出後に停止する
+
+将来、実際の表示内容が決まった時点で、銘板または独立indicatorを意味・視距離・配置契約とともに
+別工程で設計する。現時点でblank placeholderを残すことはしない。
+
+**B3U R1は不受領。R2は銘板完全削除だけの最小差分とする。**
+
+## 308. Codex: B3U R2を受領し、隔離Unity Gateをcloseする (2026-08-25)
+
+Opus 5の`batch_a_r4_b3u_r2/**`を独立照合した。generatorはPython構文解析PASS、FBX / Blend /
+atlas 5枚の実SHAはdelivery JSONと一致する。R2はThrottle / PowerSliderから`plate_label`を完全削除し、
+代替plate、frame、凹み、印刷、発光面を追加していない。
+
+### 308.1 R1との差分とtooling
+
+| 機種 | R1 → R2 triangle | 削除頂点 | 追加頂点 | renderer / submesh / material |
+|---|---:|---:|---:|---:|
+| Throttle | 4,778 → **4,706** | 38 | 0 | 2 / 2 / opaque 1 |
+| PowerSlider | 4,672 → **4,600** | 38 | 0 | 2 / 2 / opaque 1 |
+
+可動部はtriangle / unique positionとも不変で、bodyだけが銘板由来72 tris / 38 unique positionsを失った。
+R2のworld position集合はR1の部分集合で、追加geometryは0、hierarchyは同一である。Blend object / mesh /
+orphan、FBX object / material、tagged part、role face countsのいずれにも`plate_label` / readout残渣は0。
+grip UV、ferrule停止、背面seam、4.5 mm前後のpitch、atlas 5枚はR1 / B3Uと同一である。
+
+Codex独立工具経路監査を半径8.2 mmでR2 Blendへ再実行し、両機種とも4穴、各1,732 ray、hit 0。
+20枚の正面・左右斜視、motion low / mid / high、freed-face画像では、削除跡、穴、outline、shadow、
+material seamを認めず、連続した加工面になっている。
+
+### 308.2 隔離Unity GateとQuest APK
+
+R2 FBXを専用candidateへimportし、B3U 1024 atlas、URP Lit opaque、Visual Manifestを割り当てた。
+
+| 機種 | triangle | renderer | submesh | material | plate_label | 結果 |
+|---|---:|---:|---:|---:|---:|---|
+| Throttle | 4,706 | 2 | 2 | opaque 1 | 0 | **PASS** |
+| PowerSlider | 4,600 | 2 | 2 | opaque 1 | 0 | **PASS** |
+
+Error Shader 0、motion target / moving node正常、本番asset / runtime catalogは未変更。
+
+- APK: `Builds/QuestReview/AnalogInstrumentMR-Theme4-P6-BatchA-R4-B3U-R2-1024-review-quest3.apk`
+- size: **91,923,423 bytes**
+- SHA-256: `dd6e5b85c0d76a4ff269b5bfd86b485250985093d7d0e2aa141ac793f119451e`
+- Quest 3: `adb install -r` **Success**
+- 一時review configuration / credential quarantine残存なし、`DevAgentSettings.asset`復元済み
+
+起動要求時にheadsetがwake状態を保持せずprocessが残らなかったため、人間の装着・wake後に最終目視する。
+
+**B3U R2の静的Gate、tooling、隔離Unity GateはCLOSE。Questで銘板消失と自然な連続面を確認後、
+Batch A material-quality Gate Cをcloseできる。**
+
+## 309. Quest目視: B3U R2を受領し、Batch A material-quality Gate Cをcloseする (2026-08-25)
+
+Quest 3実機でR2のThrottle / PowerSliderを確認した。両機種とも`plate_label`と代替placeholderは消え、
+削除跡、凹み、不自然なoutline / shadow / material seamのない連続した筐体面になっている。
+§306でPASS済みのgrip relief、UV seam、全可動域、工具穴、ネジ、可動部も維持されているため、
+R2を最終受領する。
+
+一方、両機種の本体部分ではmachined surfaceのNormal Mapが**大きな縞模様**として見え、
+筐体スケールに対して不自然である。これは銘板削除とは独立したatlas / UV密度・方向・Normal強度の
+visual-quality課題であり、今回のR2を再差し戻す理由にはしない。ユーザー判断により別工程へ延期する。
+
+延期課題では、既受領geometryとgrip領域をfreezeし、machined領域だけについて次を比較する。
+
+1. 実機0.8 m / 至近距離で自然な加工目に見える物理pitch
+2. 縞方向が筐体面・想定加工方法と整合するUV orientation
+3. Normal強度を下げる案と、より細かい加工目へ変更する案
+4. ちらつき・モアレを増やさず、既存P5表面語彙と連続する1024 atlas
+5. machined変更前後の固定camera / Quest A-B。grip UV、BaseColor、geometry、motion、tool accessは不変
+
+**B3U R2はPASS。Theme 4 Phase 3 Batch Aのmaterial-quality Gate CはCLOSE。
+本体machined stripe refinementは別工程の記録済みtechnical debtとする。**
+
+## 310. Codex: Phase 3 Batch Bの完全Unity Gateをcloseし、Quest reviewへ進む (2026-08-25)
+
+Opus 5の`delivery_p6/batch_b/**`を、本番prefab / runtime theme catalogから分離した
+`Theme4_P6_BatchB_FullGate`へimportした。従来のBatch B stagingは形状・node構造だけを検証し、
+P4 atlas、Theme 4材質、Lamp pulse renderer、StatusIndicatorの状態rendererを構成していなかった。
+今回の完全Gateではfrozen P4 1024 atlasをURP Lit opaque / URP Unlit emissiveへ配線し、
+Android ASTC 6x6、mipmap、色空間、NormalMap型を検証した。
+
+| 機種 | triangle | renderer | submesh | runtime契約 | 結果 |
+|---|---:|---:|---:|---|---|
+| Rotary | 2,112 | 2 | 4 | `knob_pivot` / `knob` | **PASS** |
+| Button | 2,008 | 2 | 3 | `button_travel` / `button` | **PASS** |
+| Lamp | 1,332 | 2 | 3 | pulse=`indicator_lens` | **PASS** |
+| StatusIndicator | 1,476 | 4 | 5 | SAFE / WARN / DANGER順序 | **PASS** |
+
+4機種ともsource FBXのSHA-256、triangle / renderer / submesh、motion target / moving node、
+Collider / Light / Camera / Animator 0、opaque / emissive material role、null material / Error Shader 0を確認した。
+StatusIndicatorはOFFを全消灯とし、3 rendererをSAFE、WARN、DANGERの順に一意に参照する。
+production assetとruntime catalogは変更していない。
+
+完全Gate候補だけを既存Orbital Analogの同名4 prefabへbuild時限定で差し込むQuest review APKを生成した。
+
+- APK: `Builds/QuestReview/AnalogInstrumentMR-Theme4-P6-BatchB-review-quest3.apk`
+- size: **92,107,935 bytes**
+- SHA-256: `ba9b0220872f0b17b81140760754331e3f56776752e0f35dc08feb855c856228`
+- Quest 3 `2G0YC1ZG2J02HL`: `adb install -r` **Success**、launcher起動要求済み
+- 一時review configuration / credential quarantine残存なし、`DevAgentSettings.asset`復元済み
+
+Quest Gate Cでは次を確認する。
+
+1. Rotaryが全回転域で筐体に干渉せず、index markと目盛が読み取れる
+2. Buttonが押下・復帰し、guard / capのちらつき、貫通、干渉がない
+3. Lampが入力に応じて消灯 / 点灯・pulseし、hood越しと斜視で発光面を識別できる
+4. StatusIndicatorがOFF / SAFE / WARN / DANGERを順に切り替え、常に意図した1区画だけが点灯する
+5. 4機種でmaterial、Normal、emissionにError Shader、過度な縞、ちらつき、モアレがない
+
+**Phase 3 Batch Bの完全Unity Gate BはCLOSE。Quest visual / runtime Gate Cは人間の装着確認待ち。**
+
+## 311. Quest目視: Batch Bのguard過大とStatusIndicator枠ずれを差し戻す (2026-08-25)
+
+Quest 3実機でPhase 3 Batch Bを確認し、visual / ergonomics Gate Cを**FAIL**とする。Unity側の
+material / runtime manifest / Error Shader検証はPASSを維持するが、形状には次の受領不能点がある。
+
+1. **StatusIndicator**: 3ランプを囲む枠が台座の外形と整列せず、横へずれて台座からはみ出している。
+   枠、well、lens群を台座の中心軸へ揃え、正面投影で外枠を台座silhouette内へ収める
+2. **Rotary**: guard / collarが高く、回転部の側面を指で挟めない。誤操作防止より通常操作性を優先し、
+   knobの把持帯をringより十分に露出させる。thumb / indexの両側アクセスを塞がない
+3. **Button**: guard ringがcapより高すぎ、正面から指腹で押しにくい。rest時capをringと同程度以上に
+   露出させるか、ringを低くして、直径16 mmの指腹proxyが押下軸上へ到達できる形状にする
+4. **Lamp**: ring / hoodが発光lensより視覚的に支配的である。lensを主役として読み取れる高さ・厚さへ
+   ringを縮小し、正面と斜視の発光面を不必要に遮らない
+
+これは4機種の全面再設計ではなく、guard / frame比率と位置だけのBatch B最小修正とする。次のOpus 5
+ターンは`delivery_p6/batch_b/**`をfreezeし、新規`delivery_p6/batch_b_r1/**`へ次を行う。
+
+1. Rotary / Button / Lampのguard高さと厚さを下げる。単純な一律scaleではなく、操作部・lensとの
+   主従関係を各機種で調整する
+2. Rotaryは把持可能な側面高さと左右の指アクセスをmmで報告する。最低でも直径16 mm finger proxyを
+   knob両側へ置いた正面・斜視画像を示し、proxyがguardへ交差しないことを確認する
+3. Buttonは直径16 mm finger proxyを押下軸へ置き、rest / full pressでguardとのtriangle intersection 0、
+   capへ到達可能であることを示す。押下量14 mmと`button_travel` / `button`は維持する
+4. Lampは正面・左右斜視でlensの輪郭と発光面がguardに支配されないことを示す。`indicator` /
+   `indicator_lens`とrenderer分離は維持する
+5. StatusIndicatorは台座、外枠、3 well / lensの中心・左右marginを数値化し、正面投影で外枠の
+   台座外へのoverhangを0にする。SAFE / WARN / DANGERの順序と3 rendererは維持する
+6. 変更前後を同一camera・同一materialで並べ、正面、左右斜視、側面、操作proxy、silhouette overlayを
+   提出する。guard以外の形状、pivot、motion axis / range、mount plane、P4 atlasは原則freezeする
+7. 全姿勢でnon-manifold / zero-area / coplanar overlap / static-moving intersection 0、既存envelopeと
+   triangle budget内、renderer / submesh / material budget内を維持する
+8. Assets / Builds / docs / git、Batch A / C、既存3テーマへ触れず、R1成果物とJSONを提出して停止する
+
+CodexはR1受領後、元の完全Unity GateをR1用隔離candidateへ再適用し、固定camera比較後にQuest APKを
+再生成する。Rotary / Buttonの操作性とLamp / StatusIndicatorの形状比率はQuestで再確認する。
+
+**Batch B Unity Gate Bの技術結果は維持。geometry ergonomics / visual Gate CだけをOPENとしてR1へ差し戻す。**
+
+## 312. Codex: Batch B R1を部分受領し、StatusIndicatorだけをR2へ差し戻す (2026-08-26)
+
+Opus 5の`delivery_p6/batch_b_r1/**`と応答を独立照合した。generator 2本はPython AST解析PASS、
+FBX 4体とP4 atlas 4枚の実SHA-256はR1 JSONと一致する。triangle / renderer / submeshはBatch Bと同一、
+non-manifold / zero-area / coplanar overlap / motion interferenceは0、mount plane、envelope、pivot、motion、
+P4 atlasも維持されている。
+
+### 312.1 部分受領
+
+- **Rotary**: collarを24.4 mm後退し、16 mm finger proxyの左右干渉を82→0、guard clearanceを
+  -7.65→+3.71 mm、ringより前へ出る把持側面を0→17.0 mmとした。Quest指摘へ直接対応している
+- **Button**: guardを9.6 mm低減し、capのringからの突出をrest 10.8→20.4 mm、full press
+  -3.2→+6.4 mmとした。全押下でもcapがring内へ沈まない
+- **Lamp**: lens半径を30.0→37.6 mm、hoodを118→96°とし、lens / guard可視面積比を正面
+  0.687→1.779、斜視0.678→1.458へ改善した。lens outline遮蔽は2%以下である
+
+同一camera contact sheetとproxy画像でも、3機種はユーザー指摘のguard過大を改善している。
+よってRotary / Button / LampのR1 geometryを**暫定受領してfreeze**する。最終受領はR2と同時にUnity / Questで行う。
+
+### 312.2 StatusIndicator不受領
+
+R1はframe groupを中心0、左右margin各1.47 mm、shell frontへのoverhang 0へ修正しており、枠ずれ自体は
+解消した。しかし同時にSAFE / WARN / DANGERのwellとlensをすべて同幅へ変更し、Batch Bにあった
+3灯の幅による非色覚的識別を失った。Opus 5もこのtrade-offを申告している。
+
+これは§311の「guard / frame比率と位置だけの最小修正」「guard以外の形状は原則freeze」という範囲を超える。
+外枠全体の左右marginを等しくすることと、内部3灯を同幅・等間隔にすることは同義ではない。
+異なる幅を保ったまま、group全体を台座内へ配置できる。
+
+次のOpus 5ターンはR1をfreezeし、新規`delivery_p6/batch_b_r2/**`へ**StatusIndicatorだけ**を修正する。
+
+1. Rotary / Button / LampのFBX、Blend、geometry、UV、画像、数値をR1とbyte-identicalに保つ。再生成しない
+2. StatusIndicatorのBatch BにあったSAFE / WARN / DANGERの異なるwell / lens幅を復元する
+3. SAFE / WARN / DANGER rendererの順序、position semantics、OFF状態、4 renderer / 5 submeshを維持する
+4. 内部3灯を同幅・機械的対称へ揃えず、異なる幅を保ったままframe group全体の外形を台座中央へ配置する
+5. shell front faceに対するframe / well / lensの正面投影overhangを0、外枠の左右marginを同値にする。
+   内部灯のcentre間隔や左右内部余白は異なってよい
+6. Batch B / R1 / R2の同一camera正面・左右斜視・側面、silhouette overlay、OFF / SAFE / WARN /
+   DANGER画像を提出し、消灯時にも幅・位置の両方で3区画を識別できることを示す
+7. StatusIndicator以外、Assets / Builds / docs / git、Batch A / C、既存3テーマへ触れず、R2成果物と
+   JSONを提出して停止する
+
+**R1はRotary / Button / Lampを部分受領。StatusIndicatorは枠位置修正を維持しつつ幅codingを復元するR2へ差し戻す。**
+
+## 313. Codex: Batch B R2を受領し、Blender geometry Gateをcloseする (2026-08-26)
+
+Opus 5の`delivery_p6/batch_b_r2/**`を独立照合した。generator 2本はPython AST解析PASS、StatusIndicator
+FBXとP4 atlas 4枚の実SHA-256はR2 JSONと一致する。R1のRotary / Button / Lampは再生成されず、現在の
+FBX SHAがR1 JSONと一致し、`regenerated: false`である。
+
+StatusIndicator R2はBatch BのSAFE / WARN / DANGER半幅17 / 20 / 23 mmを復元し、実lens幅は
+32.03 / 38.03 / 44.03 mm、中心は-60 / -6 / +54 mmである。内部間隔は54 / 60 mmと非対称だが、
+well群全体は±80.4 mm、中心0、shell front faceに対する左右marginは各1.50 mmである。
+
+- frame / well / lensの正面投影overhang: **0 / 0 / 0 mm²**
+- SAFE / WARN / DANGER順序、OFF、4 renderer / 5 submesh: 維持
+- triangle: 1,476、non-manifold / zero-area / coplanar overlap: 0
+- static clearance: 0.600 mm、mount plane max Y: 0、envelope内
+- P4 atlas 4枚: R1 / Batch Bとbyte-identical
+
+Batch B / R1 / R2の同一camera比較では、R2だけが外枠中央配置と3灯の異なる幅を両立している。
+OFF比較でも左から右へ幅が段階的に増え、位置と幅の両方で区画を識別できる。したがってR2を受領し、
+§312で部分受領したR1のRotary / Button / Lampと組み合わせてPhase 3 Batch Bの最終geometry候補とする。
+
+次はCodexが4機種を専用Unity candidateへimportし、P4 material、Lamp pulse、Status 4状態、Error Shader、
+motion nodeを再検証する。PASS後にQuest review APKを生成し、guard操作性、Lamp比率、Status枠を実機確認する。
+
+**Batch B R1/R2のBlender geometry / ergonomics GateはCLOSE。Unity GateとQuest visual GateはOPEN。**
+
+## 314. Codex: Batch B R1/R2完全Unity Gateをcloseし、Quest review APKを導入する (2026-08-26)
+
+§313で受領したR1 Rotary / Button / LampとR2 StatusIndicatorを、専用隔離candidate
+`Theme4_P6_BatchB_R2_FullGate`へimportした。本番prefabとruntime theme catalogは変更していない。
+
+| 機種 | triangle | renderer | submesh | material / runtime manifest |
+|---|---:|---:|---:|---|
+| Rotary R1 | 2,112 | 2 | 4 | **PASS** |
+| Button R1 | 2,008 | 2 | 3 | **PASS** |
+| Lamp R1 | 1,332 | 2 | 3 | **PASS** |
+| StatusIndicator R2 | 1,476 | 4 | 5 | **PASS** |
+
+P4 1024 atlas、URP Lit opaque / URP Unlit emissive、ASTC 6x6、mipmap、NormalMap / linear、
+MetallicSmoothness / linear、BaseColor / Emission sRGBを確認した。Lampのpulse rendererは
+`indicator_lens`、StatusはSAFE / WARN / DANGERの順に異なる3 rendererを参照する。null material、
+Error Shader、forbidden componentは0、motion target / moving nodeも正常である。
+
+- APK: `Builds/QuestReview/AnalogInstrumentMR-Theme4-P6-BatchB-R2-review-quest3.apk`
+- size: **92,292,335 bytes**
+- SHA-256: `a1da8eeb56c1873544d40cbcb4e7f57548c46e0c7a7c9241f0fea0ae89c0dab5`
+- Quest 3 `2G0YC1ZG2J02HL`: `adb install -r` **Success**、launcher起動要求済み
+- 一時review configuration / credential quarantine残存なし、`DevAgentSettings.asset`復元済み
+
+Questでは、Rotary把持、Button押下、Lampのlens / guard比率、Status外枠と異なる3灯幅、4状態を確認する。
+
+**Batch B R1/R2完全Unity GateはCLOSE。Quest visual / ergonomics Gate Cは人間の装着確認待ち。**
+
+## 315. Quest目視: Rotary銘板と全fastener工具アクセスを差し戻す (2026-08-26)
+
+Batch B R1/R2 Quest reviewで次の新規不具合を確認したため、visual / serviceability Gate Cを再度FAILとする。
+
+1. **Rotary**: `plate_label`が台座から離れて空中に浮き、固定方法も表示内容もない。機能的意味を持たない
+   blank銘板であるため、移設ではなく完全削除する。代替plate、凹み、印刷、発光面は追加しない
+2. **StatusIndicator**: 台座のfastenerが上側のhood / frame部品の下に入り、正面からドライバー軸を
+   screw headへ通せない。組立・分解不能なため、上側部品に同軸の工具アクセス穴を設ける
+3. 同じ生成規則を他機種も使っているため、StatusIndicatorだけの局所修正では不十分である。
+   Theme 4の受領候補に存在する全`fastener` / `screw_*`を監査し、同種の遮蔽をすべて是正する
+
+次のOpus 5ターンは、既存deliveryをfreezeし、新規`delivery_p6/fastener_access_r1/**`だけへ以下を行う。
+
+1. Rotary R1から`plate_label` geometry、face、UV、material assignment、object / orphan meshを完全削除する。
+   tick ringと`index_mark`は回転値を示す機能部なので維持する
+2. Theme 4の受領候補全体から、`screw_`、`fastener`、bolt head相当を列挙する。少なくとも
+   Meter 3サイズ、Lever、Toggle、Rotary、Button、Lamp、Throttle、PowerSlider、StatusIndicator、
+   TrendMonitorを対象とし、存在しない機種は「fastener 0」と記録する
+3. 各fastenerについてhead centre、driver axis、approach side、遮蔽物、最小clearanceをJSON表へ記録する。
+   正面サービスfastenerはUnity正面からscrew recessへ向かう直線経路として評価する
+4. 工具経路はtip / shaft半径4.0 mm、周辺作業clearance半径8.2 mm、正面から80 mm以上を基準とする。
+   shaft経路のtriangle hitは0、8.2 mm clearance領域も0 hitを受領条件とする
+5. 上側部品が経路を遮る場合、その部品へscrew軸と同軸のthrough access holeを設ける。穴径は最低16.4 mm
+   とし、面取りを付け、穴底やblind capを残さない。構造上不自然なら、露出した固定landへfastenerを
+   移す案を理由・before/afterとともに提示する
+6. `plate_label`削除と工具穴・必要なfastener位置以外のgeometry、UV、material、pivot、motion、状態順序、
+   P4 atlasをfreezeする。既にPASSしたRotary把持、Button押下、Lamp比率、Status 3灯幅・中央配置を維持する
+7. 修正対象ごとに正面、左右斜視、側面、screw軸表示、透明な直径8.2 / 16.4 mm tool proxy画像を提出する。
+   全fastener一覧にはPASS / FAIL / 修正後PASSとblocker名を明記する
+8. non-manifold / zero-area / coplanar overlap / motion interference 0、mount plane、envelope、renderer / submesh /
+   triangle budgetを再検証する
+9. Assets / Builds / docs / git、既存delivery、既存3テーマへ触れず、成果物と監査JSONを提出して停止する
+
+Codexは成果物受領後、全fastener監査表とtool proxyを独立照合し、変更されたモデルだけを隔離Unity候補へ
+差し替える。Unity Gate PASS後にQuestで銘板消失、工具穴、既存操作性を再確認する。
+
+**Batch Bの材質・runtime Gateは維持。Rotary visualとTheme 4 fastener serviceability GateをOPENとして差し戻す。**
+
+## 316. Codex: fastener_access_r1を部分受領し、筐体内部15本の削除をR2へ指示する (2026-08-26)
+
+Opus 5の`delivery_p6/fastener_access_r1/**`と監査JSONを独立照合した。Rotaryの空中に浮いていた
+`plate_label`は44 trianglesとともに完全削除され、同名object / mesh / orphan / placeholderは0、tick ring
+12本と`index_mark`、§311.2の把持clearanceは維持されている。
+
+StatusIndicator 4本、Button 4本、Lamp 2本、Toggle 4本、Lever 2本は、直径16.4 mmの穴を成立させる
+幅が遮蔽部品にないため、覆っていたshellの正面固定landへ移設された。tool proxy監査ではshaft半径4.0 mm、
+clearance半径8.2 mm、正面80 mmの両経路がtriangle hit 0である。画像上もネジ頭が正面から見え、
+StatusIndicatorの異なる3灯幅と中央配置、Button押下、Lamp比率、Toggle / Lever操作部を損なっていない。
+この16本の移設とRotary銘板削除を**部分受領**する。
+
+一方、MeterMedium 6本、MeterLarge 6本、Rotary 3本の計15本は、ネジ頭自体がhousingの回転ソリッド内部に
+完全埋没し、外から見えず、工具経路もない。これらは固定構造を視覚的にも機能的にも表現せず、内部triangle
+だけを消費する。露出landを作るためにbezel / collar形状を変更すると、既に受領したmeter silhouetteや
+Rotary把持形状へ不要な影響が及ぶ。したがって外形変更案は不採用とし、15本を削除する。
+
+次のOpus 5ターンは既存成果物をfreezeし、新規`delivery_p6/fastener_access_r2/**`だけへ以下を行う。
+
+1. MeterMedium / MeterLargeから埋没した`screw_0`〜`screw_5`を完全削除する
+2. Rotaryから埋没した`screw_0`〜`screw_2`を完全削除する。collar外径、bore、bezel、drum、gripは変更しない
+3. R1で修正したRotary `plate_label`削除と、Lever / Toggle / Button / Lamp / StatusIndicatorの16本の位置を
+   byte-equivalentなgeometryとして維持する
+4. 全47本のR1監査をR2へ再計算し、削除15本は`removed_in_r2`、残る32本は全てPASS、対象機種の
+   fastener count before / afterを記録する。存在しない機種は0件を維持する
+5. 削除後にorphan mesh / material / placeholderを残さず、triangle deltaが削除分だけであることを示す
+6. 全geometry gate、renderer / submesh、P4 atlas、pivot / motion、過去PASSを再検証する
+7. R1 / R2の同一camera比較と、残る全32本のtool proxyを提出する
+8. Assets / Builds / docs / git、既存delivery、既存3テーマへ触れず、R2成果物とJSONを提出して停止する
+
+Leverが6,792 trianglesで既定の5,000上限を超える点は、今回の修正由来ではない既存技術負債として別管理する。
+fastener serviceabilityのR2完了を妨げる理由にはしない。
+
+**fastener_access_r1はRotary銘板削除と16本のネジ移設を部分受領。埋没15本を削除するR2へ差し戻す。**
+
+## 317. Codex: fastener_access_r2のgeometryを受領し、UV再配置をR3へ差し戻す (2026-08-26)
+
+Opus 5の`delivery_p6/fastener_access_r2/**`をBlender 5.2でFBX再読込し、JSON、実triangle、material、
+UVを独立照合した。8 FBXの実triangleはR2 JSONと一致し、15本の削除は各192 triangles、
+MeterMedium -1,152、MeterLarge -1,152、Rotary -576である。残る32本はshaft半径4.0 mm、
+clearance半径8.2 mm、正面80 mmのtriangle hit 0である。削除ネジのobject / mesh / orphan /
+placeholderは0、削除対象以外のtriangle位置も全てR1と一致した。側面で埋没ネジが暗い斑点を作っていたという
+R2の訂正も同一camera neutral比較と整合し、削除判断を補強する。よってR2の**geometryとserviceabilityは受領**する。
+
+ただしR2の「atlas repacking」という説明を追試すると、P4 atlas PNG 4枚はR1とSHA-256が一致する一方、
+削除したネジ以外のbody UVが再配置されている。FBXを再読込し、object名と三角形頂点位置でR1/R2を対応付け、
+各loop UVを比較した結果は次のとおりである。
+
+| 機種 | R2残存triangles | UV維持 | UV変更 |
+|---|---:|---:|---:|
+| MeterMedium | 2,816 | needle 828 | body 1,988 |
+| MeterLarge | 3,104 | needle 860 | body 2,244 |
+| Rotary | 1,492 | knob 620 | body 872 |
+
+これはatlas画像の変更ではなく、`dress()` / `pack_into_regions()`を削除後meshへ再実行したことによる
+**UV repack**である。§315.6のUV freezeに反し、今回の目的と無関係な表面模様の変化を生むためR2を
+最終受領しない。geometryを再変更せず、残存面のUVをR1と一致させるR3へ差し戻す。
+
+次のOpus 5ターンは既存成果物をfreezeし、新規`delivery_p6/fastener_access_r3/**`だけへ以下を行う。
+
+1. R2で確定したMeterMedium / MeterLarge / Rotaryのgeometryをそのまま使用する。削除15本を復元しない
+2. R1 FBXの残存三角形をobject名と頂点座標でR3へ一対一対応付けし、対応するloop UVをコピーする。
+   face順・loop順だけに依存せず、三角形の3頂点対応を使う
+3. 独立比較と同じ方法で、MeterMedium 2,816、MeterLarge 3,104、Rotary 1,492の全残存triangleについて
+   UV changed = 0をJSONへ記録する。位置が一致しないtriangle、重複対応、未対応loopも0を必須とする
+4. P4 atlas 4枚をR1 / R2とbyte-identicalに保ち、material slot / role / submeshも維持する
+5. R2とR3のgeometry signature、triangle、bounds、centroidを一致させ、FBX再読込でも確認する
+6. R1 / R2 / R3の同一camera textured比較を提出する。R1/R3差分は削除ネジが実際に見えた側面部分だけに
+   限定され、正面の表面模様が変化しないことを示す
+7. R1で受領済みのLever / Toggle / Button / Lamp / StatusIndicatorは再生成せず、R1 FBX SHAを参照記録する
+8. Assets / Builds / docs / git、既存delivery、既存3テーマへ触れず、R3成果物とJSONを提出して停止する
+
+**fastener_access_r2はgeometry / serviceabilityを受領するがUV GateはFAIL。UVだけを凍結復元するR3へ差し戻す。**
+
+## 318. Codex: fastener_access_r3を受領し、Blender serviceability Gateをcloseする (2026-08-26)
+
+Opus 5の`delivery_p6/fastener_access_r3/**`を独立照合した。generator 2本はPython構文解析PASS、
+P4 atlas 4枚はR1/R2/R3でbyte-identical、R3 JSONは`fastener_access_r3_ready`である。
+
+Blender 5.2で参照正本、R2、R3の各FBXを再読込し、object名と三角形3頂点位置で対応付けてloop UVを
+Codex側でも再計測した。
+
+| 機種 | R3 triangles | 参照正本とのUV変更 | R2とのgeometry差分 | R2から修復したUV |
+|---|---:|---:|---:|---:|
+| MeterMedium | 2,816 | **0** | **0** | 1,988 |
+| MeterLarge | 3,104 | **0** | **0** | 2,244 |
+| Rotary | 1,492 | **0** | **0** | 872 |
+
+参照正本にのみ存在する1,152 / 1,152 / 576 trianglesは§316で削除を承認した15本のネジと一致し、
+R3側だけに追加されたtriangleは0である。残存triangleは全て位置対応し、UV変更0。したがってR2の
+geometry / serviceabilityを維持したまま、§315.6のUV freezeが復元された。
+
+最終Blender候補は次の合成とする。
+
+- `fastener_access_r3`: MeterMedium、MeterLarge、Rotary
+- `fastener_access_r1`: Lever、Toggle、Button、Lamp、StatusIndicator
+- 変更不要: MeterRound、Throttle、PowerSlider（各受領済み正本を維持）
+- TrendMonitor: MachinedErgonomics版は未作成のため今回のfastener対象外
+
+次はCodexが変更された8機種だけを専用Unity candidateへimportし、triangle、renderer / submesh、P4
+material、UV、node / pivot、motion、Lamp pulse、Status 4状態、Error Shaderを検証する。PASS後にQuest
+review APKを更新し、Rotary銘板消失、StatusIndicatorを含む露出ネジ配置、既存操作性を実機確認する。
+
+**fastener_access_r3を受領。Theme 4 Blender geometry / UV / fastener serviceability GateはCLOSE。Unity GateをOPENする。**
+
+## 319. Codex: fastener-access合成候補のUnity Gateをcloseする (2026-08-26)
+
+最終Blender候補を隔離candidate `Theme4_FastenerAccess_R3_FullGate`へimportした。本番prefab、既存3テーマ、
+runtime theme catalogは変更していない。構成はR3のMeterMedium / MeterLarge / Rotaryと、R1のLever /
+Toggle / Button / Lamp / StatusIndicatorである。
+
+| 機種 | triangles | renderer | submesh | UV0 | material / manifest |
+|---|---:|---:|---:|---|---|
+| MeterMedium R3 | 2,816 | 2 | 3 | PASS | PASS |
+| MeterLarge R3 | 3,104 | 2 | 3 | PASS | PASS |
+| Lever R1 | 6,792 | 2 | 3 | PASS | PASS |
+| Toggle R1 | 3,540 | 2 | 3 | PASS | PASS |
+| Rotary R3 | 1,492 | 2 | 4 | PASS | PASS |
+| Button R1 | 2,008 | 2 | 3 | PASS | PASS |
+| Lamp R1 | 1,332 | 2 | 3 | PASS | PASS |
+| StatusIndicator R1 | 1,476 | 4 | 5 | PASS | PASS |
+
+P4 1024 atlas、Android ASTC 6x6、mipmap、NormalMap / linear、MetallicSmoothness / linear、BaseColor /
+Emission sRGB、URP shader、UV0 finite / vertex対応、motion target / moving nodeを検証した。Lamp pulseは
+`indicator_lens`、StatusはSAFE / WARN / DANGERの異なる3 rendererを順序どおり参照する。null material、
+Error Shader、Collider / Light / Camera / Animatorは0である。
+
+回帰テストはUnity 6000.3.19f1、Android targetでEditMode **149 / 149 PASS**、failed / skipped /
+inconclusiveはいずれも0、duration 2.713 sである。
+
+- report: `Builds/Reports/theme4-fastener-access-r3-full-unity-gate.md`
+- candidate: `Assets/MatsuMotoMeterAR/Content/RefinedCandidates/CandidateStaging/Theme4_FastenerAccess_R3_FullGate`
+- production assets / runtime catalog: unchanged
+
+次は8機種だけをOrbitalAnalog review slotへ一時mappingするQuest APKを生成する。実機ではRotary銘板消失、
+Meter側面の暗い斑点消失、露出した32本のネジ配置、特にStatusIndicator四隅、既存操作性を確認する。
+
+**Theme 4 fastener-access R3完全Unity GateとEditMode回帰はPASS。Quest visual / ergonomics GateをOPENする。**
+
+## 320. Codex: Fastener Access R3 Quest review APKを生成・導入する (2026-08-26)
+
+§319の8機種を一時review resourceへ配置し、Android / Meta Quest向けAPKを生成した。ビルド後に一時
+`CandidateReviewConfiguration.json`は削除され、credential quarantine残存は0、`DevAgentSettings.asset`は
+復元済みである。
+
+- APK: `Builds/QuestReview/AnalogInstrumentMR-Theme4-FastenerAccess-R3-review-quest3.apk`
+- size: **92,768,099 bytes**
+- SHA-256: `c170334d6c3ac3d4ad76feb49790e18d383aa8ba300559f81b931e94ed8d5da7`
+- Quest 3: `2G0YC1ZG2J02HL`
+- `adb install -r`: **Success**
+- installed version: `0.2.0` (`versionCode 2`)、update time 2026-08-26 12:08:29 JST
+
+明示起動時、Android crashやUnity例外ではなく、Horizon OSの
+`common_system_dialog_app_launch_blocked_controller_required`が表示され、controller required launch checkで
+アプリ本体の起動が保留された。ユーザーがQuestを装着し、左右controllerをwakeしてシステムダイアログを
+通過した後に実機reviewを開始する。
+
+実機確認項目は次のとおり。
+
+1. Rotaryの空中に浮いたblank銘板が消え、tick ring / index mark / gripが維持される
+2. MeterMedium / MeterLarge / Rotaryの側面に埋没ネジ由来の暗い斑点がない
+3. StatusIndicatorの4本が外枠四隅の露出landに収まり、上部部品に遮られない
+4. Lever / Toggle / Button / Lampの移設ネジが自然で、操作部や発光部と干渉しない
+5. Meter針、Lever、Toggle、Rotary、Buttonを全操作範囲で動かして既存操作性を維持する
+6. Lamp pulseとStatus OFF / SAFE / WARN / DANGERを確認する
+
+**APK生成・導入はPASS。Quest system controller checkの通過と人間の装着review待ち。**
+
+## 321. Quest Gate C: Lever / Toggleのfastener R1回帰をR4へ差し戻す (2026-08-26)
+
+Fastener Access R3 review APKをQuest 3で確認した。Rotary、StatusIndicator、MeterMedium、MeterLargeは
+ユーザー目視でPASSした。一方、Lever / Toggleは次の理由でFAILである。
+
+- **Toggle**: 移設した4本のネジが台座から浮いて見える。台座正面のdraft / taperに対し、固定Y座標で
+  ネジを前面へ移したため、各位置の局所表面へ着座していない
+- **Lever**: P5で合格していたgripのdiamond knurl Normal表現が表示されず、armとgripの構造的な
+  見分けも失われている
+
+CodexがP5正本FBXと`fastener_access_r1` FBXをBlender 5.2で再読込し、object名と三角形頂点位置で
+対応付けた結果は次のとおりである。
+
+| 機種 | 総triangles | 共通形状 | P5のみ / R1のみ | 共通形状のUV変更 | UV維持 |
+|---|---:|---:|---:|---:|---:|
+| Lever | 6,792 | 6,408 | 384 / 384 | **5,569** | 839 |
+| Toggle | 3,540 | 2,772 | 768 / 768 | **2,012** | 760 |
+
+形状差分384 / 768は各192 trianglesの移設ネジ2 / 4本と一致する。その他の形状はP5と一致するため、
+Leverの構造分離が消えたように見える主因はgeometry欠落ではなく、R1で`dress()`を再実行した結果、
+P5のUV配置、とくにLever grip専用Normal patchが失われたことにある。
+
+次のOpus 5ターンは既存成果物をfreezeし、新規`delivery_p6/fastener_access_r4/**`だけへLever / Toggleを
+限定修正する。
+
+1. Lever / Toggleの非fastener geometryをP5と完全一致させ、R1で工具アクセスPASSとなったネジ位置の
+   方針を維持する
+2. P5 FBXを参照正本として、共通三角形のloop UVをobject名＋三角形3頂点位置で一対一コピーする。
+   face / loop順へ依存せず、UV changed、未対応、重複対応、位置不一致を全て0にする
+3. 移設ネジはP5の元ネジからfastener IDとlocal triangle対応でUVを移し、metal role領域を維持する。
+   ネジ追加によって他の面をrepackしない
+4. Toggleの各ネジ位置で、Unity正面からdriver軸`-Y`へray castし、最初に当たる台座の局所表面Yと
+   法線を求める。ネジ座面をその表面へ接触させ、floating gap 0、非意図的intersection 0とする
+5. draft面がdriver軸へ斜交する場合は、ネジ頭周囲だけに小径のspot-face / counterbore landを設ける。
+   landはdriver軸へ直交し、台座へ連続接続する。大径の追加bossや台座外形変更は禁止
+6. 4本それぞれのhead centre、局所surface hit、座面gap、penetration、shaft 4.0 mm / clearance 8.2 mm /
+   80 mm経路をJSONへ記録し、gap 0±0.1 mm、penetration 0、工具triangle hit 0を必須とする
+7. Lever gripのUVがP5 Normal patchを参照することを数値化し、Normal有効 / 無効の同一camera close-upを
+   提出する。P5 / R4のgrip、arm、hub、yoke、cross pinのtextured差分はネジ周辺以外0とする
+8. Lever全97姿勢、Toggle全rangeでmotion interference 0、過去PASSのcross pin / bearing接続、grip外形、
+   Toggle axleを維持する
+9. R3のMeterMedium / MeterLarge / Rotary、R1のButton / Lamp / StatusIndicator、P4 atlas 4枚を
+   byte-identical参照とし、再生成しない
+10. Assets / Builds / docs / git、既存delivery、既存3テーマへ触れず、R4成果物とJSONを提出して停止する
+
+**Rotary / StatusIndicator / MeterMedium / MeterLargeはQuest PASS。Lever / ToggleだけをUV復元と局所着座のR4へ差し戻す。**
+
+## 322. Codex: Fastener Access R4 Blender Gateを受け入れる (2026-08-26)
+
+Opus 5の`delivery_p6/fastener_access_r4/**`をCodexが独立検証した。提出JSONの判定をそのまま
+採用せず、Blender 5.2.0 LTSでP5正本FBXとR4 FBXを再読込し、object名、三角形3頂点位置、
+各頂点に対応するloop UVをface / loop順非依存で再照合した。移設ネジは剛体平行移動量をFBXから
+独立検出してP5位置へ戻したうえで照合した。
+
+| 機種 | triangles | 一致 | UV changed | 未対応 | 重複 |
+|---|---:|---:|---:|---:|---:|
+| Lever R4 | 6,792 | 6,792 | **0** | **0** | **0** |
+| Toggle R4 | 3,540 | 3,540 | **0** | **0** | **0** |
+
+Leverの非移設部分6,408 trianglesとToggleの非移設部分2,772 trianglesはP5と形状・UVが一致した。
+移設分はLever 2本×192、Toggle 4本×192 trianglesで、いずれもP5 UVを維持する。FBX SHA-256は
+Lever `7b942b103d86f50481780917e3432620b1fbcbf5d528bd9dd7b829415c2c430d`、Toggle
+`a98dd9e443421be7ab175998e51fc578b62bb13d653ac89a31a72f9de96237f2`で提出JSONと一致した。
+
+Toggleの4本は各々、局所surface gap 0.0 mm、penetration 0.0 mm、shaft / clearance triangle hit
+0 / 0、座面高低差0.0 mm、driver軸からの法線ずれ0.0°である。Lever gripはNormal ON / OFFの
+同一camera画像をCodexも確認し、diamond knurlの有効・無効が明確に異なる。提出値は160,729 px差、
+最大channel delta 0.235294である。P4 atlas 4枚のdigestもR1 / R3正本と一致し、R3の3機種、R1の
+Button / Lamp / StatusIndicatorは再生成されていない。
+
+**R4 Blender GateはPASS。Opus 5は停止し、CodexがR3 3機種＋R4 Lever / Toggle＋R1 3機種の
+8モデルUnity候補へ進める。**
+
+## 323. Codex: Fastener Access R4 Unity / Quest Gateを開く (2026-08-26)
+
+R3のMeterMedium / MeterLarge / Rotary、R4のLever / Toggle、R1のButton / Lamp /
+StatusIndicatorを`Theme4_FastenerAccess_R4_FullGate`へ統合した。P4 atlas 4枚はR4提出の
+byte-identical copyを使用する。Unity 6000.3.19f1、Android targetで8機種すべてがexact triangle、
+renderer、submesh、UV0、material、runtime manifest GateをPASSした。
+
+- Unity report: `Builds/Reports/theme4-fastener-access-r4-full-unity-gate.md`
+- candidate: `Assets/MatsuMotoMeterAR/Content/RefinedCandidates/CandidateStaging/Theme4_FastenerAccess_R4_FullGate`
+- EditMode: **149 / 149 PASS**、failed / skipped / inconclusive 0、duration 2.901 s
+- APK: `Builds/QuestReview/AnalogInstrumentMR-Theme4-FastenerAccess-R4-review-quest3.apk`
+- APK size: **93,236,931 bytes**
+- APK SHA-256: `f615dba7dda11e4a69fd98c20a465b17896e15bc630aaf9702f8616338ca6d80`
+- Quest 3 `2G0YC1ZG2J02HL`: `adb install -r` **Success**、アプリ起動済み
+
+Quest Gateは今回差し替えた2機種へ限定する。Leverはgripのdiamond knurl Normalが見え、arm / grip / hub /
+yokeの構造分離が復元されていること、Toggleは4本のネジが台座から浮かず、操作部を妨げないことを確認する。
+過去PASSの6機種はfreezeし、回帰が見つかった場合だけ再確認する。
+
+**R4 Unity GateとEditModeはPASS。Quest上のLever / Toggle最終目視GateをOPENする。**
+
+## 324. User / Codex: Fastener Access R4 Quest Gateを受け入れる (2026-08-26)
+
+Quest 3実機でR4差し替え対象のLever / Toggleを確認し、ユーザーが両機種を`OK`と判定した。
+
+- Lever: gripのdiamond knurl Normal表現とarm / grip / hub / yokeの構造分離を受入
+- Toggle: 4本のネジ着座と操作部への非干渉を受入
+- R3で既にPASSしたMeterMedium / MeterLarge / Rotary、R1で既にPASSしたButton / Lamp /
+  StatusIndicatorに新たな回帰報告なし
+
+これにより、R3 3機種＋R4 2機種＋R1 3機種で構成する8モデルのBlender、Unity、EditMode、Quest
+visual / ergonomics Gateはすべて完了した。production assets / runtime catalogへの昇格は別工程とし、
+現時点では隔離候補をfreezeする。
+
+**Fastener Access R4の8モデルQuest GateはPASS。候補をfreezeし、次工程へ進める。**
+
+## 325. Codex: production昇格を保留し、Theme 4 Phase 3 Batch Cを開始する (2026-08-26)
+
+§324後にproduction昇格範囲を再監査した。§272.2 / §295で確定した契約は、既存3テーマを維持し、
+Machined Ergonomicsの**14機種が揃った後にだけ**runtime enum / catalog / active Resourcesへ第4テーマを
+一括登録する、というものである。現時点で完成・受入済みなのは次の11機種である。
+
+- MeterRound / Lever / Toggle
+- MeterMedium / MeterLarge / Throttle / PowerSlider
+- Rotary / Button / Lamp / StatusIndicator
+
+未制作はBatch Cの`WindowMeter` / `WindowPanel` / `TrendMonitor`の3機種である。したがって§324直後に
+productionへ進むというCodexの案内は早く、ここで訂正する。不完全な第4テーマを登録してprimitive
+fallbackを発生させず、既存3テーマと現在のproduction assetを変更しない。
+
+Opus 5は既存成果物をfreezeし、新規`delivery_p6/batch_c/**`と新規Batch C scriptだけへ次を行う。
+
+1. 対象とruntime契約を固定する
+   - WindowMeter: `needle_pivot` / `needle`、local +Z回転、55° amplitude
+   - WindowPanel: `vane_pivot` / `vane`、local +Z回転、42° amplitude
+   - TrendMonitor: `display_surface` / `display_surface`、motion kind Display
+2. `InstrumentGreyboxSpecification`を正本とし、bounds上限をWindowMeter 1.20×0.75×0.202 m、
+   WindowPanel 1.60×0.90×0.22 m、TrendMonitor 0.44×0.28×0.10 mとする。mount planeはlocal Z=0、
+   root scale 1、Unity import root X -90°契約を維持する
+3. Window 2機種はlarge analog displayとしてMachined Ergonomicsの薄いring、明るい樹脂body、
+   anodized metal、dark elastomer、主副目盛の一意性を継承する。単純な既存テーマの色替えは禁止する
+4. TrendMonitorは独立計器形状とし、flatな`display_surface`を別meshで持つ。表示面は最低
+   0.36×0.18 m、normalはlocal +Z、upはlocal +Y、bezel内へ収め、glassは追加しない。
+   runtimeの数値・LineRendererが表面へfitでき、筐体背面やframe外へ出ない連続したdisplay planeを作る
+5. Triangle上限は各25,000だがQuest負荷を考慮し、Window各8,000以下、TrendMonitor 4,000以下を
+   作業目標とする。rendererはWindow各4以下、TrendMonitor 3以下、shared materialは全機種2以下
+6. P4 atlas 4枚を上書きしない。既存role領域で成立させ、body / metal / gasketをopaque、readoutを
+   emissiveへ正規化する。新領域が不可欠なら別名proposalとして提出し、production採択はしない
+7. Windowの全可動域を129姿勢以上で検証し、moving対static intersection 0、needle / vaneとtick、ring、
+   coverのちらつき・二重目盛・突出を0にする。TrendMonitorはdisplay面とbezel/frameのcoplanar overlapを0にする
+8. non-manifold / zero-area / visual collider / Light / Camera / Animatorを0、pivot名、hierarchy、bounds、
+   material slot、UV finite、triangle、rendererをJSONへ記録する
+9. 正面・左右斜視・側面、Window min/mid/max、TrendMonitor display close-up、3機種contact sheetを提出する。
+   TrendMonitorは表示面だけ／筐体合成の段階画像も含め、前後・上下の向きを視覚確認できるようにする
+10. Assets / Builds / docs / git、既存delivery、P4 atlas、既存3テーマ、受入済み11機種へ触れず、
+    Blender FBX / Blend / report / imagesを提出して停止する
+
+Codexは提出後にBlender 5.2 FBX再読込、正式validator、isolated Unity Gate、EditMode、Quest reviewを行う。
+3機種が受入された後にのみ、14 prefabを一括したGate Cとproduction登録計画へ進む。
+
+**production昇格はBLOCKEDではなく順序保留。次工程は未制作3機種のBatch Cである。**
+
+## 326. Codex: Batch Cを静的監査し、WindowMeterネジ着座とGate上書きをR1へ差し戻す (2026-08-26)
+
+Opus 5の`delivery_p6/batch_c/**`を受領し、Blender 5.2で3 FBXを再読込した。FBX SHA、triangle、
+hierarchy、pivot / moving名、mount、bounds、UV finite、material / submeshは提出JSONと一致する。
+TrendMonitorの`display_surface`も独立実測で12 triangles、front face 2 triangles、0.372×0.190 m、
+front normal Blender −Y、単一front plane y −0.052 mで、Unity +Z normal / +Y up契約を満たす。
+
+しかし、fastener監査に次の2問題があるためBatch C全体はまだ受け入れない。
+
+1. **WindowMeter `screw_-1_-1`のseat surface spreadが6.2 mm**である。centre gapは0でも、
+   半径12 mmの座面全体は同一平面へ載っていない。他のネジはspread 0である
+2. `opus5_theme4_full_p6_batch_c_delivery.py::seating_audit()`は`seat_probe()`の`clean`を取得後、
+   `probe.update(penetration_probe(...))`を実行する。両方が同じ`clean` keyを返すため、着座FAILが
+   後段のpenetration PASSで上書きされ、`fastener_seating_clean: true`となる。これは検証器の偽陰性である
+
+WindowMeter / WindowPanel / TrendMonitorのtriangle、形状、display、motion、atlasと画像はfreezeする。
+Opus 5は新規`delivery_p6/batch_c_r1/**`と新規R1 scriptだけへ次を限定修正する。
+
+1. WindowMeter `screw_-1_-1`だけを、銘板・chamfer・隣接部品を避け、座面全周がdriver軸へ直交する
+   同一平面へ載る位置へ移す。対称性より実着座を優先するが、外観上自然なserviceable位置とする
+2. `seat_probe.clean`と`penetration_probe.clean`を`seat_clean` / `penetration_clean`として別々に保存し、
+   最終`clean = seat_clean && penetration_clean`とする。上書きを禁止する
+3. 全14本（WindowMeter 4、WindowPanel 6、TrendMonitor 4）についてgap 0±0.1 mm、
+   seat surface spread 0±0.1 mm、normal off-axis 0±0.1°、penetration 0、ray miss 0を再測定する
+4. R1と元Batch Cのgeometry差分は移動したWindowMeter 1本×fastener trianglesだけとし、
+   その他全triangle、UV、hierarchy、pivot、motion、display、atlasを一致させる
+5. WindowMeter正面・左右斜視と移動ネジclose-upを提出し、台座からの浮き、銘板との干渉、
+   工具アクセス不良がないことを示す
+6. Assets / Builds / docs / git、元Batch C、既存11機種、P4 atlas、既存3テーマを変更せず停止する
+
+**Batch C geometry / displayは条件付き受領。fastener GateはFAILで、WindowMeter 1本とGate合成だけをR1へ差し戻す。**
+
+## 327. Codex: Batch C R1を受領し、14機種Unity Gateを開く (2026-08-26)
+
+Opus 5の`delivery_p6/batch_c_r1/**`をCodexが独立検証した。R1 script 2本はPython構文解析PASS。
+Blender 5.2で元Batch CとR1 WindowMeter FBXを再読込し、object名、三角形3頂点、loop UVを
+face / loop順非依存で照合した。
+
+| 対象 | triangles | 一致 | 移設ネジ | UV changed | 未対応 | 重複 |
+|---|---:|---:|---:|---:|---:|---:|
+| WindowMeter R1 | 3,220 | 3,220 | 192 | **0** | **0** | **0** |
+
+非移設2,824 trianglesとneedle 204 trianglesは元Batch Cと一致し、`screw_-1_-1` 192 trianglesだけが
+(-6, 0, +11) mm移動している。R1 FBX SHA-256は
+`7cc0123a875f1e2bb3f915a3205f5af8b75ac671e89e7204ba45706b20334cf2`でJSONと一致する。
+WindowPanel / TrendMonitorのFBXとBlend digestも元Batch Cと一致し、再生成されていない。
+
+修正後の判定器は`seat_clean`と`penetration_clean`を別キーに保持し、最終`clean`をANDで生成する。
+WindowMeter 4本、WindowPanel 6本、TrendMonitor 4本の合計14本について、最大gap、seat spread、
+normal off-axis、penetration、ray missは全て0。元位置へ修正版判定器を当てた対照では6.2 mm spreadを
+正しくFAILとして再現する。移設後close-upも確認し、ネジは平面へ着座し、銘板と2.2 mm離れ、
+driver軸が開いている。
+
+**Batch C R1 Blender GateはPASS。Machined Ergonomics 14機種のBlender成果物が揃ったため、
+Codexの隔離Unity Full Gateへ進む。**
+
+## 328. Codex: Machined Ergonomics 14機種Unity / Quest Gateを開く (2026-08-26)
+
+受入済みR1 / R3 / R4 / P5 / Batch A / Batch C R1の正本FBXを
+`Theme4_MachinedErgonomics_14_FullGate`へ統合した。production Resources、runtime theme catalog、
+既存3テーマは変更していない。Unity 6000.3.19f1、Android targetで全14機種のexact triangle、
+renderer、submesh、finite UV0、URP material role、runtime manifestを検証し、すべてPASSした。
+TrendMonitorは薄いdisplay meshの正面2 trianglesを抽出し、0.36×0.18 m以上、front normal +Z、
+画面height +YをUnity座標で確認した。
+
+- Unity report: `Builds/Reports/theme4-machined-ergonomics-14-full-unity-gate.md`
+- candidate: `Assets/MatsuMotoMeterAR/Content/RefinedCandidates/CandidateStaging/Theme4_MachinedErgonomics_14_FullGate`
+- models: **14 / 14 PASS**
+- EditMode: **149 / 149 PASS**、failed / skipped / inconclusive 0、duration 2.847 s
+- APK: `Builds/QuestReview/AnalogInstrumentMR-Theme4-MachinedErgonomics-14-review-quest3.apk`
+- APK size: **94,103,567 bytes**
+- APK SHA-256: `5fa19e1db7ff52eecf21443677b19b8d16f2b3d09a09a23675e1784c612cb30f`
+- review configuration / credential quarantine: build後の復元 **PASS**
+- Quest 3 `2G0YC1ZG2J02HL`: `adb install -r` **Success**、review APK起動済み
+
+Quest目視は新規Batch C 3機種を主対象とする。WindowMeterは針のmin / mid / max、目盛・ringとの
+非干渉、R1移設ネジの着座と銘板との離隔を確認する。WindowPanelはvaneの全域、二重目盛・ちらつき・
+cover突出がないことを確認する。TrendMonitorは筐体正面と表示面の向き、数値とLineRendererの前面表示、
+bezel内fit、背面透過や誤った奥行きがないことを確認する。既受入11機種は一巡して明白な回帰だけを拾う。
+
+**14機種Unity GateとEditModeはPASS。Quest 3実機のBatch C visual / motion GateをOPENする。**
+
+## 329. User / Codex: Batch C Quest GateをFAILとし、scale R2とUnity orientation修正へ戻す (2026-08-26)
+
+§328のQuest 3実機確認で、Batch C 3機種に次の不適合を確認した。
+
+1. WindowMeter / WindowPanelの針の可動範囲が約80°に見え、RoundMeterの±115°、全230° sweepと
+   一致しない。runtimeにもWindowMeter ±55°、WindowPanel ±42°の旧契約が残っていた
+2. 目盛も各々110° / 84° sweepで作られており、RoundMeter相当の可動域へ広げる要求と一致しない
+3. TrendMonitor筐体が配置時に裏向きである
+4. TrendMonitorの数値とLineRendererがdisplay面に沿わず、面へ垂直方向に描画される
+
+CodexはruntimeのWindowMeter / WindowPanel amplitudeを
+`InstrumentGreyboxSpecification.MeterSweepDegrees`、すなわち**±115°**へ統一する。TrendMonitorは
+FBX objectのTransform軸と実mesh面が一致しないため、最初のmesh normalや`displaySurface.forward`へ
+依存せず、display mesh boundsの最薄軸を法線、第二軸を上下としてUnity +Z / +Yへ正規化する。
+これにより筐体正面と数値・グラフを同じ実表示平面へ揃える。
+
+Opus 5は新規`delivery_p6/batch_c_r2/**`と新規R2 scriptだけへ、WindowMeter / WindowPanelの
+scale geometryを限定修正する。
+
+1. 両機種のmotion / scale契約を**−115°～+115°、total 230°**へ変更する
+2. 主目盛と副目盛を230° arcへ均等配置し、針のmin / mid / maxがそれぞれ最初／中央／最後の主目盛へ
+   一致するようにする。RoundMeterと同じ可動域だが、Window固有の寸法と意匠は維持する
+3. 既存のflank scale / side well scaleは主針の読み取り目盛と混同しない意匠へ整理し、二重目盛、
+   重複tick、coplanar overlap、ちらつきを0にする
+4. 針／vane、ring、cover、tick、銘板との干渉を−115°～+115°の**129姿勢以上**で検証し、
+   intersection、突出、目盛へのめり込みを0にする
+5. pivot名、moving名、mount、bounds、renderer / material role、UV、P4 atlas、R1 fastener位置を維持する
+6. 変更範囲はWindowMeter / WindowPanelのscale関連geometryだけとし、TrendMonitor、既受入11機種、
+   Assets / Builds / docs / git、既存deliveryを変更しない
+7. min / mid / maxの正面・斜視、scale close-up、旧版とのgeometry / UV差分、全姿勢motion reportを提出して停止する
+
+**Batch C Quest GateはFAIL。CodexはUnity orientation / overlayを修正し、Opus 5はWindow 2機種の230° scale R2だけを行う。**
+
+Codex側の先行修正では、WindowMeter / WindowPanelのruntimeとmotion auditを共通の±115°契約へ変更した。
+TrendMonitor prefab importはdisplay meshの最薄軸の負方向をfront、第二軸をupとして筐体をUnity +Z / +Yへ
+正規化する。runtime overlayはFBX object軸ではなくplacement `LabelSocket.forward`を表示正面として、mesh
+boundsの最前面から0.2 mmだけ前へ数値とLineRendererを配置する。Transform forwardが表示面へ垂直でない
+meshを再現する回帰テストを追加し、既存3テーマの再配置テストを含むEditMode **150 / 150 PASS**、failed / skipped /
+inconclusive 0、duration 3.508 sを確認した。R2 FBX受領まではQuest APKを再発行しない。
+
+## 330. User / Codex: TrendMonitor表示面のCyan競合を解消する (2026-08-26)
+
+Quest 3で、Machined Ergonomics版TrendMonitorの`display_surface`がP4 atlasのCyan領域を使用し、
+数値および複数入力グラフのCyan系チャンネルと背景が競合して視認性が低いことを確認した。
+筐体、銘板、他13機種、既存3テーマには触れず、TrendMonitorの表示面だけをatlasから切り離し、
+URP Unlitの専用暗色中性マテリアル（BaseColor RGB 0.012 / 0.020 / 0.028、不透明）へ変更した。
+
+再生成時の退行を防ぐため、14機種Unity Gateへ、`display_surface`が専用マテリアルを使用し、
+BaseColor最大成分が0.05以下であることの検査を追加した。
+
+- 14機種Unity Gate: **14 / 14 PASS**
+- EditMode: **150 / 150 PASS**、failed / skipped / inconclusive 0、duration 3.26 s
+- APK: `Builds/QuestReview/AnalogInstrumentMR-Theme4-MachinedErgonomics-14-review-quest3.apk`
+- APK size: **94,107,653 bytes**
+- APK SHA-256: `8634904246490d74f849f26057761b9baf56ea7299deb5d1fccffb4bca997510`
+- review configuration / credential quarantine: build後の復元 **PASS**
+- Quest 3 `2G0YC1ZG2J02HL`: `adb install -r` **Success**、更新版を起動済み
+
+**自動GateはPASS。Questでは暗色背景、各チャンネル色の識別、bezel内fit、背面透過なしを再確認する。**
+
+## 331. User / Codex: Machined Ergonomics 14機種のQuest Gateをcloseする (2026-08-26)
+
+ユーザーが§330の更新APKをQuest 3で確認し、TrendMonitorの暗色背景と表示視認性を`OK`と判定した。
+これにより、Batch C R2のWindowMeter / WindowPanel 230°目盛とruntime ±115°、TrendMonitorの筐体向き、
+表示面fit、数値・LineRenderer、背景コントラストを含む残項目を受領する。
+
+Machined Ergonomics 14機種は、Blender静的検証、fastener serviceability、隔離Unity Gate、EditMode、
+Quest visual / motion Gateを完了した。既存3テーマ、active production Resources、runtime theme catalogは
+まだ変更していない。
+
+次工程を第4テーマproduction昇格とし、変更境界、runtime登録、4テーマ回帰、48 / 64 objects長時間Gate、
+復旧単位を`docs/THEME4_PRODUCTION_PROMOTION_PLAN.md`へ固定した。production asset変更は、
+ユーザーによる第4テーマ本番登録の明示承認後に開始する。
+
+**Machined Ergonomics 14機種Quest GateはCLOSE。production昇格計画はREADY、実装は承認待ち。**
+
+## 332. User / Codex: Machined Ergonomicsを第4productionテーマへ登録する (2026-08-26)
+
+ユーザーの「第4テーマ本番登録を承認」を受け、`MachinedErgonomics = 3`を既存enum値の末尾へ追加し、
+theme ID `machined-ergonomics`、表示名`MACHINED ERGONOMICS`として通常runtimeへ登録した。
+既存`ForgeBrass = 0`、`OrbitalAnalog = 1`、`KineticSafety = 2`は変更していない。
+
+production assetは既存テーマと同じ構成へ分離した。14 FBX、3 material、1K atlas 4枚は
+`Content/Themes/MachinedErgonomics`、実行時14 prefabは`Resources/MachinedErgonomics/Prefabs`へ追加した。
+専用promoterがcandidate prefabをunpackし、meshとmaterialをproduction側へ再配線する。
+14 prefab全てについて`CandidateStaging/Theme4_MachinedErgonomics_14_FullGate`依存が0であることを確認した。
+
+- production promotion: **14 / 14 PASS**
+- installed active visual prefab: **53 / 53 PASS**
+- Machined Ergonomics motion: **4 / 4 PASS**、4テーマ合計16 / 16
+- Machined Ergonomics signal visual: **2 / 2 PASS**、4テーマ合計8 / 8
+- EditMode: **153 / 153 PASS**、failed / skipped / inconclusive 0、duration 3.233 s
+- production Gate APK:
+  `Builds/QuestReview/AnalogInstrumentMR-MachinedErgonomics-production-gate-quest3.apk`
+- APK size: **94,973,001 bytes**
+- APK SHA-256: `f92060947b684bdf939dba7af6e7715fb417ba5a78618217b907ae4a0bdaa5f8`
+- candidate review define / override: **なし**
+- credential quarantine / restore: **PASS**
+- Quest 3 `2G0YC1ZG2J02HL`: `adb install -r` **Success**、通常runtime APK起動済み
+
+production validatorの旧3テーマ共通上限は、第4テーマで受入済みのLever 6,792 triangles／可動外形と、
+TrendMonitor専用dark displayを含む3 material、mesh plane基準の正面判定だけをテーマ限定で拡張した。
+既存3テーマの判定値は変更していない。
+
+**第4テーマproduction登録と自動GateはPASS。Quest theme cycle／14機種visual Gateと48 / 64 objects長時間GateをOPENする。**
+
+## 333. User: 後工程のvisual / instrument redesignを記録する (2026-08-26)
+
+ユーザー指示により、次を後工程backlogへ追加した。今回は記録だけとし、Blender、Unity asset、runtime、
+test、Quest APK、現行production Gateへ変更を加えない。
+
+1. Kinetic Safety / Forge Brass / Orbital AnalogのTrend Monitorは、同一形状の色替えを廃止し、
+   各テーマに合った固有形状とtextureへ作り直す
+2. Orbital Analog meterのうちカバーガラス部分に目盛があるモデルを特定し、glass上の目盛を削除して
+   dial / scale面へ整理する
+3. Window Panelは4テーマともmeter・針・vaneを使わない。複数入力を位置、回転、scale、色、位相、
+   変形量などへ割り当て、2Dのparametricな幾何学図形をanimation表示する計器へ再設計する
+
+詳細な依存順序と受入条件は`docs/V0_3_DEVELOPMENT_ROADMAP.md`の
+`Deferred visual and instrument redesign backlog`へ記録した。Window Panelは複数入力合成、保存schema、
+描画budgetを伴うため、外観だけを先行実装しない。
+
+**後工程backlogとしてRECORDED。現時点ではNOT STARTED。**
+
+## 334. User: 4テーマproduction Quest Gateを受領する (2026-08-26)
+
+ユーザーが通常runtimeのproduction Gate APKをQuest 3で確認し、Orbital Analog、Forge Brass、
+Kinetic Safety、Machined Ergonomicsの4テーマが動作することを確認して受領した。
+
+これにより、theme cycle、`MACHINED ERGONOMICS`のruntime登録、production Resourcesからの表示、
+テーマ切替後の操作を含む第4テーマproduction visual / operation Gateをcloseする。
+正式release、merge、tag、commit / pushは別工程であり、まだ実行しない。
+
+**4テーマproduction Quest GateはPASS。次工程は48 / 64 objects長時間性能Gate。**
+
+## 335. User / Codex: Machined Ergonomics production性能Gateをcloseする (2026-08-26)
+
+第4productionテーマ専用APKを生成し、Quest 3で48 / 64 objects性能Gateを実行した。30分測定に対応するため、
+duration 1800秒と150,000 frame sampleを追加した。起動時に`[PerfGate] Scenario ready`、終了時に
+`[PerfGate] FINAL`を必須化し、logcat切断時の再接続も追加した。これにより、VR lock中の起動要求で通常app
+だけが立ち上がった無効runを性能結果へ混入させない。
+
+- APK: `Builds/Performance/AnalogInstrumentMR-MachinedErgonomics-perfgate-quest3.apk`
+- SHA-256: `89c22fa4a0cfb6fe41d26ca6a618b6b565f235452853297a82db9404a03f3eff`
+- EditMode: **154 / 154 PASS**
+- 48 objects / 1800秒: CPU p95 14.434 ms、frame p95 14.431 ms、delayed 0.017%、
+  GC 0、max frame allocation 0 B、fatal 0、42–43 C、**external stability PASS**
+- 64 objects / 600秒: CPU p95 14.561 ms、frame p95 14.555 ms、delayed 0.047%、
+  GC 15、max frame allocation 0 B、fatal 0、44–45 C、**stress PASS / GC OBSERVE**
+
+64 objectsはユーザー判断により長時間runを短縮した。開始温度44 Cのため同条件baseline acceptanceには使わず、
+stress characterizationだけに用いる。48 / 64ともQuest/OpenXRのGPU timingは0で`UNAVAILABLE`。
+CPU/frame p95は72 Hz pacingを含み内部diagnosticは`REVIEW`だが、delayed frame、GC allocation、memory、
+fatal、thermalを用いて外部判定した。
+
+現行混在baselineは6機種にTrendMonitorを含むが、signal connection / 履歴更新を駆動しない。したがって
+静的production theme負荷のGateとしてcloseし、動的TrendMonitorと将来のparametric WindowPanelは
+表示更新なし／ありの専用matrixへ分離する。
+
+並行してOpus 5へ§333後工程の読み取り専用設計reviewを依頼した。project access喪失後はファイルを変更せず、
+Codexの照合結果だけでv2を作成した。依存順序はOrbital目盛是正→既存3テーマTrendMonitor→Priority 4
+composition / persistence→4テーマWindowPanel。texture方式、WindowPanel描画方式、外部library/tool導入は
+ユーザー承認事項とし、寸法、silhouette metric、頂点数、更新Hzは実測後に確定する。
+
+**第4テーマproduction visual / operation / static performance GateはCLOSE。正式release / merge / tagは別承認。**
