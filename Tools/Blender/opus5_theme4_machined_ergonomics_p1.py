@@ -994,8 +994,12 @@ def pose_bounds(pivot, body, part, motion, scan):
     scanned = to_unity(scan["bounds"])
     poses["collider_union_matches_continuous_scan"] = {
         "continuous_scan_unity": scanned,
-        "agrees": all(abs(scanned["size"][i] - poses["collider_union_unity"]["size"][i])
-                      <= 1e-6 for i in range(3)),
+        "agrees": all(
+            abs(scanned[field][i] - poses["collider_union_unity"][field][i])
+            <= 1e-6
+            for field in ("min", "max", "size", "centre")
+            for i in range(3)
+        ),
     }
     return poses
 

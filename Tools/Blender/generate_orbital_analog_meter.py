@@ -569,7 +569,14 @@ def create_preview(material, output_path):
             bpy.data.objects.remove(obj, do_unlink=True)
 
 
-def export_fbx(root, output_path):
+def export_fbx(root, output_path, use_custom_props=False):
+    """Export the selected hierarchy.
+
+    ``use_custom_props`` is off by default so the production exports keep
+    exactly the bytes they have always produced. Candidate exports turn it on:
+    setting a custom property on the root does nothing for the file unless the
+    exporter is asked to carry it.
+    """
     bpy.ops.object.select_all(action="DESELECT")
     root.select_set(True)
     for child in root.children_recursive:
@@ -592,6 +599,7 @@ def export_fbx(root, output_path):
         bake_anim=False,
         path_mode="STRIP",
         embed_textures=False,
+        use_custom_props=use_custom_props,
     )
 
 

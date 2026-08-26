@@ -37,15 +37,51 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--project-root", required=True)
     parser.add_argument("--object", dest="object_key", choices=OBJECTS)
+    parser.add_argument("--theme", choices=THEMES)
+    parser.add_argument(
+        "--source-dir",
+        default=None,
+        help=(
+            "Read the Retopo blend from here instead of "
+            "ArtSource/Blender/ThemeHardSurfaceV6/<Theme>. Used to run a "
+            "brush-up candidate through this stage."
+        ),
+    )
+    parser.add_argument(
+        "--source-suffix",
+        default="_Retopo",
+        help="Filename suffix of the input blend, e.g. _Opus5_R2_Retopo.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        default=None,
+        help=(
+            "Write the Material blend and previews here instead of the "
+            "production source directory. Use this for every candidate run."
+        ),
+    )
     return parser.parse_args(args)
 
 
-def render_one(project_root, theme, key):
-    source_dir = (
-        project_root / "ArtSource/Blender/ThemeHardSurfaceV6" / theme
-    )
+def theme_source_dir(project_root, theme, override=None):
+    if override is not None:
+        return Path(override)
+    return project_root / "ArtSource/Blender/ThemeHardSurfaceV6" / theme
+
+
+def render_one(
+    project_root,
+    theme,
+    key,
+    source_dir=None,
+    output_dir=None,
+    source_suffix="_Retopo",
+):
+    source_dir = theme_source_dir(project_root, theme, source_dir)
+    output_dir = source_dir if output_dir is None else Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
     bpy.ops.wm.open_mainfile(
-        filepath=str(source_dir / f"BL_{key}_{theme}_V6_Retopo.blend")
+        filepath=str(source_dir / f"BL_{key}_{theme}_V6{source_suffix}.blend")
     )
     root = bpy.data.objects.get(f"PF_Visual_{key}_{theme}_V6")
     if root is None:
@@ -74,19 +110,19 @@ def render_one(project_root, theme, key):
     center_z = (min(z_values) + max(z_values)) * 0.5
     v6_theme_materials.set_emission_enabled(False)
     output_off = (
-        source_dir / f"Preview_{key}_{theme}_V6_MaterialOff.png"
+        output_dir / f"Preview_{key}_{theme}_V6_MaterialOff.png"
     )
     controls.create_preview(meshes, center_z, output_off)
     v6_theme_materials.set_emission_enabled(True)
     output_on = (
-        source_dir / f"Preview_{key}_{theme}_V6_MaterialOn.png"
+        output_dir / f"Preview_{key}_{theme}_V6_MaterialOn.png"
     )
     controls.create_preview(meshes, center_z, output_on)
     root["material_pass"] = "V6 shared PBR atlas prototype"
     atlas_suffix = "_Large" if scale_class == "Large" else ""
     root["material_atlas"] = f"T_{theme}_V6_Atlas{atlas_suffix}"
     root["material_scale_class"] = scale_class
-    blend_path = source_dir / f"BL_{key}_{theme}_V6_Material.blend"
+    blend_path = output_dir / f"BL_{key}_{theme}_V6_Material.blend"
     bpy.context.preferences.filepaths.save_version = 0
     bpy.ops.wm.save_as_mainfile(filepath=str(blend_path), compress=True)
     blend_path.with_suffix(".blend1").unlink(missing_ok=True)
@@ -99,9 +135,17 @@ def main():
     args = parse_args()
     project_root = Path(args.project_root).resolve()
     objects = (args.object_key,) if args.object_key else OBJECTS
-    for theme in THEMES:
+    themes = (args.theme,) if args.theme else THEMES
+    for theme in themes:
         for key in objects:
-            render_one(project_root, theme, key)
+            render_one(
+                project_root,
+                theme,
+                key,
+                args.source_dir,
+                args.output_dir,
+                args.source_suffix,
+            )
 
 
 if __name__ == "__main__":

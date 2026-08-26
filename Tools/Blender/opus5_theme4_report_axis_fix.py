@@ -71,6 +71,14 @@ def main():
         union["max"] = [round(v, 6) for v in hi]
         union["size"] = [round(hi[i] - lo[i], 6) for i in range(3)]
         union["centre"] = [round((lo[i] + hi[i]) / 2.0, 6) for i in range(3)]
+        comparison = poses["collider_union_matches_continuous_scan"]
+        scanned = to_unity(row["bounds_swept"])
+        comparison["continuous_scan_unity"] = scanned
+        comparison["agrees"] = all(
+            abs(scanned[field][i] - union[field][i]) <= 1e-6
+            for field in ("min", "max", "size", "centre")
+            for i in range(3)
+        )
         pivot = row["motion"]["pivot_local"]
         row["motion"]["pivot_local_unity"] = [round(pivot[0], 6),
                                               round(-pivot[2], 6),

@@ -1,0 +1,7 @@
+# V6 texture atlas tooling.
+#
+# numpy comes from Blender 5.2's bundled python via
+# `python -m venv --system-site-packages`, so it is deliberately not pinned
+# here: keeping one numpy shared with Blender avoids a version split between
+# the texture tools and the Blender tools.
+Pillow==11.3.0

@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 import bpy
+import mathutils
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import blender_compat
@@ -295,7 +296,7 @@ def add_rotary_detail(root, theme, mats, pivot):
     v5r.parent_keep_world(pointer, movable)
 
 
-def add_button_detail(root, theme, mats):
+def add_button_detail(root, theme, mats, restore_glyph=False):
     add_small_mounts(root, theme, "Button", mats)
     travel = descendant_named(root, "button_travel")
     remove_mesh_descendants(travel)
@@ -421,8 +422,42 @@ def add_button_detail(root, theme, mats):
             guard.location.x = x
             guard.parent = root
         moving_parts = (cap, face)
+    if restore_glyph:
+        glyph = button_glyph_on_face(face, mats)
     for part in moving_parts:
         v5r.parent_keep_world(part, travel)
+    if restore_glyph:
+        v5r.parent_keep_world(glyph, travel)
+
+
+def button_glyph_on_face(face, mats):
+    """Rebuild the readout glyph the V6 detail pass drops (defect D-1).
+
+    `add_button_detail` clears every mesh under `button_travel` and rebuilds the
+    island from body and metal only, so V5's `button_glyph` - the sole
+    readout-role surface on all three Button themes - never comes back and the
+    model emits nothing in the dark.
+
+    The seating is measured off the V6 face rather than carried over from V5,
+    whose `glyph_surface` constants were tied to the V5 cap: 1 mm into the face
+    and 2 mm proud of it, which is what Orbital and Kinetic used. (V5's Forge
+    value buried the glyph inside the mushroom dome; V6 has no dome, and
+    measuring the face avoids inheriting that mistake.)
+    """
+    bpy.context.view_layer.update()
+    front = min(
+        (face.matrix_world @ mathutils.Vector(corner)).y
+        for corner in face.bound_box
+    )
+    return v4.accent_bar(
+        "button_glyph",
+        0.030,
+        0.006,
+        0.0,
+        0.0,
+        -front - 0.001,
+        mats["readout"],
+    )
 
 
 def add_lamp_detail(root, theme, mats):
@@ -892,13 +927,13 @@ def add_window_meter_detail(root, theme, mats):
             brace.parent = root
 
 
-def add_detail(root, theme, key, mats, pivot):
+def add_detail(root, theme, key, mats, pivot, restore_glyph=False):
     if key == "Toggle":
         add_toggle_detail(root, theme, mats, pivot)
     elif key == "Rotary":
         add_rotary_detail(root, theme, mats, pivot)
     elif key == "Button":
-        add_button_detail(root, theme, mats)
+        add_button_detail(root, theme, mats, restore_glyph)
     elif key == "Lamp":
         add_lamp_detail(root, theme, mats)
     elif key == "StatusIndicator":
