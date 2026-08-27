@@ -10,8 +10,8 @@ namespace MatsuMotoMeterAR.PlacementPersistence
     public sealed class PlacementDocument
     {
         public const int LegacySchemaVersion = 1;
-        public const int PreviousSchemaVersion = 3;
-        public const int CurrentSchemaVersion = 4;
+        public const int PreviousSchemaVersion = 4;
+        public const int CurrentSchemaVersion = 5;
         public const int MaximumActivePlacements = 48;
         public const int MaximumStoredPlacements = 192;
         public const int MaximumConnections = 192;
@@ -25,10 +25,22 @@ namespace MatsuMotoMeterAR.PlacementPersistence
     [Serializable]
     public sealed class SignalConnectionRecord
     {
+        public const float DefaultInputMinimum = 0f;
+        public const float DefaultInputMaximum = 1f;
+        public const float DefaultOutputMinimum = 0.2f;
+        public const float DefaultOutputMaximum = 0.8f;
+        public const float DefaultThresholdValue = 0.5f;
+
         public string connectionId;
         public string sourcePlacementId;
         public string targetPlacementId;
         public int transformKind = (int)SignalTransformKind.Direct;
+        public float inputMinimum = DefaultInputMinimum;
+        public float inputMaximum = DefaultInputMaximum;
+        public float outputMinimum = DefaultOutputMinimum;
+        public float outputMaximum = DefaultOutputMaximum;
+        public float thresholdValue = DefaultThresholdValue;
+        public int thresholdComparison = (int)SignalThresholdComparison.Above;
 
         public SignalConnectionRecord Clone()
         {
@@ -37,7 +49,13 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                 connectionId = connectionId,
                 sourcePlacementId = sourcePlacementId,
                 targetPlacementId = targetPlacementId,
-                transformKind = transformKind
+                transformKind = transformKind,
+                inputMinimum = inputMinimum,
+                inputMaximum = inputMaximum,
+                outputMinimum = outputMinimum,
+                outputMaximum = outputMaximum,
+                thresholdValue = thresholdValue,
+                thresholdComparison = thresholdComparison
             };
         }
     }

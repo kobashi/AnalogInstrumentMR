@@ -139,6 +139,8 @@ namespace MatsuMotoMeterAR.PlacementPersistence
 
         public static PlacementDocument Normalize(PlacementDocument source)
         {
+            var sourceSchemaVersion = source?.schemaVersion ??
+                                      PlacementDocument.CurrentSchemaVersion;
             var normalized = new PlacementDocument
             {
                 schemaVersion = PlacementDocument.CurrentSchemaVersion,
@@ -205,6 +207,7 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                         activeTypeIds,
                         connectionIds,
                         endpointPairs,
+                        sourceSchemaVersion,
                         out var connection))
                 {
                     continue;
@@ -235,6 +238,7 @@ namespace MatsuMotoMeterAR.PlacementPersistence
             IReadOnlyDictionary<string, string> activeTypeIds,
             ISet<string> connectionIds,
             ISet<string> endpointPairs,
+            int sourceSchemaVersion,
             out SignalConnectionRecord connection)
         {
             connection = null;
@@ -269,14 +273,66 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                 source.transformKind)
                 ? source.transformKind
                 : (int)SignalTransformKind.Direct;
+            var usesLegacyDefaults = sourceSchemaVersion <
+                                     PlacementDocument.CurrentSchemaVersion;
+            var inputMinimum = usesLegacyDefaults
+                ? SignalConnectionRecord.DefaultInputMinimum
+                : NormalizeUnitValue(
+                    source.inputMinimum,
+                    SignalConnectionRecord.DefaultInputMinimum);
+            var inputMaximum = usesLegacyDefaults
+                ? SignalConnectionRecord.DefaultInputMaximum
+                : NormalizeUnitValue(
+                    source.inputMaximum,
+                    SignalConnectionRecord.DefaultInputMaximum);
+            var outputMinimum = usesLegacyDefaults
+                ? SignalConnectionRecord.DefaultOutputMinimum
+                : NormalizeUnitValue(
+                    source.outputMinimum,
+                    SignalConnectionRecord.DefaultOutputMinimum);
+            var outputMaximum = usesLegacyDefaults
+                ? SignalConnectionRecord.DefaultOutputMaximum
+                : NormalizeUnitValue(
+                    source.outputMaximum,
+                    SignalConnectionRecord.DefaultOutputMaximum);
+            Order(ref inputMinimum, ref inputMaximum);
+            Order(ref outputMinimum, ref outputMaximum);
+            var thresholdValue = usesLegacyDefaults
+                ? SignalConnectionRecord.DefaultThresholdValue
+                : NormalizeUnitValue(
+                    source.thresholdValue,
+                    SignalConnectionRecord.DefaultThresholdValue);
+            var thresholdComparison = !usesLegacyDefaults && Enum.IsDefined(
+                typeof(SignalThresholdComparison),
+                source.thresholdComparison)
+                ? source.thresholdComparison
+                : (int)SignalThresholdComparison.Above;
             connection = new SignalConnectionRecord
             {
                 connectionId = connectionId,
                 sourcePlacementId = sourceId,
                 targetPlacementId = targetId,
-                transformKind = transform
+                transformKind = transform,
+                inputMinimum = inputMinimum,
+                inputMaximum = inputMaximum,
+                outputMinimum = outputMinimum,
+                outputMaximum = outputMaximum,
+                thresholdValue = thresholdValue,
+                thresholdComparison = thresholdComparison
             };
             return true;
+        }
+
+        private static float NormalizeUnitValue(float value, float fallback)
+        {
+            return IsFinite(value) ? Mathf.Clamp01(value) : fallback;
+        }
+
+        private static void Order(ref float minimum, ref float maximum)
+        {
+            if (minimum <= maximum)
+                return;
+            (minimum, maximum) = (maximum, minimum);
         }
 
         private static bool TryNormalizeRecord(

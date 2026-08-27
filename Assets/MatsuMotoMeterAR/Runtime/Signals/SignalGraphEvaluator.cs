@@ -31,7 +31,7 @@ namespace MatsuMotoMeterAR.Signals
 
                 var transformed = InstrumentSignalPolicy.Transform(
                     source.NormalizedValue,
-                    (SignalTransformKind)connection.transformKind);
+                    connection);
                 sums.TryGetValue(connection.targetPlacementId, out var sum);
                 counts.TryGetValue(connection.targetPlacementId, out var count);
                 sums[connection.targetPlacementId] = sum + transformed;

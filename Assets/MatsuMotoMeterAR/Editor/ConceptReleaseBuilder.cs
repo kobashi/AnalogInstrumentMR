@@ -34,6 +34,15 @@ namespace MatsuMotoMeterAR.Editor
                 "Performance gate");
         }
 
+        [MenuItem("Tools/MatsuMotoMeterAR/Build Connection Parameter Review APK")]
+        public static void BuildConnectionParameterReview()
+        {
+            BuildTo(
+                "Builds/QuestReview/" +
+                "AnalogInstrumentMR-ConnectionParameters-review-quest3.apk",
+                "Connection parameter review");
+        }
+
         private static void BuildTo(string outputPath, string label)
         {
             var scenes = EditorBuildSettings.scenes

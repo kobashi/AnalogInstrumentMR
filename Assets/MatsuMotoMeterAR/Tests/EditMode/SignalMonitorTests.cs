@@ -91,6 +91,62 @@ namespace MatsuMotoMeterAR.Tests
         }
 
         [Test]
+        public void Evaluator_UsesConnectionSpecificTransformParameters()
+        {
+            var sourceRoot = MockInstrumentFactory.Create(
+                MockInstrumentKind.Lever,
+                Pose.identity);
+            var targetRoot = MockInstrumentFactory.Create(
+                MockInstrumentKind.RoundMeter,
+                Pose.identity);
+            try
+            {
+                var source = sourceRoot
+                    .GetComponent<InstrumentGreyboxContract>()
+                    .InstrumentInteraction;
+                var target = targetRoot
+                    .GetComponent<InstrumentGreyboxContract>()
+                    .InstrumentInteraction;
+                source.SetNormalizedValue(0.5f);
+                var instruments = new Dictionary<string, MockInstrumentInteraction>
+                {
+                    ["source"] = source,
+                    ["target"] = target
+                };
+                var connections = new List<SignalConnectionRecord>
+                {
+                    new()
+                    {
+                        connectionId = "configured-range",
+                        sourcePlacementId = "source",
+                        targetPlacementId = "target",
+                        transformKind = (int)SignalTransformKind.Range,
+                        inputMinimum = 0f,
+                        inputMaximum = 1f,
+                        outputMinimum = 0.4f,
+                        outputMaximum = 0.6f
+                    }
+                };
+
+                new SignalGraphEvaluator().Evaluate(connections, instruments);
+
+                Assert.That(
+                    target.NormalizedValue,
+                    Is.EqualTo(0.5f).Within(0.0001f));
+                source.SetNormalizedValue(1f);
+                new SignalGraphEvaluator().Evaluate(connections, instruments);
+                Assert.That(
+                    target.NormalizedValue,
+                    Is.EqualTo(0.6f).Within(0.0001f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(sourceRoot);
+                UnityEngine.Object.DestroyImmediate(targetRoot);
+            }
+        }
+
+        [Test]
         public void Factory_AddsDisplayOnlyToTrendMonitor()
         {
             var monitor = MockInstrumentFactory.Create(
