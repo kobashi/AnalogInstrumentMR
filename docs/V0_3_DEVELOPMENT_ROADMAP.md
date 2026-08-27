@@ -70,6 +70,16 @@ monitorを先に置くことで、parameter編集の結果をQuest内で直接�
 5. その他のモデルは共通contact sheetで視覚reviewし、具体的な欠陥または明確な品質差が
    確認できたものだけ候補化する。
 
+### 完了（2026-08-27）: Lever geometry G2
+
+- **Kinetic Safety Lever:** `handle`全体ではなく、負向きだった98頂点のグリップ主成分だけを
+  反転し、正向きだった棒・軸元・上部小部品を維持した。上端へ薄い専用キャップを追加して
+  内部が見える開口を閉じた。
+- **Orbital Analog Lever:** 棒とグリップ間の15.78 mmの空隙を、既存`handle`内の接合カラーで
+  橋渡しした。可動pivot、Renderer 2、Material 2を維持した。
+- FBX round-tripの全成分で正体積、boundary edge 0、non-manifold edge 0。Active Prefabと
+  5状態Motion Audit、Quest 3近接視覚確認をPASSした。
+
 各候補は、形状contract、triangle / renderer / material予算、全可動域、固定画像、Quest
 近接・1 m表示、48 / 64構成への影響を確認する。透明glassは現状のQuest負荷と描画順問題を
 増やすため標準要件にせず、必要性が実機画像で示された場合だけ別検討する。
