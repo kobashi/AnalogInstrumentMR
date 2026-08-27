@@ -14,6 +14,12 @@ namespace MatsuMotoMeterAR.Signals
         Threshold = 3
     }
 
+    public enum SignalThresholdComparison
+    {
+        Above = 0,
+        Below = 1
+    }
+
     public static class InstrumentSignalPolicy
     {
         public const float RangeMinimum = 0.2f;
@@ -76,6 +82,46 @@ namespace MatsuMotoMeterAR.Signals
                     value >= Threshold ? 1f : 0f,
                 _ => value
             };
+        }
+
+        public static float Transform(
+            float value,
+            SignalConnectionRecord connection)
+        {
+            if (connection == null)
+                return Mathf.Clamp01(value);
+
+            value = Mathf.Clamp01(value);
+            var transform = Enum.IsDefined(
+                typeof(SignalTransformKind),
+                connection.transformKind)
+                ? (SignalTransformKind)connection.transformKind
+                : SignalTransformKind.Direct;
+            switch (transform)
+            {
+                case SignalTransformKind.Invert:
+                    return 1f - value;
+                case SignalTransformKind.Range:
+                    var input = Mathf.InverseLerp(
+                        connection.inputMinimum,
+                        connection.inputMaximum,
+                        value);
+                    return Mathf.Lerp(
+                        connection.outputMinimum,
+                        connection.outputMaximum,
+                        input);
+                case SignalTransformKind.Threshold:
+                    var comparison = Enum.IsDefined(
+                        typeof(SignalThresholdComparison),
+                        connection.thresholdComparison)
+                        ? (SignalThresholdComparison)connection.thresholdComparison
+                        : SignalThresholdComparison.Above;
+                    return comparison == SignalThresholdComparison.Below
+                        ? value <= connection.thresholdValue ? 1f : 0f
+                        : value >= connection.thresholdValue ? 1f : 0f;
+                default:
+                    return value;
+            }
         }
 
         public static SignalTransformKind Cycle(

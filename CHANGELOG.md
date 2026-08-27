@@ -8,6 +8,9 @@
 
 ### Added
 
+- 接続単位のRange入力min / max・出力min / max、およびThreshold値・ABOVE / BELOWを
+  Quest内で編集、preview、取消、保存・復元できるparameter editor。保存schemaをv5へ更新し、
+  v1〜v4接続は従来と同じ既定値へ移行
 - 第4テーマ`Machined Ergonomics`。受入済み14機種のproduction model、1K atlas、
   opaque／emissive／Trend Monitor暗色表示面material、独立prefabを追加し、
   theme ID `machined-ergonomics`として通常runtimeへ登録
@@ -41,6 +44,8 @@
 
 ### Validated
 
+- 接続parameter編集はUnity EditMode 162 / 162とQuest 3でRange／Threshold編集、
+  preview、保存をPASS
 - Unity EditMode 154 / 154、Machined Ergonomics production prefab 14 / 14、
   installed active visual prefab 53 / 53
 - 4テーマmotion 16 / 16、signal visual 8 / 8、candidate dependency 0

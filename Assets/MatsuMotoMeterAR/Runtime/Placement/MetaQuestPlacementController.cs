@@ -136,6 +136,8 @@ namespace MatsuMotoMeterAR.Placement
             SignalTransformKind.Direct;
         private SignalTransformKind selectedConnectionPendingTransform =
             SignalTransformKind.Direct;
+        private SignalConnectionRecord connectionParameterDraft;
+        private SignalConnectionParameterField connectionParameterField;
         private RuntimePlacement groupMovePivot;
         private RuntimePlacement lastAlignmentReference;
         private AlignmentAnchorMode nextAlignmentAnchorMode =
@@ -167,6 +169,7 @@ namespace MatsuMotoMeterAR.Placement
         private bool connectRightTriggerEngaged;
         private bool connectLeftTriggerEngaged;
         private bool connectAxisEngaged;
+        private bool connectParameterFieldAxisEngaged;
         private bool groupMoveArmed;
         private bool selectionAxisEngaged;
         private bool themeAxisEngaged;
@@ -1536,6 +1539,8 @@ namespace MatsuMotoMeterAR.Placement
                     trigger,
                     leftTrigger,
                     leftThumbstick,
+                    thumbstick,
+                    yButton && !previousYButton,
                     leftThumbstickButton &&
                     !previousLeftThumbstickButton,
                     aButton && !previousAButton,
@@ -2144,10 +2149,30 @@ namespace MatsuMotoMeterAR.Placement
             float rightTrigger,
             float leftTrigger,
             Vector2 transformAxis,
+            Vector2 parameterAxis,
+            bool parameterEditPressed,
             bool transformConfirmPressed,
             bool confirmPressed,
             bool cancelPressed)
         {
+            if (connectionParameterDraft != null)
+            {
+                UpdateConnectionParameterInput(
+                    transformAxis,
+                    parameterAxis,
+                    parameterEditPressed,
+                    transformConfirmPressed,
+                    cancelPressed);
+                return;
+            }
+
+            if (parameterEditPressed &&
+                selectedConnectionForRemoval != null)
+            {
+                BeginConnectionParameterEdit();
+                return;
+            }
+
             var axisMagnitude = Mathf.Abs(transformAxis.x);
             if (axisMagnitude <= SelectionReleaseThreshold)
             {
@@ -2231,6 +2256,155 @@ namespace MatsuMotoMeterAR.Placement
 
             if (!endpointAction)
                 UpdateConnectStatus();
+        }
+
+        private void BeginConnectionParameterEdit()
+        {
+            if (selectedConnectionForRemoval == null)
+                return;
+            if (!SignalConnectionParameterEditor.Supports(
+                    selectedConnectionPendingTransform))
+            {
+                SetConnectNotice(
+                    "PARAMETERS APPLY TO RANGE / THRESHOLD",
+                    Color.yellow);
+                return;
+            }
+
+            connectionParameterDraft =
+                selectedConnectionForRemoval.Clone();
+            connectionParameterDraft.transformKind =
+                (int)selectedConnectionPendingTransform;
+            connectionParameterField =
+                SignalConnectionParameterEditor.FirstField(
+                    selectedConnectionPendingTransform);
+            connectAxisEngaged = false;
+            connectParameterFieldAxisEngaged = false;
+            connectStatusHoldUntil = 0f;
+            PulseHaptics();
+            UpdateConnectStatus();
+        }
+
+        private void UpdateConnectionParameterInput(
+            Vector2 adjustmentAxis,
+            Vector2 fieldAxis,
+            bool parameterEditPressed,
+            bool confirmPressed,
+            bool cancelPressed)
+        {
+            if (connectionParameterDraft == null ||
+                selectedConnectionForRemoval == null)
+            {
+                CancelConnectionParameterEdit();
+                return;
+            }
+
+            var fieldMagnitude = Mathf.Abs(fieldAxis.y);
+            if (fieldMagnitude <= SelectionReleaseThreshold)
+            {
+                connectParameterFieldAxisEngaged = false;
+            }
+            else if (!connectParameterFieldAxisEngaged &&
+                     fieldMagnitude >= SelectionThreshold)
+            {
+                connectParameterFieldAxisEngaged = true;
+                connectionParameterField =
+                    SignalConnectionParameterEditor.CycleField(
+                        selectedConnectionPendingTransform,
+                        connectionParameterField,
+                        fieldAxis.y < 0f ? 1 : -1);
+                PulseHaptics();
+            }
+
+            var adjustmentMagnitude = Mathf.Abs(adjustmentAxis.x);
+            if (adjustmentMagnitude <= SelectionReleaseThreshold)
+            {
+                connectAxisEngaged = false;
+            }
+            else if (!connectAxisEngaged &&
+                     adjustmentMagnitude >= SelectionThreshold)
+            {
+                connectAxisEngaged = true;
+                SignalConnectionParameterEditor.Adjust(
+                    connectionParameterDraft,
+                    connectionParameterField,
+                    adjustmentAxis.x < 0f ? -1 : 1);
+                PulseHaptics();
+            }
+
+            if (confirmPressed)
+            {
+                ConfirmConnectionParameterEdit();
+                return;
+            }
+            if (cancelPressed || parameterEditPressed)
+            {
+                CancelConnectionParameterEdit();
+                SetConnectNotice(
+                    "PARAMETER EDIT CANCELLED",
+                    Color.yellow);
+                return;
+            }
+            UpdateConnectStatus();
+        }
+
+        private void ConfirmConnectionParameterEdit()
+        {
+            if (selectedConnectionForRemoval == null ||
+                connectionParameterDraft == null ||
+                placementDocument?.connections == null ||
+                !placementDocument.connections.Contains(
+                    selectedConnectionForRemoval))
+            {
+                CancelConnectionParameterEdit();
+                SetConnectNotice("CONNECTION NO LONGER EXISTS", Color.red);
+                return;
+            }
+
+            var connection = selectedConnectionForRemoval;
+            var previous = connection.Clone();
+            CopyConnectionState(connectionParameterDraft, connection);
+            if (!SavePlacementDocument())
+            {
+                CopyConnectionState(previous, connection);
+                SetConnectNotice("PARAMETER SAVE FAILED", Color.red);
+                return;
+            }
+
+            var confirmedTransform =
+                (SignalTransformKind)connection.transformKind;
+            connectionParameterDraft = null;
+            selectedConnectionForRemoval = null;
+            selectedConnectionPendingTransform =
+                SignalTransformKind.Direct;
+            connectAxisEngaged = false;
+            connectParameterFieldAxisEngaged = false;
+            SetConnectNotice(
+                $"{confirmedTransform.ToString().ToUpperInvariant()} " +
+                "PARAMETERS APPLIED\nOBJECT REMAINS SELECTED | A: NEXT",
+                ConnectionColor(confirmedTransform));
+            PulseHaptics();
+        }
+
+        private void CancelConnectionParameterEdit()
+        {
+            connectionParameterDraft = null;
+            connectAxisEngaged = false;
+            connectParameterFieldAxisEngaged = false;
+            connectStatusHoldUntil = 0f;
+        }
+
+        private static void CopyConnectionState(
+            SignalConnectionRecord source,
+            SignalConnectionRecord destination)
+        {
+            destination.transformKind = source.transformKind;
+            destination.inputMinimum = source.inputMinimum;
+            destination.inputMaximum = source.inputMaximum;
+            destination.outputMinimum = source.outputMinimum;
+            destination.outputMaximum = source.outputMaximum;
+            destination.thresholdValue = source.thresholdValue;
+            destination.thresholdComparison = source.thresholdComparison;
         }
 
         private bool UpdateConnectTrigger(
@@ -2640,6 +2814,30 @@ namespace MatsuMotoMeterAR.Placement
             var transformLabel =
                 pendingSignalTransform.ToString().ToUpperInvariant();
             var editPlacement = connectEditPlacement ?? connectSource;
+            if (connectionParameterDraft != null &&
+                selectedConnectionForRemoval != null)
+            {
+                var transform = (SignalTransformKind)
+                    connectionParameterDraft.transformKind;
+                var source = FindPlacementById(
+                    selectedConnectionForRemoval.sourcePlacementId);
+                var input = source?.Interaction == null
+                    ? 0f
+                    : source.Interaction.NormalizedValue;
+                var output = InstrumentSignalPolicy.Transform(
+                    input,
+                    connectionParameterDraft);
+                SetStatus(
+                    $"{transform.ToString().ToUpperInvariant()} PARAM | " +
+                    $"{SignalConnectionParameterEditor.Label(connectionParameterField)} " +
+                    $"{SignalConnectionParameterEditor.Value(connectionParameterDraft, connectionParameterField)}\n" +
+                    $"PREVIEW {input:0.00} -> {output:0.00} | " +
+                    "L STICK L/R: ADJUST\n" +
+                    "R STICK U/D: FIELD | L STICK PRESS: APPLY\n" +
+                    "Y / B: CANCEL",
+                    ConnectionColor(transform));
+                return;
+            }
             if (selectedConnectionForRemoval != null &&
                 editPlacement?.Record != null)
             {
@@ -2686,6 +2884,10 @@ namespace MatsuMotoMeterAR.Placement
                     $"{direction} {selectedIndex}/{selectedCount} | " +
                     $"{selectedSourceName} -> {selectedTargetName}\n" +
                     $"{selectedTransformLabel} | L STICK L/R: CHANGE\n" +
+                    (SignalConnectionParameterEditor.Supports(
+                            selectedConnectionPendingTransform)
+                        ? "Y: PARAMETERS | "
+                        : string.Empty) +
                     "L STICK PRESS: APPLY | A: NEXT | B: DELETE",
                     SelectedConnectionColorFor(
                         selectedConnectionPendingTransform));
@@ -2835,7 +3037,9 @@ namespace MatsuMotoMeterAR.Placement
             pendingSignalTransform = SignalTransformKind.Direct;
             selectedConnectionPendingTransform =
                 SignalTransformKind.Direct;
+            connectionParameterDraft = null;
             connectAxisEngaged = false;
+            connectParameterFieldAxisEngaged = false;
         }
 
         private void ClearConnectEditSelection()
@@ -2847,6 +3051,8 @@ namespace MatsuMotoMeterAR.Placement
             selectedConnectionForRemoval = null;
             selectedConnectionPendingTransform =
                 SignalTransformKind.Direct;
+            connectionParameterDraft = null;
+            connectParameterFieldAxisEngaged = false;
         }
 
         private void UpdateSignalGraph()
@@ -2900,7 +3106,7 @@ namespace MatsuMotoMeterAR.Placement
 
                     var value = InstrumentSignalPolicy.Transform(
                         source.NormalizedValue,
-                        (SignalTransformKind)connection.transformKind);
+                        connection);
                     monitor.AddSample(connection.connectionId, value);
                 }
             }

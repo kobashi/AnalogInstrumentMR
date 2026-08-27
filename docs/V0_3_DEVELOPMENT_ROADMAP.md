@@ -40,6 +40,10 @@ MR計器環境にすることである。機能追加と並行して、Quest 3�
 
 ## Priority 2: connection parameter editing
 
+**完了（2026-08-27）:** schema v5、接続単位のRange入出力min / max、Threshold値・
+ABOVE / BELOW、HUD preview、取消、保存・復元を実装し、EditMode 162 / 162とQuest 3実機をPASS。
+hysteresisは実際のchattering要件が確認された場合の後続拡張とする。
+
 既存接続を作り直さず、RangeとThresholdのparameterをEdit / Connect UIから変更できる
 ようにする。
 

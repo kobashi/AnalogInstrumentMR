@@ -52,7 +52,7 @@ namespace MatsuMotoMeterAR.Tests
                 Is.EqualTo(PlacementLoadStatus.Corrupt));
 
             var future = PlacementJsonCodec.Deserialize(
-                "{\"schemaVersion\":5,\"revision\":9,\"placements\":[]}");
+                "{\"schemaVersion\":6,\"revision\":9,\"placements\":[]}");
             Assert.That(future.Status, Is.EqualTo(PlacementLoadStatus.UnsupportedVersion));
             Assert.That(future.CanWrite, Is.False);
             Assert.That(future.Document.revision, Is.EqualTo(9));
@@ -217,13 +217,28 @@ namespace MatsuMotoMeterAR.Tests
         }
 
         [Test]
-        public void Json_MigratesLegacySchemasToV4AndRequiresCommit()
+        public void Json_MigratesLegacySchemasToV5WithConnectionDefaults()
         {
-            foreach (var schemaVersion in new[] { 1, 2, 3 })
+            foreach (var schemaVersion in new[] { 1, 2, 3, 4 })
             {
+                var document = CreateDocument(2);
+                document.schemaVersion = schemaVersion;
+                document.placements[0].instrumentTypeId = "control.lever";
+                document.placements[1].instrumentTypeId = "indicator.status";
+                var legacyConnection = Connection(
+                    "legacy-connection",
+                    document.placements[0].placementId,
+                    document.placements[1].placementId);
+                legacyConnection.inputMinimum = 0.15f;
+                legacyConnection.inputMaximum = 0.85f;
+                legacyConnection.outputMinimum = 0.3f;
+                legacyConnection.outputMaximum = 0.7f;
+                legacyConnection.thresholdValue = 0.75f;
+                legacyConnection.thresholdComparison =
+                    (int)SignalThresholdComparison.Below;
+                document.connections.Add(legacyConnection);
                 var result = PlacementJsonCodec.Deserialize(
-                    $"{{\"schemaVersion\":{schemaVersion}," +
-                    "\"revision\":9,\"placements\":[]}");
+                    JsonUtility.ToJson(document));
 
                 Assert.That(
                     result.Status,
@@ -232,7 +247,118 @@ namespace MatsuMotoMeterAR.Tests
                 Assert.That(
                     result.Document.schemaVersion,
                     Is.EqualTo(PlacementDocument.CurrentSchemaVersion));
+                var connection = result.Document.connections[0];
+                Assert.That(connection.inputMinimum, Is.Zero);
+                Assert.That(connection.inputMaximum, Is.EqualTo(1f));
+                Assert.That(connection.outputMinimum, Is.EqualTo(0.2f));
+                Assert.That(connection.outputMaximum, Is.EqualTo(0.8f));
+                Assert.That(connection.thresholdValue, Is.EqualTo(0.5f));
+                Assert.That(
+                    connection.thresholdComparison,
+                    Is.EqualTo((int)SignalThresholdComparison.Above));
             }
+        }
+
+        [Test]
+        public void Json_RoundTripsConnectionParametersAndClonePreservesThem()
+        {
+            var document = CreateDocument(2);
+            document.placements[0].instrumentTypeId = "control.lever";
+            document.placements[1].instrumentTypeId = "indicator.status";
+            var source = Connection(
+                "configured",
+                document.placements[0].placementId,
+                document.placements[1].placementId);
+            source.transformKind = (int)SignalTransformKind.Threshold;
+            source.inputMinimum = 0.1f;
+            source.inputMaximum = 0.9f;
+            source.outputMinimum = 0.25f;
+            source.outputMaximum = 0.75f;
+            source.thresholdValue = 0.65f;
+            source.thresholdComparison = (int)SignalThresholdComparison.Below;
+            document.connections.Add(source);
+
+            var result = PlacementJsonCodec.Deserialize(
+                PlacementJsonCodec.Serialize(document));
+            var connection = result.Document.connections[0];
+            var clone = connection.Clone();
+
+            Assert.That(connection.inputMinimum, Is.EqualTo(0.1f));
+            Assert.That(connection.inputMaximum, Is.EqualTo(0.9f));
+            Assert.That(connection.outputMinimum, Is.EqualTo(0.25f));
+            Assert.That(connection.outputMaximum, Is.EqualTo(0.75f));
+            Assert.That(connection.thresholdValue, Is.EqualTo(0.65f));
+            Assert.That(
+                connection.thresholdComparison,
+                Is.EqualTo((int)SignalThresholdComparison.Below));
+            Assert.That(clone.inputMinimum, Is.EqualTo(connection.inputMinimum));
+            Assert.That(clone.inputMaximum, Is.EqualTo(connection.inputMaximum));
+            Assert.That(clone.outputMinimum, Is.EqualTo(connection.outputMinimum));
+            Assert.That(clone.outputMaximum, Is.EqualTo(connection.outputMaximum));
+            Assert.That(clone.thresholdValue, Is.EqualTo(connection.thresholdValue));
+            Assert.That(clone.thresholdComparison, Is.EqualTo(connection.thresholdComparison));
+        }
+
+        [Test]
+        public void Normalize_ClampsOrdersAndRepairsConnectionParameters()
+        {
+            var document = CreateDocument(2);
+            document.placements[0].instrumentTypeId = "control.lever";
+            document.placements[1].instrumentTypeId = "indicator.status";
+            var connection = Connection(
+                "invalid-parameters",
+                document.placements[0].placementId,
+                document.placements[1].placementId);
+            connection.inputMinimum = 2f;
+            connection.inputMaximum = -1f;
+            connection.outputMinimum = float.NaN;
+            connection.outputMaximum = float.PositiveInfinity;
+            connection.thresholdValue = -4f;
+            connection.thresholdComparison = 99;
+            document.connections.Add(connection);
+
+            var normalized = PlacementJsonCodec.Normalize(document).connections[0];
+
+            Assert.That(normalized.inputMinimum, Is.Zero);
+            Assert.That(normalized.inputMaximum, Is.EqualTo(1f));
+            Assert.That(normalized.outputMinimum, Is.EqualTo(0.2f));
+            Assert.That(normalized.outputMaximum, Is.EqualTo(0.8f));
+            Assert.That(normalized.thresholdValue, Is.Zero);
+            Assert.That(
+                normalized.thresholdComparison,
+                Is.EqualTo((int)SignalThresholdComparison.Above));
+        }
+
+        [Test]
+        public void ConnectionTransform_UsesConfiguredRangeAndThresholdDirection()
+        {
+            var connection = new SignalConnectionRecord
+            {
+                transformKind = (int)SignalTransformKind.Range,
+                inputMinimum = 0.25f,
+                inputMaximum = 0.75f,
+                outputMinimum = 0.1f,
+                outputMaximum = 0.9f
+            };
+
+            Assert.That(
+                InstrumentSignalPolicy.Transform(0.5f, connection),
+                Is.EqualTo(0.5f).Within(0.0001f));
+            Assert.That(
+                InstrumentSignalPolicy.Transform(0f, connection),
+                Is.EqualTo(0.1f).Within(0.0001f));
+            Assert.That(
+                InstrumentSignalPolicy.Transform(1f, connection),
+                Is.EqualTo(0.9f).Within(0.0001f));
+
+            connection.transformKind = (int)SignalTransformKind.Threshold;
+            connection.thresholdValue = 0.4f;
+            connection.thresholdComparison = (int)SignalThresholdComparison.Above;
+            Assert.That(InstrumentSignalPolicy.Transform(0.6f, connection), Is.EqualTo(1f));
+            Assert.That(InstrumentSignalPolicy.Transform(0.2f, connection), Is.Zero);
+            connection.thresholdComparison = (int)SignalThresholdComparison.Below;
+            Assert.That(InstrumentSignalPolicy.Transform(0.2f, connection), Is.EqualTo(1f));
+            Assert.That(InstrumentSignalPolicy.Transform(0.6f, connection), Is.Zero);
         }
 
         [Test]
@@ -358,7 +484,7 @@ namespace MatsuMotoMeterAR.Tests
             {
                 Result = new PlacementLoadResult(
                     PlacementLoadStatus.UnsupportedVersion,
-                    new PlacementDocument { schemaVersion = 5 })
+                    new PlacementDocument { schemaVersion = 6 })
             };
 
             var result = LegacyPlacementMigration.LoadOrMigrate(
