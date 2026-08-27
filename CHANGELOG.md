@@ -28,6 +28,9 @@
 
 ### Changed
 
+- Kinetic Safety Leverは負向きだったグリップ主成分だけを修正し、上端キャップで内部露出を
+  閉鎖。Orbital Analog Leverは棒とグリップ間を接合カラーで橋渡しし、両モデルとも既存
+  `handle_pivot`、Renderer／Material契約、FBX GUIDを維持
 - Trend Monitorを先に選んでから入力元を選ぶtarget-first接続を追加。meter出力は
   Trend Monitorでの観測専用とし、既存計器への一般的な信号sourceには拡張しない
 - Orbital Analog／Forge BrassのMeterMedium／MeterLargeから、前面カバー上に重複していた
@@ -44,6 +47,8 @@
 
 ### Validated
 
+- Lever G2はBlender／FBX round-tripで全連結成分の正体積、boundary edge 0、
+  non-manifold edge 0を確認。Active Prefab、5状態Motion Audit、Quest 3近接視覚確認をPASS
 - 接続parameter編集はUnity EditMode 162 / 162とQuest 3でRange／Threshold編集、
   preview、保存をPASS
 - Unity EditMode 154 / 154、Machined Ergonomics production prefab 14 / 14、
