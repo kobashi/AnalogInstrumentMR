@@ -80,10 +80,10 @@ monitorを先に置くことで、parameter編集の結果をQuest内で直接�
    各style guideに沿った筐体、bezel、取付方法、操作・保守意匠と専用textureへ作り直す。
    display plane寸法・正面方向・overlay fit・最大4入力・LineRenderer契約は共通化し、
    テーマ差によって表示面座標やruntime signal処理を分岐させない。
-2. **Orbital Analog meterのカバーガラス上の目盛を除去する。**
-   対象meterを画像とPrefab Previewで特定し、目盛をdial / scale面へ一意に置く。
-   glass相当の前面部品には読み取り目盛を持たせず、二重目盛、coplanar overlap、ちらつき、
-   針との奥行き競合を0にする。全可動域と正面・斜視・1 m表示で確認する。
+2. **完了（2026-08-27）: Orbital Analog／Forge Brass meterのカバー上の重複目盛を除去。**
+   MeterGlassScale G1としてMedium／Largeの`secondary_scale_*`だけを削除し、文字盤側の
+   主目盛、針、230°の可動範囲を維持した。固定画像、Prefab、Quest 3実機、48配置gate、
+   64配置stressをPASSし、元FBX GUIDを維持してproductionへ昇格済み。
 3. **Window Panelを4テーマ共通で非メーター型graphic instrumentへ再設計する。**
    meter、針、vane、アナログ目盛を使わず、2Dの幾何学的なparametric図形を表示する。
    複数入力を受け付け、入力ごとに位置、回転、scale、色、位相、変形量など明示されたparameterへ

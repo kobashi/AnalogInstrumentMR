@@ -52,6 +52,70 @@ namespace MatsuMotoMeterAR.Editor
             Debug.Log("All instrument theme materials and prefabs rebuilt.");
         }
 
+        internal static void RebuildModel(string folder, string key)
+        {
+            foreach (var theme in Themes)
+            {
+                if (!string.Equals(theme.Folder, folder, StringComparison.Ordinal))
+                    continue;
+
+                string target = null;
+                foreach (var asset in Assets)
+                {
+                    if (string.Equals(asset.Key, key, StringComparison.Ordinal))
+                    {
+                        target = asset.Target;
+                        break;
+                    }
+                }
+                if (target == null)
+                {
+                    foreach (var asset in OptionalAssets)
+                    {
+                        if (string.Equals(asset.Key, key, StringComparison.Ordinal))
+                        {
+                            target = asset.Target;
+                            break;
+                        }
+                    }
+                }
+                if (target == null)
+                    throw new InvalidDataException($"Unsupported visual model: {key}");
+
+                var themeRoot =
+                    $"Assets/MatsuMotoMeterAR/Content/Themes/{folder}";
+                var modelRoot = themeRoot + "/Models";
+                var materialRoot = themeRoot + "/Materials";
+                var prefabRoot =
+                    $"Assets/MatsuMotoMeterAR/Resources/{folder}/Prefabs";
+                var modelPath = $"{modelRoot}/SM_{key}_{theme.Suffix}.fbx";
+                ConfigureModel(modelPath);
+
+                var scaleSuffix = IsLargeAsset(key)
+                    ? "_Large"
+                    : IsMediumAsset(key)
+                        ? "_Medium"
+                        : string.Empty;
+                var opaque = LoadRequiredMaterial(
+                    $"{materialRoot}/MAT_{theme.Suffix}_Atlas{scaleSuffix}.mat");
+                var emissive = LoadRequiredMaterial(
+                    $"{materialRoot}/MAT_{theme.Suffix}_Emissive{scaleSuffix}.mat");
+                BuildPrefab(
+                    modelRoot,
+                    prefabRoot,
+                    theme.Suffix,
+                    key,
+                    target,
+                    opaque,
+                    emissive);
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+                return;
+            }
+
+            throw new InvalidDataException($"Unsupported visual theme: {folder}");
+        }
+
         private static void BuildTheme(
             string folder,
             string suffix,
@@ -275,6 +339,14 @@ namespace MatsuMotoMeterAR.Editor
                 material.shader = shader;
             }
 
+            return material;
+        }
+
+        private static Material LoadRequiredMaterial(string path)
+        {
+            var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material == null)
+                throw new FileNotFoundException("Required material missing", path);
             return material;
         }
 

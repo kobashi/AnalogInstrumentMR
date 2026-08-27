@@ -27,6 +27,11 @@
 
 - Trend Monitorを先に選んでから入力元を選ぶtarget-first接続を追加。meter出力は
   Trend Monitorでの観測専用とし、既存計器への一般的な信号sourceには拡張しない
+- Orbital Analog／Forge BrassのMeterMedium／MeterLargeから、前面カバー上に重複していた
+  `secondary_scale_*`を除去。文字盤側の主目盛、針、可動範囲を維持したまま、
+  二重目盛と奥行き競合を解消
+- Gate Cを通過したmanifest内の選択モデルだけをproductionへ昇格し、元FBX GUID、
+  prefab参照、production materialを維持してcandidate依存0を検証するpromoterを追加
 - Blender authoring pipelineを`5.2.x`へ移行。プロジェクト専用launcher、V6生成前の
   Python API／EEVEE／Legacy FBX preflight、非破壊smoke test、生成reportの
   Blender／Python／FBX exporter provenanceを追加。Blender 5.2のEEVEE engine ID
@@ -45,6 +50,9 @@
 - Machined Ergonomics productionの48配置30分stability Gateと、ユーザー判断で
   短縮した64配置10分stress。48はGC 0／delayed 0.017%、64はGC 15 `OBSERVE`／
   delayed 0.047%、両runともfatal・thermal stop・frame allocation 0
+- MeterGlassScale G1はGate C readiness 18 / 18、対象4モデルのmotion 4 / 4
+  （各230°）、Unity EditMode 154 / 154、Quest 3での4モデル視覚確認、48配置gate、
+  64配置stress、production APK smokeをPASS
 
 ## [0.2.0-concept.1] - 2026-07-30
 

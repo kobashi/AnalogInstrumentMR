@@ -229,7 +229,9 @@ def main():
         label for label in missing_readout if label not in READOUT_NOT_REQUIRED
     ]
     stale_allowances = [
-        label for label in READOUT_NOT_REQUIRED if label not in missing_readout
+        label
+        for label in READOUT_NOT_REQUIRED
+        if label in models and label not in missing_readout
     ]
     report = {
         "note": (
