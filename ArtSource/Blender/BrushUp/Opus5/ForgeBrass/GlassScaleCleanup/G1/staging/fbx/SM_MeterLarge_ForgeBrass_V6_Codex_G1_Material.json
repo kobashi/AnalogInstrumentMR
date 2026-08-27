@@ -1,0 +1,40 @@
+{
+  "theme": "ForgeBrass",
+  "object": "MeterLarge",
+  "source": "ArtSource/Blender/BrushUp/Opus5/ForgeBrass/GlassScaleCleanup/G1/staging/BL_MeterLarge_ForgeBrass_V6_Material.blend",
+  "prepared_blend": "ArtSource/Blender/BrushUp/Opus5/ForgeBrass/GlassScaleCleanup/G1/staging/production/BL_MeterLarge_ForgeBrass_V6_Codex_G1_ProductionReady.blend",
+  "fbx": "ArtSource/Blender/BrushUp/Opus5/ForgeBrass/GlassScaleCleanup/G1/staging/fbx/SM_MeterLarge_ForgeBrass_V6_Codex_G1_Material.fbx",
+  "triangles": 9072,
+  "renderers": 2,
+  "material_slots": [
+    "opaque",
+    "emissive"
+  ],
+  "atlas_quadrants": {
+    "body": [
+      0.02,
+      0.52
+    ],
+    "metal": [
+      0.52,
+      0.52
+    ],
+    "gasket": [
+      0.02,
+      0.02
+    ],
+    "readout": [
+      0.52,
+      0.02
+    ]
+  },
+  "production_integrated": false,
+  "authoring_environment": {
+    "blender_version": "5.2.0 LTS",
+    "blender_build_hash": "fbe6228777e7",
+    "python_version": "3.13.13",
+    "fbx_exporter": "bpy.ops.export_scene.fbx (Legacy FBX)",
+    "preview_render_engine": "BLENDER_EEVEE",
+    "pipeline_version": "AnalogInstrumentMR Blender 5.2 migration v1"
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "MeterGlassScale_G1",
+  "integrationStage": "GateC",
+  "entries": [
+    {
+      "theme": "OrbitalAnalog",
+      "model": "MeterMedium",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/OrbitalAnalog/GlassScaleCleanup/D3_D4_G1/staging/fbx/SM_MeterMedium_OrbitalAnalog_V6_Opus5_D3_D4_G1_Material.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/OrbitalAnalog/GlassScaleCleanup/D3_D4_G1/staging/fbx/SM_MeterMedium_OrbitalAnalog_V6_Opus5_D3_D4_G1_Material.json",
+      "revision": "D3_D4_G1",
+      "includedRevisions": ["D3", "D4", "G1"],
+      "requiredRevisions": ["D3", "D4", "G1"]
+    },
+    {
+      "theme": "OrbitalAnalog",
+      "model": "MeterLarge",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/OrbitalAnalog/GlassScaleCleanup/D3_D4_G1/staging/fbx/SM_MeterLarge_OrbitalAnalog_V6_Opus5_D3_D4_G1_Material.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/OrbitalAnalog/GlassScaleCleanup/D3_D4_G1/staging/fbx/SM_MeterLarge_OrbitalAnalog_V6_Opus5_D3_D4_G1_Material.json",
+      "revision": "D3_D4_G1",
+      "includedRevisions": ["D3", "D4", "G1"],
+      "requiredRevisions": ["D3", "D4", "G1"]
+    },
+    {
+      "theme": "ForgeBrass",
+      "model": "MeterMedium",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/ForgeBrass/GlassScaleCleanup/G1/staging/fbx/SM_MeterMedium_ForgeBrass_V6_Codex_G1_Material.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/ForgeBrass/GlassScaleCleanup/G1/staging/fbx/SM_MeterMedium_ForgeBrass_V6_Codex_G1_Material.json",
+      "revision": "G1",
+      "includedRevisions": ["G1"],
+      "requiredRevisions": ["G1"]
+    },
+    {
+      "theme": "ForgeBrass",
+      "model": "MeterLarge",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/ForgeBrass/GlassScaleCleanup/G1/staging/fbx/SM_MeterLarge_ForgeBrass_V6_Codex_G1_Material.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/ForgeBrass/GlassScaleCleanup/G1/staging/fbx/SM_MeterLarge_ForgeBrass_V6_Codex_G1_Material.json",
+      "revision": "G1",
+      "includedRevisions": ["G1"],
+      "requiredRevisions": ["G1"]
+    }
+  ],
+  "gateCEvidence": {
+    "semanticUvAudit": "Builds/Reports/candidate-MeterGlassScale_G1-semantic-uv-audit.json",
+    "fixedCameraVisualReview": "Builds/Reports/candidate-MeterGlassScale_G1-unity-visual-contact-sheet.png",
+    "motionAudit": "Builds/Reports/candidate-MeterGlassScale_G1-motion-audit.md",
+    "unityStagingValidation": "Builds/Reports/candidate-MeterGlassScale_G1-staging-validation.md",
+    "editModeTests": "Builds/Reports/candidate-MeterGlassScale_G1-editmode-tests.md",
+    "quest48Gate": "Builds/Reports/candidate-MeterGlassScale_G1-quest-48-gate.md",
+    "quest64Stress": "Builds/Reports/candidate-MeterGlassScale_G1-quest-64-stress.md",
+    "rollbackPlan": "docs/METER_GLASS_SCALE_G1_ROLLBACK.md"
+  }
+}

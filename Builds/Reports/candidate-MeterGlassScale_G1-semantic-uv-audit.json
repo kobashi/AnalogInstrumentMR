@@ -1,0 +1,143 @@
+{
+  "note": "Constant-density atlas UV pass applied to every V6 Retopo source. spread_ratio is the ratio between the highest and lowest per-object median texel density inside one model; 1.0 is perfect.",
+  "substituted_sources": {
+    "ForgeBrass/MeterLarge": "ArtSource/Blender/BrushUp/Opus5/ForgeBrass/GlassScaleCleanup/G1/BL_MeterLarge_ForgeBrass_V6_Codex_G1_Retopo.blend",
+    "ForgeBrass/MeterMedium": "ArtSource/Blender/BrushUp/Opus5/ForgeBrass/GlassScaleCleanup/G1/BL_MeterMedium_ForgeBrass_V6_Codex_G1_Retopo.blend",
+    "OrbitalAnalog/MeterLarge": "ArtSource/Blender/BrushUp/Opus5/OrbitalAnalog/GlassScaleCleanup/D3_D4_G1/BL_MeterLarge_OrbitalAnalog_V6_Opus5_D3_D4_G1_Retopo.blend",
+    "OrbitalAnalog/MeterMedium": "ArtSource/Blender/BrushUp/Opus5/OrbitalAnalog/GlassScaleCleanup/D3_D4_G1/BL_MeterMedium_OrbitalAnalog_V6_Opus5_D3_D4_G1_Retopo.blend"
+  },
+  "all_sources_are_production": false,
+  "models_audited": 4,
+  "worst_spread_ratio": 1.2,
+  "median_spread_ratio": 1.19,
+  "models_with_clamped_parts": {},
+  "readout_role": {
+    "measured_after": "v6_theme_materials.apply + assign_special_roles",
+    "models_without_readout": [],
+    "allowed_without_readout": [
+      "ForgeBrass/Lever",
+      "ForgeBrass/WindowPanel"
+    ],
+    "unexpected_missing_readout": [],
+    "stale_allowances": []
+  },
+  "failures": [],
+  "models": {
+    "OrbitalAnalog/MeterMedium": {
+      "scale_class": "Medium",
+      "target_texels_per_metre": 520.0,
+      "atlas_pixels": 1024,
+      "meshes": 54,
+      "bounds": {
+        "min": [
+          -0.17,
+          -0.115231,
+          -0.14
+        ],
+        "max": [
+          0.17,
+          0.0,
+          0.14
+        ]
+      },
+      "roles": [
+        "body",
+        "gasket",
+        "metal",
+        "readout"
+      ],
+      "density_median": 494.9,
+      "density_lowest": 445.6,
+      "density_highest": 534.1,
+      "spread_ratio": 1.2,
+      "clamped_parts": []
+    },
+    "OrbitalAnalog/MeterLarge": {
+      "scale_class": "Large",
+      "target_texels_per_metre": 150.0,
+      "atlas_pixels": 1024,
+      "meshes": 60,
+      "bounds": {
+        "min": [
+          -0.255,
+          -0.156074,
+          -0.21
+        ],
+        "max": [
+          0.255,
+          0.0,
+          0.21
+        ]
+      },
+      "roles": [
+        "body",
+        "gasket",
+        "metal",
+        "readout"
+      ],
+      "density_median": 137.2,
+      "density_lowest": 128.5,
+      "density_highest": 154.0,
+      "spread_ratio": 1.2,
+      "clamped_parts": []
+    },
+    "ForgeBrass/MeterMedium": {
+      "scale_class": "Medium",
+      "target_texels_per_metre": 520.0,
+      "atlas_pixels": 1024,
+      "meshes": 54,
+      "bounds": {
+        "min": [
+          -0.17,
+          -0.118857,
+          -0.17
+        ],
+        "max": [
+          0.17,
+          0.0,
+          0.186
+        ]
+      },
+      "roles": [
+        "body",
+        "gasket",
+        "metal",
+        "readout"
+      ],
+      "density_median": 496.5,
+      "density_lowest": 451.3,
+      "density_highest": 534.1,
+      "spread_ratio": 1.18,
+      "clamped_parts": []
+    },
+    "ForgeBrass/MeterLarge": {
+      "scale_class": "Large",
+      "target_texels_per_metre": 150.0,
+      "atlas_pixels": 1024,
+      "meshes": 61,
+      "bounds": {
+        "min": [
+          -0.226042,
+          -0.157198,
+          -0.246
+        ],
+        "max": [
+          0.226042,
+          0.0,
+          0.27
+        ]
+      },
+      "roles": [
+        "body",
+        "gasket",
+        "metal",
+        "readout"
+      ],
+      "density_median": 141.0,
+      "density_lowest": 130.2,
+      "density_highest": 154.1,
+      "spread_ratio": 1.18,
+      "clamped_parts": []
+    }
+  }
+}
