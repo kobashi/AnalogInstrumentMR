@@ -52,7 +52,7 @@ namespace MatsuMotoMeterAR.Tests
                 Is.EqualTo(PlacementLoadStatus.Corrupt));
 
             var future = PlacementJsonCodec.Deserialize(
-                "{\"schemaVersion\":6,\"revision\":9,\"placements\":[]}");
+                "{\"schemaVersion\":8,\"revision\":9,\"placements\":[]}");
             Assert.That(future.Status, Is.EqualTo(PlacementLoadStatus.UnsupportedVersion));
             Assert.That(future.CanWrite, Is.False);
             Assert.That(future.Document.revision, Is.EqualTo(9));
@@ -217,7 +217,7 @@ namespace MatsuMotoMeterAR.Tests
         }
 
         [Test]
-        public void Json_MigratesLegacySchemasToV5WithConnectionDefaults()
+        public void Json_MigratesLegacySchemasToCurrentWithConnectionDefaults()
         {
             foreach (var schemaVersion in new[] { 1, 2, 3, 4 })
             {
@@ -260,6 +260,177 @@ namespace MatsuMotoMeterAR.Tests
         }
 
         [Test]
+        public void Json_MigratesV5WindowPanelInputsInSavedOrderWithoutLosingParameters()
+        {
+            var document = CreateDocument(6);
+            document.schemaVersion = 5;
+            for (var index = 0; index < 5; index++)
+                document.placements[index].instrumentTypeId = "control.lever";
+            document.placements[5].instrumentTypeId = "panel.window";
+            document.placements[5].windowPanelPreset =
+                (int)WindowPanelGraphicPreset.Rose;
+            for (var index = 0; index < 5; index++)
+            {
+                var connection = Connection(
+                    $"window-input-{index}",
+                    document.placements[index].placementId,
+                    document.placements[5].placementId);
+                connection.transformKind = (int)SignalTransformKind.Range;
+                connection.inputMinimum = 0.1f;
+                connection.inputMaximum = 0.9f;
+                connection.outputMinimum = 0.25f;
+                connection.outputMaximum = 0.75f;
+                connection.targetInputSlot = 3 - index;
+                document.connections.Add(connection);
+            }
+
+            var result = PlacementJsonCodec.Deserialize(
+                JsonUtility.ToJson(document));
+
+            Assert.That(result.Status, Is.EqualTo(PlacementLoadStatus.Loaded));
+            Assert.That(result.RequiresSave, Is.True);
+            Assert.That(
+                result.Document.schemaVersion,
+                Is.EqualTo(PlacementDocument.CurrentSchemaVersion));
+            Assert.That(result.Document.connections, Has.Count.EqualTo(4));
+            for (var index = 0; index < 4; index++)
+            {
+                var connection = result.Document.connections[index];
+                Assert.That(connection.targetInputSlot, Is.EqualTo(index));
+                Assert.That(connection.inputMinimum, Is.EqualTo(0.1f));
+                Assert.That(connection.inputMaximum, Is.EqualTo(0.9f));
+                Assert.That(connection.outputMinimum, Is.EqualTo(0.25f));
+                Assert.That(connection.outputMaximum, Is.EqualTo(0.75f));
+            }
+            Assert.That(
+                result.Document.placements[5].windowPanelPreset,
+                Is.EqualTo((int)WindowPanelGraphicPreset.Rose));
+        }
+
+        [Test]
+        public void Normalize_WindowPanelRejectsDuplicateAndInvalidExplicitSlots()
+        {
+            var document = CreateDocument(5);
+            for (var index = 0; index < 4; index++)
+                document.placements[index].instrumentTypeId = "control.lever";
+            document.placements[4].instrumentTypeId = "panel.window";
+            var requestedSlots = new[] { 2, 2, 9, 0 };
+            for (var index = 0; index < requestedSlots.Length; index++)
+            {
+                var connection = Connection(
+                    $"window-input-{index}",
+                    document.placements[index].placementId,
+                    document.placements[4].placementId);
+                connection.targetInputSlot = requestedSlots[index];
+                document.connections.Add(connection);
+            }
+
+            var normalized = PlacementJsonCodec.Normalize(document);
+
+            Assert.That(normalized.connections, Has.Count.EqualTo(2));
+            Assert.That(normalized.connections[0].targetInputSlot, Is.EqualTo(2));
+            Assert.That(normalized.connections[1].targetInputSlot, Is.EqualTo(0));
+        }
+
+        [Test]
+        public void Normalize_WindowPanelPresetFallsBackAndClonePreservesFields()
+        {
+            var document = CreateDocument(2);
+            document.placements[0].instrumentTypeId = "control.lever";
+            document.placements[1].instrumentTypeId = "panel.window";
+            document.placements[1].windowPanelPreset = 99;
+            var connection = Connection(
+                "window-input",
+                document.placements[0].placementId,
+                document.placements[1].placementId);
+            connection.targetInputSlot = 3;
+            document.connections.Add(connection);
+
+            var normalized = PlacementJsonCodec.Normalize(document);
+
+            Assert.That(
+                normalized.placements[1].windowPanelPreset,
+                Is.EqualTo((int)WindowPanelGraphicPreset.Orbit));
+            Assert.That(normalized.connections[0].targetInputSlot, Is.EqualTo(3));
+            Assert.That(
+                normalized.connections[0].Clone().targetInputSlot,
+                Is.EqualTo(3));
+            Assert.That(
+                normalized.placements[1].Clone().windowPanelPreset,
+                Is.EqualTo((int)WindowPanelGraphicPreset.Orbit));
+        }
+
+        [Test]
+        public void Json_MigratesV6CompositionDefaultsAndPreservesWindowPanelSlot()
+        {
+            var document = CreateDocument(2);
+            document.schemaVersion = 6;
+            document.placements[0].instrumentTypeId = "control.lever";
+            document.placements[1].instrumentTypeId = "panel.window";
+            document.placements[1].signalCompositionKind =
+                (int)SignalCompositionKind.Maximum;
+            var connection = Connection(
+                "v6-window-input",
+                document.placements[0].placementId,
+                document.placements[1].placementId);
+            connection.targetInputSlot = 3;
+            connection.compositionPriority = 3;
+            document.connections.Add(connection);
+
+            var result = PlacementJsonCodec.Deserialize(
+                JsonUtility.ToJson(document));
+
+            Assert.That(result.Status, Is.EqualTo(PlacementLoadStatus.Loaded));
+            Assert.That(result.RequiresSave, Is.True);
+            Assert.That(
+                result.Document.schemaVersion,
+                Is.EqualTo(PlacementDocument.CurrentSchemaVersion));
+            Assert.That(
+                result.Document.placements[1].signalCompositionKind,
+                Is.EqualTo((int)SignalCompositionKind.Average));
+            Assert.That(
+                result.Document.connections[0].compositionPriority,
+                Is.EqualTo(SignalConnectionRecord.DefaultCompositionPriority));
+            Assert.That(
+                result.Document.connections[0].targetInputSlot,
+                Is.EqualTo(3));
+        }
+
+        [Test]
+        public void Normalize_RepairsCompositionKindAndClampsPriority()
+        {
+            var document = CreateDocument(3);
+            document.placements[0].instrumentTypeId = "control.lever";
+            document.placements[1].instrumentTypeId = "control.toggle";
+            document.placements[2].instrumentTypeId = "indicator.status";
+            document.placements[2].signalCompositionKind = 999;
+            var high = Connection(
+                "high",
+                document.placements[0].placementId,
+                document.placements[2].placementId);
+            high.compositionPriority = 99;
+            var low = Connection(
+                "low",
+                document.placements[1].placementId,
+                document.placements[2].placementId);
+            low.compositionPriority = -20;
+            document.connections.Add(high);
+            document.connections.Add(low);
+
+            var normalized = PlacementJsonCodec.Normalize(document);
+
+            Assert.That(
+                normalized.placements[2].signalCompositionKind,
+                Is.EqualTo((int)SignalCompositionKind.Average));
+            Assert.That(
+                normalized.connections[0].compositionPriority,
+                Is.EqualTo(SignalConnectionRecord.MaximumCompositionPriority));
+            Assert.That(
+                normalized.connections[1].compositionPriority,
+                Is.EqualTo(SignalConnectionRecord.MinimumCompositionPriority));
+        }
+
+        [Test]
         public void Json_RoundTripsConnectionParametersAndClonePreservesThem()
         {
             var document = CreateDocument(2);
@@ -276,6 +447,9 @@ namespace MatsuMotoMeterAR.Tests
             source.outputMaximum = 0.75f;
             source.thresholdValue = 0.65f;
             source.thresholdComparison = (int)SignalThresholdComparison.Below;
+            source.compositionPriority = 2;
+            document.placements[1].signalCompositionKind =
+                (int)SignalCompositionKind.Maximum;
             document.connections.Add(source);
 
             var result = PlacementJsonCodec.Deserialize(
@@ -297,6 +471,10 @@ namespace MatsuMotoMeterAR.Tests
             Assert.That(clone.outputMaximum, Is.EqualTo(connection.outputMaximum));
             Assert.That(clone.thresholdValue, Is.EqualTo(connection.thresholdValue));
             Assert.That(clone.thresholdComparison, Is.EqualTo(connection.thresholdComparison));
+            Assert.That(clone.compositionPriority, Is.EqualTo(2));
+            Assert.That(
+                result.Document.placements[1].Clone().signalCompositionKind,
+                Is.EqualTo((int)SignalCompositionKind.Maximum));
         }
 
         [Test]
@@ -484,7 +662,7 @@ namespace MatsuMotoMeterAR.Tests
             {
                 Result = new PlacementLoadResult(
                     PlacementLoadStatus.UnsupportedVersion,
-                    new PlacementDocument { schemaVersion = 6 })
+                    new PlacementDocument { schemaVersion = 8 })
             };
 
             var result = LegacyPlacementMigration.LoadOrMigrate(

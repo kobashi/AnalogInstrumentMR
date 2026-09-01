@@ -1,4 +1,5 @@
 using MatsuMotoMeterAR.Rendering;
+using MatsuMotoMeterAR.Signals;
 using UnityEngine;
 #if ANALOGMR_OPUS5_R2_REVIEW
 using System.Collections.Generic;
@@ -110,6 +111,15 @@ namespace MatsuMotoMeterAR.Instruments
             foreach (var collider in visual.GetComponentsInChildren<Collider>(true))
                 DestroyComponent(collider);
 
+            WindowPanelGraphicsPrototypeView windowPanelGraphic = null;
+            if (kind == MockInstrumentKind.WindowPanel &&
+                manifest.MotionTarget.name == "display_surface")
+            {
+                windowPanelGraphic = AttachWindowPanelGraphic(
+                    visual.transform,
+                    manifest.MotionTarget);
+            }
+
             if (preview)
             {
                 foreach (var renderer in visual.GetComponentsInChildren<Renderer>(true))
@@ -123,8 +133,76 @@ namespace MatsuMotoMeterAR.Instruments
                 return true;
             }
 
-            ConfigureMotion(kind, theme, manifest, logic);
+            if (windowPanelGraphic != null)
+                ConfigureWindowPanelSignal(logic);
+            else
+                ConfigureMotion(kind, theme, manifest, logic);
             return true;
+        }
+
+        private static void ConfigureWindowPanelSignal(Transform logic)
+        {
+            const string targetName = "[WindowPanel] Signal State";
+            var signalTarget = logic.Find(targetName);
+            if (signalTarget == null)
+            {
+                signalTarget = new GameObject(targetName).transform;
+                signalTarget.SetParent(logic, false);
+            }
+            // Keep the existing read-only meter signal semantics without
+            // rotating the fixed display_surface or its procedural graphic.
+            AddMotion(
+                logic,
+                MockInstrumentMotion.MotionKind.Meter,
+                signalTarget,
+                Vector3.forward,
+                0f,
+                0f);
+        }
+
+        internal static WindowPanelGraphicsPrototypeView
+            AttachWindowPanelGraphic(
+                Transform visualRoot,
+                Transform displaySurface)
+        {
+            if (visualRoot == null)
+                throw new System.ArgumentNullException(nameof(visualRoot));
+            if (displaySurface == null)
+                throw new System.ArgumentNullException(nameof(displaySurface));
+            var mesh = displaySurface.GetComponent<MeshFilter>()?.sharedMesh;
+            if (mesh == null)
+            {
+                throw new MissingReferenceException(
+                    "Window Panel display_surface has no mesh.");
+            }
+
+            var center = displaySurface.TransformPoint(mesh.bounds.center);
+            var localCenter = mesh.bounds.center;
+            var worldWidth = Vector3.Distance(
+                displaySurface.TransformPoint(
+                    localCenter + Vector3.left * mesh.bounds.extents.x),
+                displaySurface.TransformPoint(
+                    localCenter + Vector3.right * mesh.bounds.extents.x));
+            var worldHeight = Vector3.Distance(
+                displaySurface.TransformPoint(
+                    localCenter + Vector3.down * mesh.bounds.extents.y),
+                displaySurface.TransformPoint(
+                    localCenter + Vector3.up * mesh.bounds.extents.y));
+            var worldScale = Mathf.Min(
+                worldWidth * 0.45f,
+                worldHeight * (0.90f / 1.10f));
+            var parentScale = Mathf.Max(
+                Mathf.Abs(visualRoot.lossyScale.x),
+                0.000001f);
+
+            var graphic = WindowPanelGraphicsPrototypeView.Create(visualRoot);
+            graphic.transform.SetPositionAndRotation(
+                center + visualRoot.forward * 0.002f,
+                visualRoot.rotation * Quaternion.Euler(0f, 180f, 0f));
+            graphic.transform.localScale =
+                Vector3.one * (worldScale / parentScale);
+            graphic.ApplyNow();
+            return graphic;
         }
 
         public static bool HasVisualPrefab(

@@ -20391,3 +20391,794 @@ composition / persistence→4テーマWindowPanel。texture方式、WindowPanel�
 ユーザー承認事項とし、寸法、silhouette metric、頂点数、更新Hzは実測後に確定する。
 
 **第4テーマproduction visual / operation / static performance GateはCLOSE。正式release / merge / tagは別承認。**
+
+## 336. User / Codex: 既存3テーマTrendMonitor ThemeShapes T1をproduction登録する (2026-08-28)
+
+§333で記録した既存3テーマTrendMonitorの固有形状化について、Opus 5のThemeShapes T1を
+Blender固定画像とUnity 4視点contact sheetでユーザーが受領した。Quest実機検証はユーザー指示により
+当面スキップし、Gate Cへ明示的なdeferral証跡として記録したため、隠れたPASSとして扱わない。
+
+CodexはOrbital Analog、Forge Brass、Kinetic Safetyの3候補を隔離stagingで検証し、各FBXの
+triangle、renderer、submesh、material、bounds、mount、display面方向をsource reportと照合した。
+初回production登録を安全に扱うため、promoterを既存アセット置換だけでなく、TrendMonitorに限って
+FBX／prefabがともに未登録の場合を許可するよう拡張した。片方だけ存在する不整合は拒否し、失敗時は
+新規FBX、prefab、2 role materialsと各`.meta`を削除して初期状態へ戻す。
+
+- Orbital Analog: 518 triangles、FBX SHA-256
+  `c0babc8f53a344bc38d40ff6d48bdd5cbf782973c674cb45172aff281519c278`
+- Forge Brass: 474 triangles、FBX SHA-256
+  `ac315963616451167a5ac5223f8f8bf8a9187ace6fbb83e9b394e931fcd3eda5`
+- Kinetic Safety: 190 triangles、FBX SHA-256
+  `1be654b96e229f44d4aa67bb0ea3fc8f1bb42392634fbe34bbccbcba415fc63b`
+- 候補／production FBX digest: **3 / 3一致**
+- candidate dependency: **0**
+- Active Prefab validation: **PASS**
+- Unity EditMode: **164 / 164 PASS**
+- Quest 48 / 64: **DEFERRED**（ユーザー指示。未実施をPASSへ読み替えない）
+
+本番には各テーマ固有FBX、visual prefab、opaque／readout solid role materialを登録した。
+今回の完了範囲は筐体形状であり、テーマ専用textureの制作は後工程として残す。
+
+**ThemeShapes T1のshape production登録はPASS。Quest検証と専用textureは残作業。**
+
+## 337. Codex: 既存3テーマTrendMonitor Texture T1を隔離Gate Bへ進める (2026-08-29)
+
+ユーザーの「進める」を受け、Orbital Analog、Forge Brass、Kinetic SafetyのTrendMonitor専用textureを
+production外の`TrendMonitor_Texture_T1`として作成した。画像モデルにはテーマ別の表面仕上げ見本だけを
+生成させ、出力画像を直接textureとして採用していない。大きな照明勾配と色を除去し、微細な高周波成分を
+周期化したうえで、承認済みpaletteと低強度normalへ決定論的に再構成した。
+
+T1形状の`display_surface`はFBX上で`static_opaque`と同じmaterial roleを共有しているため、画面への筐体模様の
+混入を防ぐ目的で、Unity候補Prefabだけを次の3材へ分離した。rendererとgeometryは増やしていない。
+
+1. textured housing: 1K BaseColor / Normal / MetallicSmoothness
+2. fixed readout: 既存と同じsolid emissive
+3. display: RGB 0.012 / 0.020 / 0.028のdark untextured material
+
+3テーマともrenderer 3、使用material 3、旧shape candidate依存0でstaging PASS。map境界差は8 bit最大値で
+Orbital Analog 5、Forge Brass 10、Kinetic Safety 4（上限10）である。BaseColor luminance範囲とnormal XYは
+低コントラストに抑え、Questでの縞・ちらつきriskを優先した。Unity EditModeは**165 / 165 PASS**。
+
+固定4視点画像を`Builds/Reports/candidate-TrendMonitor_Texture_T1-unity-shape-contact-sheet.png`、現行材質との
+比較を`Builds/Reports/candidate-TrendMonitor_Texture_T1-unity-visual-contact-sheet.png`へ出力した。
+production material / prefabは変更していない。
+
+**Texture T1 Gate BはPASS。画像によるユーザー外観判定待ち。**
+
+## 338. User / Codex: 既存3テーマTrendMonitor Texture T1をproduction登録する (2026-08-29)
+
+ユーザーが§337の固定画像を受領したため、`TrendMonitor_Texture_T1`をGate Cへ進めて
+Orbital Analog、Forge Brass、Kinetic Safetyのproductionへ登録した。Quest 48 / 64は
+ユーザー指示どおりdeferral証跡を必須にし、未実施をPASSへ読み替えていない。
+
+production FBXとgeometryは変更せず、各テーマへ1K BaseColor、Normal、MetallicSmoothnessを
+追加した。TrendMonitor prefabはrenderer 3を維持したまま、textured housing、solid emissive
+readout、dark untextured displayの3 materialへ分離した。専用promoterは変更前のmaterial、
+prefab、`.meta`をバックアップし、失敗時に新規texture／display materialを含めて復元する。
+
+- Gate C readiness: **READY**（Quest 48 / 64はDEFERRED）
+- production texture: **3 themes × 3 maps**
+- production FBX changed: **no**
+- display dark / untextured: **3 / 3 PASS**
+- candidate dependency: **0**
+- Active Prefab validation: **56 / 56 PASS**
+- Unity EditMode（昇格前／後）: **165 / 165 PASS**
+- fixed visual review:
+  `Builds/Reports/candidate-TrendMonitor_Texture_T1-unity-visual-contact-sheet.png`
+- rollback: `docs/TREND_MONITOR_TEXTURE_T1_ROLLBACK.md`
+
+**Texture T1のproduction登録はPASS。Quest実機確認は明示保留のまま。**
+
+## 339. User / Codex: Window Panel parametric graphicsの実装前契約を固定する (2026-08-30)
+
+次工程として、4テーマのWindow Panelを針／vane式meterから2D parametric graphicsへ変更するための
+実装前契約を`docs/WINDOW_PANEL_GRAPHICS_CONTRACT.md`へ記録した。現行コードはWindow Panelを
+read-only meterとして平均合成値で駆動するため、このまま外観だけを変更せず、runtime、保存、UI、
+model interfaceを分離したGateで進める。
+
+- 最大4入力をAverageせず、Energy / Balance / Phase / Detailの固定slotへ割り当てる
+- 初期presetはOrbit / Rose / Lissajousの3種
+- 各connectionのDirect / Invert / Range / Thresholdをslot入力前に適用する
+- 4テーマ共通のnormalized display座標と`display_surface`契約を使う
+- 1 MeshRenderer、1 shared material、最大256 vertex、parameter更新10 Hz、steady-state 0 B/frame
+- schema v6候補は`targetInputSlot`と`windowPanelPreset`。現時点のproduction schemaはv5のまま
+- WP1 runtime prototypeとWP3 Opus model candidateはinterface確定後に並行可能
+- 外部library / package / add-onは不要であり、今回は導入しない
+
+**WP0設計契約はCOMPLETE。次はproduction非変更のWP1隔離runtime prototype。**
+
+## 340. Codex: Window Panel WP1隔離runtime prototypeを作成する (2026-08-31)
+
+§339の契約に従い、production prefab、FBX、placement schema、Connect UIへ接続しないWP1 prototypeを
+追加した。固定配列と再利用Meshを使い、Orbit、Rose、Lissajousを各2 contour／64 sampleのribbon meshで
+描画する。4 slotはEnergy、Balance、Phase、Detailへ解決し、missingはneutral、NaN / Infinityはneutralへ
+戻したうえで赤いinvalid表示にする。
+
+初回固定画像ではtriangle windingが裏向きで線がcullingされていたため正面へ反転した。次の画像確認では
+OrbitのPhaseが特定位相で直線へ退化する問題を検出し、X成分だけの位相加算から図形全体の2D回転へ修正、
+再発防止testを追加した。
+
+- 3 presets × min / neutral / max: finite、closed、display bounds内
+- invalid Balance: neutral fallback + red warning
+- fixed budget: 256 vertices / 768 indices
+- geometry 100 rebuilds after warmup: 0 B managed allocation
+- Unity EditMode: **173 / 173 PASS**
+- fixed review: `Builds/Reports/window-panel-WP1-prototype-contact-sheet.png`
+- production asset / persistence / UX changes: **0**
+
+**WP1 technical GateはPASS。固定画像のユーザー外観判定をOPENとする。**
+
+## 341. User / Codex: Quest 3でWindow Panel WP1実機Gateを開始する (2026-08-31)
+
+ユーザーがQuest 3実機検証の再開を許可したため、production非変更の専用review bootstrapとAPK builderを
+追加した。起動時に2×2 tableauを約1.15 m前方へ生成し、Orbit、Rose、Lissajousを10 Hzで変化させ、
+4枚目はNaN Balanceの赤いinvalid表示へ固定する。build define外の通常APKではbootstrapを含めない。
+
+- APK: `Builds/QuestReview/AnalogInstrumentMR-WindowPanel-WP1-review-quest3.apk`
+- size: 98,491,227 bytes
+- SHA-256: `ee0b75592a48e799b252d01bcb644332ea385aeb7929bad6c159ebb548f5e094`
+- Quest 3 `2G0YC1ZG2J02HL`: `adb install -r` **Success**
+- Horizon OS controller-required launch check: **PASS**
+- Quest app process: **RUNNING**（確認時PID 4937）
+- ready marker: **PASS**（`[WindowPanelWP1] Review tableau ready`）
+- fatal runtime exception: **未検出**
+- Quest visual verdict: **OPEN**
+
+**WP1 Quest APKはRUNNING。2×2 tableauの実機visual Gateを続行する。**
+
+## 342. User / Codex: Window Panel WP1 Quest visual Gateをcloseする (2026-08-31)
+
+Quest 3上で2×2 tableauを確認し、ユーザーが`OK`と判定した。Orbit、Rose、Lissajousの連続アニメーション、
+赤いinvalid表示、正面／斜視のframe内描画、裏面遮蔽、線の連続性とちらつきの5項目を受領した。
+
+- WP1 technical Gate: **PASS**
+- WP1 Quest visual Gate: **PASS**
+- production prefab / FBX / placement schema / Connect UI変更: **0**
+- 次工程: **WP2 persistence and UX**（schema v6、4 slot assignment、preset / slot edit、保存復元）
+
+**WP1はCLOSE。次はWP2をproduction統合前の小さなmigration／domain testから開始する。**
+
+## 343. Codex: Window Panel WP2 schema v6 domain Gateを通す (2026-08-31)
+
+WP2の第1変更単位として、production prefab／FBX／描画接続を変えずに永続化domainをv6へ更新した。
+`SignalConnectionRecord.targetInputSlot`（`-1` auto、0〜3 A〜D）と
+`PlacementRecord.windowPanelPreset`（Orbit／Rose／Lissajous）を追加した。
+
+v1〜v5のWindow Panel着信接続は保存順に最小の空きslotへ割り当て、5本目を拒否する。v6では
+明示slotの重複と範囲外を拒否し、未知presetはOrbitへ戻す。v5で導入済みのRange／Threshold parameterは
+v6移行時に保持し、v1〜v4だけを従来defaultへ移行するよう境界を分離した。またWindow Panel targetは
+操作計器に加えてread-only meterを観測できるが、Window Panel同士の接続は禁止した。
+
+- Unity compile: **PASS**（Test Runnerに178 testsを認識）
+- Unity EditMode: **178 / 178 PASS**
+- 新規test: v5 parameter-preserving migration、4 slot自動割当、重複／範囲外拒否、5本目拒否、
+  slot再利用、preset fallback、Clone保持
+- production prefab / FBX / Connect UI変更: **0**
+
+**WP2 schema／migration domain GateはPASS。次はruntime slot評価とpreset／slot編集UXを接続する。**
+
+## 344. Codex: Window Panel WP2 runtime／Connect UX desktop Gateを通す (2026-08-31)
+
+schema v6 domainへruntimeとConnect操作を接続した。Window Panel着信は`SignalGraphEvaluator`のAverage対象から
+除外し、`WindowPanelSignalRuntime`がA〜DをEnergy／Balance／Phase／Detailとして独立評価する。slot 0の
+変換後EnergyだけをWindow Panelの`NormalizedValue`へ戻すため、Trend Monitorから観測できる一方、4入力は
+混合されない。missing sourceは当該slotだけ未接続扱いにする。
+
+Connect modeではWindow PanelもTrend Monitor同様のtarget-firstを許可した。新規接続は最小番号の空きslotへ
+割り当て、4本で拒否する。着信connection選択中は右stick左右で空きslotを循環し、左stick押し込みで
+transformと一緒に保存する。Window Panel本体だけを選択した状態では右stick上下でOrbit／Rose／Lissajousを
+変更して即時保存する。YによるRange／Threshold parameter編集は従来どおり維持する。
+
+- Unity compile: **PASS**（error 0）
+- Unity EditMode: **181 / 181 PASS**、failed 0、skipped 0、duration 5.306 s
+- TestResults: `/Users/kblab/Library/Application Support/DefaultCompany/AnalogInstrumentMR/TestResults.xml`
+- production prefab / FBX / graphic view接続: **0**
+- Quest preset／slot controller UX: **OPEN**
+
+**WP2 desktop GateはPASS。次はQuestでpreset／slot操作と再起動復元を確認し、その後WP3 model candidateへ進む。**
+
+## 345. Codex: Window Panel WP2 Quest review APKを導入する (2026-08-31)
+
+通常runtimeのConnection Parameter review APKをWP2コードで再生成し、Quest 3へ上書き導入した。初回起動で
+schema v5からv6へ移行し、40 recordsを保持した。その後、target-firstのWindow Panel選択状態からpresetと
+既存着信connection選択へ到達できない操作経路を発見したため、target-only状態の右stick上下とAを有効化して
+再buildした。
+
+- APK: `Builds/QuestReview/AnalogInstrumentMR-ConnectionParameters-review-quest3.apk`
+- size: 98,483,215 bytes
+- SHA-256: `a48c2164bd33bab27372ab622dd365db2c359b6947b25b7cae1f29973c3d8b81`
+- Quest 3: `adb install -r` **Success**
+- runtime: **RUNNING**（確認時PID 8456）
+- placement: schema v6、revision 4893、40 records読込
+- Unity EditMode after reachability fix: **181 / 181 PASS**
+- manual result: **OPEN**
+
+**WP2 APK build／install／startup GateはPASS。preset、slot、parameter回帰、再起動復元の人間操作GateをOPENする。**
+
+## 346. User / Codex: Window Panel WP2 Quest UX／persistence Gateをcloseする (2026-08-31)
+
+ユーザーがQuest 3でpreset切替、着信connectionのslot A〜D編集、Range／Threshold parameter回帰を確認し、
+`OK`と判定した。アプリをforce-stop／再起動後、schema v6 revision 4928を読み込み、変更した状態の復元を
+確認した。record数は初回migration時の40から38へ減少したが、ユーザーが2オブジェクトを意図して削除した
+結果であり、migration／復元欠損ではないことを確認した。
+
+- WP2 desktop Gate: **PASS**
+- WP2 Quest UX Gate: **PASS**
+- WP2 restart persistence Gate: **PASS**
+- placement loss: **0**（2件減少は意図した削除）
+- production Window Panel model／graphic view統合: **未実施、予定どおりWP3／WP4へ保留**
+
+**WP2はCLOSE。次はWP3で4テーマ固有のWindow Panel frame candidateを`display_surface`契約に従って隔離生成する。**
+
+## 347. Codex / Opus 5: Window Panel WP3 parallel execution contract (2026-08-31)
+
+WP2完了後のWP3は、Opus 5のモデル制作とCodexのUnity受入準備を並行する。両者は次の所有範囲を越えて
+編集せず、同一ファイルを同時に変更しない。
+
+### Opus 5 ownership
+
+- 新規候補の`.blend`、`.fbx`、source report、固定カメラ画像だけを
+  `ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/`以下へ生成する。
+- `OrbitalAnalog`、`ForgeBrass`、`KineticSafety`、`MachinedErgonomics`の4候補を作り、単なる色替えではなく
+  各テーマ固有のframe形状と材質役割を与える。
+- 各候補は`display_surface`を正確に1個持ち、前面をinstrument local `+Z`、上をlocal `+Y`とする。
+  `display_surface`は2 triangleの平面とし、vane、needle、analog scaleを含めない。
+- 既存production FBX、prefab、material、runtime、schema、UI、Codexのvalidatorは変更しない。
+- Blender 5.2の生成元、寸法、triangle／renderer／submesh／material数、object一覧、SHA-256をreportへ記録する。
+  固定画像はfront、front 3/4、side、backを4テーマ同条件で提出する。
+
+### Codex ownership
+
+- `CandidateStagingManifest`の第4テーマ対応、Window Panel固有の構造検証、manifest、固定画像contact sheet、
+  isolated Unity staging、EditMode／dependency／rollback Gateを準備する。
+- Opus 5のauthoring script、`.blend`、source reportは作業中に変更しない。
+- 成果物受領後、source reportとFBXを照合し、Gate B／Cを通すまでproductionへ昇格しない。
+
+### Handoff / stop gate
+
+Opus 5は4候補とevidence一式を生成した時点で停止し、本節末尾へ成果物パス、revision、未解決事項を回答する。
+Codexは回答後にのみUnityへimportする。形状修正が必要な場合は候補を直接編集せず、Opus 5へrevisionを返す。
+WP4昇格前に、4テーマ×3 presetのframe clipping、正面向き、裏面遮蔽、5% margin、8,000 triangles以下を
+確認する。
+
+**並行実行を開始可能。Opus 5はWP3候補制作、Codexは受入検証基盤を担当する。**
+
+## 348. Codex: WP3 Unity intake preflightを完了する (2026-08-31)
+
+Opus 5の候補制作と並行して、既存candidate manifestへ`MachinedErgonomics`を追加し、Window Panel専用の
+構造validatorを用意した。validatorは`display_surface`が正確に1個、MeshFilter／MeshRenderer、2 triangle、
+coplanar、instrument local `+Z`向き、local `+Y`上向きであることを確認する。またvane／needle／analog scaleの
+legacy nodeを拒否し、候補全体を8,000 triangles以下に制限する。既存production Window Panelには適用せず、
+WP3候補を受領してisolated stagingへ入れた時だけ使用する。
+
+- Unity EditMode: **185 / 185 PASS**、failed 0、skipped 0、duration 5.382 s
+- 新規tests: valid display plane、backward／legacy vane拒否、duplicate display拒否、Theme 4 manifest受入
+- TestResults: `/Users/kblab/Library/Application Support/DefaultCompany/AnalogInstrumentMR/TestResults.xml`
+- production FBX／prefab／material変更: **0**
+
+**Codex側のWP3受入preflightはREADY。Opus 5の4候補とevidenceを待ちながら、manifest／固定画像工程を続行できる。**
+
+## 349. Codex: WP3 isolated staging／fixed review経路を準備する (2026-08-31)
+
+汎用candidate staging builderをWP3向けに拡張した。manifestから受け取るWindow Panelだけは旧
+`vane_pivot`ではなく`display_surface`をThemeVisualManifestのtargetとして扱い、4番目の
+`MachinedErgonomics`も同じ隔離rootへ構築する。通常のproduction再構築と過去candidateのWindow Panelは
+従来契約のまま維持する。候補用materialは既存production atlasへ依存しないsolid role materialとし、
+候補形状の比較を先行できる。
+
+- manifest template: `docs/templates/window-panel-WP3-manifest.json.template`
+- expected candidate id: `WindowPanel_WP3`
+- staging root: `Assets/MatsuMotoMeterAR/Content/RefinedCandidates/CandidateStaging/WindowPanel_WP3/`
+- fixed review: 4 theme rows × front／left 3/4／right 3/4／side
+- candidate validation: source report照合＋Window Panel専用`display_surface`契約＋8,000 triangle budget
+- production変更: **0**
+
+**Opus 5成果物受領後はtemplateを実manifestへ確定し、Build → Validate → fixed contact sheetの順でGate Bを実行する。**
+
+## 350. Codex → Opus 5: WP3-r1 Gate B受領結果とevidence補完依頼 (2026-08-31)
+
+`ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/`のWP3-r1成果物を受領した。4 FBXの実SHA-256は集合reportと
+一致し、Blender側reportでは4候補すべて`display_surface` 1個／2 triangles／+Z normal／+Y up／legacy node 0／
+mount plane Z=0／8,000 triangle以内となっている。Blender固定画像でも4テーマ固有形状を確認した。
+
+Codexは`WindowPanel_WP3.json`をGate Bとして確定し、production非変更のisolated stagingへimportした。
+初回はsolid role material指定でもTheme 4の未提供atlasを先読みするbuilder不具合を検出して修正した。
+
+- Unity isolated prefab: **4 / 4 generated**
+- Unity structural validation: **4 / 4 PASS**
+- triangles: Orbital 442、Forge 342、Kinetic 190、Machined 618
+- bounds / minimum Z: 4 / 4 PASS
+- dedicated `display_surface` contract: 4 / 4 PASS
+- Unity EditMode: **185 / 185 PASS**、failed 0、duration 5.601 s
+- validation report: `Builds/Reports/candidate-WindowPanel_WP3-staging-validation.md`
+- Unity fixed review: `Builds/Reports/candidate-WindowPanel_WP3-unity-shape-contact-sheet.png`
+- production変更: **0**
+
+Gate Cへ進む前に、Opus 5は次のevidenceだけをWP3 subtreeへ追加する。FBX／Blend形状は変更しない。
+
+1. Blender実行versionを集合reportへ追加する（要求値: Blender 5.2.x、完全なversion stringを記録）。
+2. 4候補それぞれについて、`theme`、`model: WindowPanel`、FBX path／SHA-256、triangles、renderers、
+   submeshes、material slots、bounds min/maxをtop-levelに持つテーマ別JSON reportを追加する。
+3. 既存固定画像は露出が低くframe／trim差を判定しづらいため、geometry／cameraを変えず、照明または露出だけを
+   上げたfront／front 3/4／side／backとcontact sheetを追加する。既存画像は削除しない。
+4. 完了後、追加ファイルpath、SHA-256、Blender version、形状非変更を本節の次に回答して停止する。
+
+Codex側の未解決事項として、Unity固定画像へのOrbit合成表示がまだ見えない。これはFBX差し戻し理由にせず、
+Codexがgraphic rootの実測display front配置を引き続き修正する。
+
+**WP3-r1 structural Gate BはPASS。Gate CはOpus evidence補完とCodex graphic composite reviewの2点待ち。**
+
+### 350-A. Codex correction: WP3-r1 Blender provenance Gate FAIL
+
+集合reportのversion欠落を補うため、Codexが4つの`.blend`をread-only background inspectionした。その結果、
+4ファイルすべての`bpy.app.version_string`は **`4.5.11 LTS`** であり、§347で要求したBlender 5.2ではなかった。
+ローカルには`/Applications/Blender 5.2.app/Contents/MacOS/Blender`が存在し、実versionは
+**`Blender 5.2.0 LTS`** である。従って上記「形状非変更のevidence補完」指示を訂正する。
+
+Opus 5はauthoring／exportを必ず次のbinaryへ明示固定し、4テーマを`WP3-r2`として再生成する。
+
+`/Applications/Blender 5.2.app/Contents/MacOS/Blender`
+
+- 4.5版`.blend`を5.2で開き、保存し直すだけでなく、5.2 process内でvalidation、FBX export、固定画像、
+  SHA-256、集合／テーマ別reportをすべて再生成する。
+- 出力は`ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/r2/`へ新規配置し、WP3-r1を上書き／削除しない。
+- reportへ`blender_binary`と`blender_version: 5.2.0 LTS`を記録する。
+- 5.2移行によるgeometry、normal、material slot、FBX import差を再検査する。
+- 露出を上げた固定画像もr2へ含める。
+- 完了後、r2 paths／SHA-256／r1との差分を本節の次へ回答し停止する。
+
+**WP3-r1はUnity structural参考PASSだが、Blender provenance GateはFAIL。production昇格不可。次候補はWP3-r2。**
+
+## 351. Codex: WP3-r2 evidence／Unity composite Gateをcloseする (2026-08-31)
+
+Opus 5の`ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/r2/`成果物を受領した。4つの`.blend`を
+指定binaryでread-only background inspectionし、全ファイルが`5.2.0 LTS`保存データであることを確認した。
+集合／テーマ別reportの`blender_binary`、`blender_version`、FBX SHA-256は実成果物と一致する。明るさを補った
+`ContactSheet_WindowPanel_WP3_r2_bright.png`では4テーマ固有のframe／trim差を判定でき、r1を保持したままr2が
+新規配置されている。
+
+Codexは`WindowPanel_WP3_r2.json`をGate B manifestとして確定し、isolated stagingへimportした。Window Panelの
+3 material role（Face／Frame／Trim）を保持するようsolid stagingを補正し、source reportとUnity prefabを照合した。
+
+- Blender provenance: **4 / 4 PASS**（binary `/Applications/Blender 5.2.app/Contents/MacOS/Blender`、version `5.2.0 LTS`）
+- Unity isolated prefab generation: **4 / 4 PASS**
+- Unity structural validation: **4 / 4 PASS**
+- triangles: Orbital 442、Forge 342、Kinetic 190、Machined 618
+- renderers／submeshes／materials: 全テーマ **3 / 3 / 3**
+- `display_surface`、bounds、minimum Z、8,000 triangle budget: **4 / 4 PASS**
+- validation report: `Builds/Reports/candidate-WindowPanel_WP3_r2-staging-validation.md`
+- Unity composite review: `Builds/Reports/candidate-WindowPanel_WP3_r2-unity-shape-contact-sheet.png`
+- Unity EditMode: **186 / 186 PASS**、failed 0、skipped 0、duration 5.66 s
+- production FBX／prefab／material変更: **0**
+
+Orbit合成が見えなかった原因はFBXではなくレビュー側だった。runtime ribbonはUnity front-face windingを使うため、
+candidateの表示面側へ180°向ける必要があり、さらに`display_surface`からlocal +Zへ2 mmのdepth biasを与えた。
+修正後は4テーマすべてについてfront／左右oblique／sideでOrbitを確認でき、画面領域内へ収まっている。
+WP1固定レビューも実際の前面カメラと表示面depthを使うよう修正し、12セルを正常描画した。
+
+**WP3-r2 structural／evidence／composite Gate BはPASS。productionは未変更。次はWP4のproduction候補統合、
+rollback／Gate C evidence、Quest実機受入へ進む。**
+
+## 352. Codex: WP4 candidate runtime統合とQuest受入APKを準備する (2026-08-31)
+
+WP3-r2の`display_surface`へWP2のprocedural graphicを候補runtimeだけで取り付けた。表示面の実寸から
+5% margin内へscaleし、front-face windingに合わせてY軸180°、表示面から前方2 mmへ配置する。旧
+Window Panelの`vane_pivot`は従来motionを維持し、WP3-r2の`display_surface`だけは固定画面として扱う。
+配置／復元時には4入力slotと保存済みpresetをgraphicへ反映する。
+
+- fixed preset review: **12 / 12 PASS**（4 themes × Orbit／Rose／Lissajous）
+- preset contact sheet: `Builds/Reports/candidate-WindowPanel_WP3_r2-unity-preset-contact-sheet.png`
+- fixed display audit: **4 / 4 PASS**（mechanical motionなし）
+- Unity EditMode: **187 / 187 PASS**、failed 0、skipped 0、duration 6.19 s
+- candidate Quest APK: `Builds/QuestReview/AnalogInstrumentMR-WindowPanel_WP3_r2-review-quest3.apk`
+- APK size: 98,582,847 bytes（生成APK実ファイル）
+- APK SHA-256: `39d0d68bbb12ffb132cd5450b7b4c74f97d3d37763e9e984e312ed7a4972cf13`
+- credential quarantine restoration: **PASS**
+- generated candidate configuration cleanup: **PASS**
+- Quest 3 install: **Success**、launch要求送信済み（確認時headset sleep／controller launch check）
+- production FBX／prefab／material変更: **0**
+
+Generic production promoterはTheme 4、旧`vane_pivot`、旧import orientationを前提にするため、現時点では使用しない。
+rollback文書とsemantic material evidenceを追加し、本番昇格はQuest上で4テーマの向き、遮蔽、margin、preset反応を
+人間が確認するまで保留する。
+
+**WP4 desktop／build GateはPASS。Quest visual／interaction受入はOPEN。productionは未変更。**
+
+## 353. User / Codex: Quest受入を延期し、WP4 production preflightをcloseする (2026-09-01)
+
+ユーザーの指示により、Window Panel WP3-r2のQuest実機受入を後工程へ延期した。延期範囲、残存リスク、
+再開条件を`candidate-WindowPanel_WP3_r2-quest-deferral.md`へ記録し、48-object／64-objectをPASSではなく
+`DEFERRED`としてGate C manifestへ登録した。
+
+汎用promoterは旧`vane_pivot`、3テーマ、従来import orientationを前提とするため使用しない。専用の
+`WindowPanelProductionPromoter`を追加し、4テーマのactive FBX／prefab、Face／Frame／Trim材質、候補形状、
+source report、GUID維持方針、rollback対象をproduction非変更のpreflightで照合した。
+
+- Gate C readiness: **18 / 18 READY**
+- Quest 48 / 64: **DEFERRED**（PASSではない）
+- production promotion preflight: **4 / 4 PASS**
+- triangles: Orbital 442、Forge 342、Kinetic 190、Machined 618
+- renderer／material roles: 全テーマ **3 / 3 PASS**
+- Unity EditMode: **187 / 187 PASS**、failed 0、duration 6.21 s
+- preflight production writes: **0**
+- production asset changes: **0**
+
+専用promoterの本実行は、既存4テーマのFBX／prefabを同一pathで置換し、新規の3 role materialを登録する。
+実行前backupと失敗時自動restoreを実装済みだが、本番資産の上書きに該当するためpreflightで停止した。
+
+**WP4 Gate C／promotion preflightはREADY。本番昇格操作と昇格後desktop検証が次の工程。Quest受入は延期一覧へ保持する。**
+
+## 354. Codex: Window Panel WP4を4テーマproductionへ昇格する (2026-09-01)
+
+専用`WindowPanelProductionPromoter`でWP3-r2を4テーマのactive FBX／prefabへ一括昇格した。実行前に
+`Builds/ModelReplacementBackups/WindowPanel_WP3_r2_20260901_064949/`へ既存assetと`.meta`、SHA-256を保存した。
+Face／Frame／Trimはtheme別production materialとして新規登録し、prefabのmeshをactive FBXへ再bindしたため
+CandidateStaging依存は0である。既存active FBX／prefabのGUIDは8 / 8維持した。
+
+昇格直後のEditModeは4件の回帰を検出した。原因は固定`display_surface`へ移行したWindow Panelで旧motionを
+構成しなくなり、論理signal値まで失われたこと、および3 role material＋procedural graphicに対して旧2 material
+budgetを適用していたことだった。表示面とは独立したrendererなしのread-only meter signal stateをLogic配下へ
+追加し、固定画面が回転しない契約をテストへ明示した。修正後に全回帰をcloseした。
+
+- production promotion: **4 / 4 APPLIED**
+- backup manifest／restore path: **PASS**
+- active visual prefab validation: **PASS**
+- Window Panel dedicated contract: **4 / 4 PASS**
+- candidate dependencies: **0**
+- existing FBX／prefab GUID preservation: **8 / 8 PASS**
+- production fixed review: **12 / 12 PASS**
+- candidate／production contact sheet: **byte-identical**
+- contact-sheet SHA-256: `760c3b6bec82916a680d8af7727d96e954aa9eb714d117f0bb0718528cf6a3b3`
+- Unity EditMode after promotion/fix: **187 / 187 PASS**、failed 0、duration 6.06 s
+- Quest visual／interaction／48／64: **DEFERRED**
+
+**WP4 production desktop GateはCLOSE。実機受入だけを延期一覧へ残し、次は通常APKでのproduction-equivalent
+確認または次機能工程へ進める。**
+
+## 355. Codex: production-equivalent APKを生成し、旧credential隔離処理を修正する (2026-09-01)
+
+ユーザー指示によりQuest実機受入は延期したまま、候補defineを含まない通常APKを生成した。これは昇格済みの
+4テーマWindow Panelを含むproduction-equivalent buildであり、install／launch／visual／interaction／48-object／
+64-objectは実施せず延期一覧へ保持する。
+
+- APK: `Builds/QuestReview/AnalogInstrumentMR-ConnectionParameters-review-quest3.apk`
+- APK size: **98,386,753 bytes**
+- APK SHA-256: `0dc567c54404baac7b7df10d7d26fdde2c70025b3d0c719b5c32b452c856efe1`
+- candidate scripting define: **none**
+- Quest acceptance: **DEFERRED**
+
+このbuildで旧`ConceptReleaseBuilder`のDev Agent設定隔離処理が、build後に隔離assetを削除する欠陥を検出した。
+同じ処理を持つ`WindowPanelQuestReviewBuilder`も含め、設定をbuild中だけ移動し、成功／失敗のどちらでも`finally`で
+元pathへ復元する方式へ統一した。隔離先が既に存在する場合は上書きせず停止する。削除されたgit-ignore対象の
+ローカル設定はUnity import cacheから復元し、enabled、接続先、2 port、access tokenが存在することを値を記録せず
+確認した。復旧専用コードは作業後に削除した。
+
+修正後にUnityを再コンパイルし、Console error 0、EditMode **187 / 187 PASS**、failed 0、skipped 0、
+inconclusive 0、duration 6.47 sを確認した。
+
+**production-equivalent APK buildはPASS。WP4 desktop／APK生成工程はCLOSEし、Quest実機受入のみDEFERRED。**
+
+## 356. User / Codex: Window Panel専用production promoterの採用理由を記録する (2026-09-01)
+
+既存`CandidateProductionPromoter`は、標準名のactive FBXへ候補をコピーし、従来の`RebuildModel()`でPrefabを
+再生成する「同形式の計器置換」を前提とする。Window Panel WP4はこの前提と一致しなかったため、専用
+`WindowPanelProductionPromoter`を使用した。
+
+- 従来の可動`vane_pivot`ではなく、固定された`display_surface`を表示基準とする新構造である。
+- Face／Frame／Trimの3つのsemantic materialを、4テーマそれぞれについて本番へ登録・再割当する必要がある。
+- Machined Ergonomicsのactive FBXは標準ファイル名ではなく、既存のrevision付きpathを維持する必要がある。
+- 4 FBX、4 Prefab、12 materialと各`.meta`を同一transactionとしてbackup／restoreする必要がある。
+- staged Prefabのmeshをactive FBXへ再bindし、CandidateStaging依存0を昇格後に確認する必要がある。
+- `ThemeVisualManifest.MotionTarget == display_surface`とWindow Panel専用形状contractを昇格後にも検証する。
+
+汎用promoterをそのまま使用すると、旧構造でのPrefab再生成、semantic material喪失、非標準pathの別asset生成、
+GUID変更、候補依存残存、不完全なrollbackの可能性があった。専用promoterでは既存FBX／Prefab GUID 8 / 8維持、
+候補依存0、4テーマcontract PASSを確認した。
+
+専用promoterをmodelごとに増やすことは標準方針にしない。今後同様の構造移行が複数発生した場合は、active
+FBX／Prefab path、target node、material role、Prefab構築方式、昇格後validator、backup対象をmanifestへ明示し、
+`CandidateProductionPromoter`をmanifest駆動へ一般化する。今回の専用実装は、従来型計器から固定graphic
+instrumentへの一度限りのsemantic migrationとして扱う。
+
+**専用promoterの採用は今回の構造移行には妥当。ただし再利用例が生じた時点で汎用化を優先する。**
+
+## 357. Codex: Priority 4複数入力合成の第一段階を実装する (2026-09-01)
+
+Quest実機Gateを延期したまま、次工程の複数入力合成へ着手した。現行`SignalGraphEvaluator`は各connectionの
+Direct／Invert／Range／Threshold変換後の値をtarget単位で無条件に平均していた。Window Panelは既にこの経路から
+分離され、A〜DをEnergy／Balance／Phase／Detailとして独立評価する。Trend Monitorはconnection別履歴を保持する。
+
+第一段階では既存結果とschema v6を変更せず、Average／Sum／Minimum／Maximum／Priorityを扱う
+allocation-free `SignalCompositionAccumulator`を追加した。既存evaluatorはこのaccumulatorのAverageを使用する
+ようrefactorしたため、runtime出力は従来と同一である。非有限値を除外し、入力を0〜1へclampし、有効入力0件では
+出力なしとしてtargetの直前値を維持する。Priorityは大きいrankを採用し、同rankはconnection IDのordinal順で
+決めるため保存配列順に依存しない。
+
+- design contract: `docs/MULTI_INPUT_COMPOSITION_CONTRACT.md`
+- persistence／Quest UI変更: **0**
+- current runtime composition: **Average固定（互換維持）**
+- policy tests: Average／Sum／Minimum／Maximum／Priority／invalid／empty／default struct／unknown kind
+- Unity EditMode: **196 / 196 PASS**、failed 0、skipped 0、inconclusive 0、duration 6.64 s
+- Quest validation: **DEFERRED**
+
+次段階はschema v7へtargetの`signalCompositionKind`、connectionの`compositionPriority`を追加し、v6から
+Average／priority 0へ移行する。UIとTrend Monitor診断はschema migration後に接続する。
+
+**Priority 4のpure domain foundationはCLOSE。schema v7 migrationが次工程。**
+
+## 358. Codex: Priority 4 schema v7 migrationとruntime統合を完了する (2026-09-01)
+
+`PlacementDocument`をschema v7へ更新し、通常targetの`signalCompositionKind`と各connectionの
+`compositionPriority`を永続化した。priorityは0〜3へ正規化し、大きい値を優先する。`SignalGraphEvaluator`は
+targetごとの保存済みkindとconnection priorityをallocation-free accumulatorへ渡し、Average／Sum／Minimum／
+Maximum／Priorityをruntimeで評価する。
+
+v6 migrationはcomposition fieldをAverage／priority 0へ初期化する一方、Window Panelで導入済みのA〜D slotを
+維持する。slot migration条件を「current schema未満」ではなく「schema 6未満」と明示したため、v6→v7で既存slotを
+保存順に再割当しない。graphic preset、Range／Threshold parameterも維持する。Window Panelは引き続き独立slot
+経路であり、target-level compositionを適用しない。
+
+- schema: **v7**
+- v6 migration: **Average / priority 0**
+- preserved: **Window Panel slot／preset、Range／Threshold parameters**
+- normalized: unknown kind → Average、priority → 0〜3
+- runtime: **5 composition kinds connected**
+- Edit／Quest setting UI: **未接続（次工程）**
+- initial test run: 201 PASS / 2 FAIL（mock Leverの0.2がdetent 0.25へ正規化されるfixture期待値誤り）
+- final Unity EditMode: **203 / 203 PASS**、failed 0、skipped 0、inconclusive 0、duration 6.89 s
+- Quest validation: **DEFERRED**
+
+**Priority 4 schema/runtime GateはCLOSE。target kindとPriority rankの編集UIが次工程。**
+
+## 359. Codex: Priority 4 Connect-mode desktop UIを統合する (2026-09-01)
+
+schema v7の合成設定を既存Connectモードへ接続した。通常targetを単体選択中は右stick上下でAverage／Sum／
+Minimum／Maximum／Priorityを循環し、保存成功後にsignal graphを即時再評価してHUDへ現在outputを表示する。
+保存失敗時は以前のkindへrollbackする。
+
+connection選択時、そのtargetがPriorityなら右stick左右でpending rank 0〜3を循環する。HUDへrankを表示し、
+左stick押下でpending transform／Window Panel slotと同じtransactionとして保存する。保存失敗時はtransform、
+slot、priorityをすべてrollbackする。未確定のままAで次connectionへ移ると保存済みrankを再読込するためdraftは
+破棄される。YのRange／Threshold parameter編集、Bのconnection削除は既存どおりである。
+
+Window Panelはtarget-level composition対象外のまま、右stick上下＝graphic preset、右stick左右＝A〜D slotを
+維持する。新しい`SignalCompositionEditor` pure policyでkind cycle、priority wrap／clamp、設定可能targetを定義した。
+
+- target kind UI: **desktop integrated**
+- live save／evaluation／rollback: **PASS**
+- Priority rank draft／commit／rollback: **PASS**
+- Window Panel preset／slot regression: **maintained**
+- Range／Threshold parameter regression: **maintained**
+- Unity EditMode: **206 / 206 PASS**、failed 0、skipped 0、inconclusive 0、duration 7.15 s
+- Quest interaction acceptance: **DEFERRED**
+
+**Priority 4 desktop setting UI GateはCLOSE。次はTrend Monitorへ各入力と合成結果の診断表示を追加する。**
+
+## 360. Codex: Opus5 AuditKit A1／A2／全機種Sweepを検証し、Tier A運用を決定する (2026-09-01)
+
+Opus5が自主作業で作成した共通監査キット4本と、A1／A2／21機種SweepのJSONをローカル実体で照合した。
+既存production FBX／prefab／material／`.meta`への変更はなく、監査スクリプト4本は新規・未追跡のままである。
+A1／A2のSHA-256は報告値と一致し、A2のseat、tool access、UV carry、pose interferenceは全て既知の
+before／afterを逆方向も含めて判別する。`Verdict.add()`は同名checkを`SystemExit`で拒否し、三角形SATによる
+coplanar判定は既知のAABB偽陽性140件を0件へ分離している。
+
+- A1: `437d1913b654e8c3e06d232ac2989d5d00d8be116c8ce124024e944e786d622f`
+- A2: `bff236e3869f08afddeeee2f7c9057d8a4a31d367f6b029bc602508254de843d`
+- Sweep: `bad7742af36bbc8b4cc3e3e2088db03fdd44864a3fdf421f7968da82bb9d074b`
+- Sweep: 21 models、46,452 triangles、z-fighting 0、contact seam 6、motion defect 0
+- sealed geometry: 全62 clusters中、mount面付近を除く**要review 48 clusters／3,788 triangles**
+- display contract: 実行対象9件のうち**8 pass／1 n/a**。非display機種12件では未実行
+
+Opus5報告の「display contract 判定対象20機種すべてpass（1件n/a）」はSweep JSONと一致しない。
+正しくは上記の8 pass／1 n/aであり、残り12件をpassへ数えない。Opus5は次回報告でこの表現を訂正する。
+
+Tier Aは、今後の**新規または変更したBlender／FBX候補についてGate B前の必須実行工程**に採用する。ただし
+結果は`PASS / FAIL / REVIEW / N/A`の4値で扱い、Gateを停止するのは既知before／afterで裏取り済みの
+チェックが出した`FAIL`だけとする。sealed geometry、contact seam、静止時から存在する構造的交差は
+`REVIEW`であり、自動差戻し理由にはしない。未変更のlegacy production全体へ遡及適用しない。
+
+監査JSONには今後、監査スクリプトSHA-256、Blender version、入力FBX SHA-256、対象check、4値集計を残す。
+同一入力の再実行結果が決定的であることも維持する。AuditKitはvisual comparison、Unity composite、Quest実機
+受入を置換せず、それらより前に明白な形状／契約回帰を落とす補助Gateとして扱う。今回の4本は外部libraryを
+追加しないproject専用ツールであり、次回の関連commit対象へ含めてよい。
+
+封止ジオメトリの処置は次のとおり決定する。
+
+- MeterLarge φ425.6 x 3.4 mm／192 triangles、MeterMedium φ271.6 x 3.4 mm／160 trianglesの全径円板は、
+  **次のモデルrevisionで削除比較候補を作る**。productionへ直接変更しない。前後・断面render、FBX round-trip、
+  material／normal／shadow、Unity固定視点比較、既存motion contractを通過してから採否を決める。
+- 留具サイズの薄い円板22件はザグリ底の可能性があるため**現状維持**する。生成時semantic名または断面確認で
+  機能を特定できるまでは一括削除しない。
+- その他26件の大きな封止shellは機種別`REVIEW`とし、現行Priority 4を中断して修正しない。
+
+**AuditKitは条件付きで工程採用。Opus5はdisplay集計の訂正以外の追加作業を開始せず、全径円板の比較revisionは
+次の3Dモデル改善枠でCodexが明示したときだけ作成する。**
+
+## 361. User / Codex → Opus 5: AuditKitの運用可能化を限定指示する (2026-09-01)
+
+ユーザーはOpus5による次作業の開始を承認した。§360で条件付き採用したAuditKitを実際のTier A工程へ投入できる
+形にするため、以下の範囲だけを実行する。
+
+1. `opus5_audit_kit.py`とA1／A2／Sweep driverへ、使用した監査scriptのSHA-256、明示的な`checks_run`、
+   `PASS / FAIL / REVIEW / N/A`集計を追加する。Blender provenanceと入力FBX SHA-256は既存値を維持する。
+2. 集計母数をcheckごとに明示する。displayは21件母数で`PASS 8 / FAIL 0 / REVIEW 0 / N/A 13`とし、
+   N/A理由を「非display 12」「legacy pointer 1」に分離する。未実行をPASSへ数えない。
+3. poseは現状を`PASS 6 / FAIL 0 / REVIEW 4 / N/A 11`として扱う。REVIEWは静止時構造交差3件と、
+   可動機種PowerSliderの直線運動未対応1件である。単なる未対応をN/Aで隠さない。
+4. PowerSliderの直線運動監査を共通kitへ追加する場合は、既存のBatch A contractを導出元とし、正常原本と
+   人工的に干渉させたmutationを判別するA2 fixtureを先に成立させる。判別fixtureが成立しなければ実装を
+   blocking checkへ昇格せず、coverage REVIEWのまま報告する。
+5. 更新後にA1／A2／21機種SweepをBlender 5.2で再実行し、JSON、SHA-256、4値集計、変更ファイル一覧を回答する。
+
+書込み可能範囲は上記4 scriptと`ArtSource/Blender/BrushUp/Opus5/AuditKit/`配下の生成reportだけとする。
+`Assets/`、`Builds/`、production／delivery FBX、prefab、material、texture、`.meta`、他のTool、docs、gitには触れない。
+全径内部円板、留具円板、封止shellのモデル修正は開始しない。commit／push、外部library導入も行わない。
+
+**A1／A2／Sweep再実行と自己照合を完了したら停止し、Codexへ報告する。**
+
+## 362. Codex → Opus 5: AuditKit集計のsubject／revision契約を限定差戻しする (2026-09-01)
+
+§361成果物をCodexが再照合した結果、直線運動fixtureとSHAは成立しているが、受領前に監査器自身の次の3点を
+修正する必要がある。
+
+1. Sweepには旧pointer版とWP3版の`WindowPanel/MachinedErgonomics`が両方あり、現状のsubject文字列では同名に
+   なる。この同名subjectがdisplayのPASSとN/Aの両bucketへ入っている。subjectへ`tree`または入力revisionを含め、
+   21行を一意にする。`Tally.record()`も、同一subjectの2回目の登録をbucketを問わず`SystemExit`で拒否する。
+   A1へ重複subject拒否のback-testを追加する。
+2. `motion_for(model)`は機種名だけで古いcontractを先に拾うため、WP3の4件を旧WindowPanel回転契約として扱い、
+   `mover object not in FBX`へ誤分類している。`tree_name`／revisionを含めて契約を選択し、WP3は生成仕様どおり
+   `motion: none`としてN/A理由を記録する。旧pointer版WindowPanelの回転監査PASSは維持する。
+3. `linear_interference()`とA2 reportの「PowerSliderが唯一のtranslate機種」「ButtonとLampと同じno moving part」
+   という説明は、今回確認したButtonのtranslate契約と矛盾する。コードコメント、known defect、`tally_note`を
+   Button／PowerSliderの2機種に整合させる。A2 fixtureはPowerSliderの既存fixtureを維持してよい。
+
+修正後、A1／A2／Sweepを2回ずつ再実行し、決定性、script／JSON SHA-256、21件の一意subject、4値集計、
+WP3のN/A理由、変更範囲を報告して停止する。書込み範囲と禁止事項は§361から変更しない。
+
+## 363. Codex: AuditKit §362修正版を独立再実行し、Tier A工程へ受領する (2026-09-01)
+
+Opus5の§362修正版をコード／JSONで照合後、Codex側でもBlender 5.2.0 LTS
+（build hash `fbe6228777e7`）によりA1／A2／21機種Sweepを独立再実行した。全実行はexit 0で、生成JSONの
+SHA-256はOpus5報告と完全一致した。
+
+- `opus5_audit_kit.py`: `76ac72592616360f6210f85ecdf66003098f0ec3ba14204fab1ff241f4e9f9cd`
+- A1 driver: `1977efc1c175cddc28b7cd5e05df5e11d281e4501798e020177a1c86672001bb`
+- A2 driver: `d7eab227500079e270400734c3538e92484791d3be94505fa400fa42e27f6df4`
+- Sweep driver: `29865a37387c4ca5c7d3a085fa968238a222a3cab8dcf1252fc5a0857abc6a9b`
+- A1 JSON: `1a5d5b95d5222622c290e6f9bfaaf9a232a76cdc8ea5896882d9ad1b1e9cdb5c`
+- A2 JSON: `6f09c9aff2d46a5eb3c9f1abc84a143571f821f5b89163d9fff995799a022a06`
+- Sweep JSON: `e9d99eab2f275608ed7d536a98b26789ab29fdddb7ad470822dcc72bb32a7ca0`
+
+A1は`verdict_composition`、`tally_subject_uniqueness`、`buried_clusters`、`coplanar_overlap`の
+**4 / 4 PASS**。同一subjectの二重登録はbucketを問わず拒否され、旧pointer版とWP3版は`@tree`で一意になった。
+A2はseat、tool access、UV carry、回転干渉、直線干渉の**5 / 5 PASS**で、全5checkをblockingへ昇格できる。
+PowerSlider fixtureは正常0 / 49交差、人工欠陥49 / 49交差。SweepではButtonとPowerSliderが直線運動PASS、
+旧pointer版WindowPanelは回転PASS、WP3 4テーマは仕様上motion noneとしてN/Aになった。
+
+- display: PASS 8 / FAIL 0 / REVIEW 0 / N/A 13
+- motion: PASS 8 / FAIL 0 / REVIEW 3 / N/A 10
+- z-fighting: PASS 21 / FAIL 0 / REVIEW 0 / N/A 0
+- contact seam: PASS 15 / FAIL 0 / REVIEW 6 / N/A 0
+- sealed geometry: PASS 11 / FAIL 0 / REVIEW 10 / N/A 0
+
+各checkのsubjectは母数21、総数21、一意数21、重複0を再導出した。script digest、Blender provenance、入力FBX
+digest、明示的checks、4値集計も揃っている。production／deliveryモデル、Assets、Builds、gitへの変更はない。
+
+**AuditKit §362修正版をTier A必須実行ツールとして受領する。次の関連commitへ4 scriptを含めてよい。
+Opus5は停止を維持し、モデル円板等の修正は別指示まで開始しない。**
+
+## 364. Codex: Priority 4 Trend Monitor合成診断を実装する (2026-09-01)
+
+通常targetの複数入力合成について、Trend Monitorへ個別入力と合成出力を同時表示する診断を追加した。
+最大4本の個別入力履歴は従来どおり色別に保持し、白色の`ComposedTrend`と
+`AVG / SUM / MIN / MAX / PRI`、合成値、有効入力数を別系列として表示する。有効入力0件は
+`NO VALID INPUT`とし、composition kind変更時は合成履歴だけをresetして個別履歴を維持する。
+`MetaQuestPlacementController`は各connectionの変換後値を追加した後、同じframeの
+`SignalGraphEvaluator`結果を合成系列へ渡すため、個別入力と合成結果の更新bucketは一致する。
+
+EditModeへ、個別履歴を置換しない合成描画、kind変更時の限定reset、no-valid-input表示の3件を追加した。
+Unity 6000.3.19f1で最終回帰を実行し、結果は**209 / 209 PASS、failure 0**。
+4テーマのproduction Trend Monitorを固定視点で描画した比較画像は
+`Builds/Reports/production-TrendMonitor-composition-review.png`、SHA-256は
+`d4082bba4d3cb519f3942d8862dbed235373267513ed3752596c36deda3730c6`。
+
+**Priority 4 delivery sequence 4はdesktop完了。Quest実機での合成種別切替、Priority rank、長時間表示、
+48／64 object性能受入はsequence 5として後続実施する。Opus5の追加モデル作業は開始しない。**
+
+## 365. Codex: Unity CLI / Pipelineを導入し、project固有commandを検証する (2026-09-01)
+
+ユーザー承認に基づきUnity CLI `1.0.0-beta.5`と`com.unity.pipeline` `0.5.0-exp.1`を導入した。
+Unity 6000.3.19f1の起動中Editorへlocalhost接続し、port 7800、state `ready`、組み込みcommand
+142件を確認した。Pipeline認証descriptorはgit ignoredの`Library/Pipeline/.unity-pipeline-port`へ置かれ、
+認証tokenをlog、report、gitへ出力しない。
+
+`MatsuMotoMeterAR.Editor`へ次のproject固有command 5件を登録した。
+
+- `matsu_render_trend_monitor_review`
+- `matsu_audit_control_motion`
+- `matsu_audit_signal_visuals`
+- `matsu_build_performance_gate`
+- `matsu_build_performance_gate_status`
+
+review／auditは既存のproduction処理を再利用し、生成artifactの相対path、byte数、SHA-256をJSONで返す。
+performance gateは`dry_run=true`でplanだけを返し、実buildには`confirm=true`を必須とする。実buildは
+HTTP応答後にqueueし、status commandで追跡する。confirmなし呼出しがHTTP 400で拒否されることを確認した。
+
+- Trend Monitor review: `d4082bba4d3cb519f3942d8862dbed235373267513ed3752596c36deda3730c6`
+- control motion report: `bccac2bfcd7ac65ee69e68ad5ffdf62d66e0dc61778fef9f5b3ce52fb66cc053`
+- signal visual report: `dd1d6ad969a7a864e0a8ab691353552c81b26c53dbf66eef64ce2d91d5f61a46`
+- Pipeline EditMode: **209 / 209 PASS、failed 0、skipped 0、inconclusive 0**
+
+Consoleのerror 1件はconfirmなしbuild拒否を検証した期待どおりのguard logであり、compile、test、review、
+audit由来のerrorは0。実APK buildはこの節では開始していない。
+
+**以後の定型Unity検証はPipelineを第一選択とし、GUIは実機操作、視覚受入、Pipeline未対応処理へ限定する。
+Opus5の作業範囲に変更はない。**
+
+## 366. Codex: Trend Monitor性能Gateを表示負荷別3 profileへ分離する (2026-09-01)
+
+従来の`INSTRUMENT_KIND=TrendMonitor`は48台の筐体と未接続表示componentを生成するだけで、数値表示と
+5 Hz履歴更新の負荷を比較できなかった。Performance Gateへ`matsu_perf_display`を追加し、次の3条件を
+同一APK、配置、theme、距離で選択可能にした。
+
+- `None`: `SignalMonitorView`を無効化し、筐体だけを測定
+- `Numeric`: 1入力の静的な50.0%数値を表示し、履歴線は生成しない
+- `Graph`: 2入力とAverage合成の計3系列を5 Hzで更新
+
+動的profileは`TrendMonitor`単独指定時だけ有効とし、host scriptは他機種との誤った組合せを起動前に拒否する。
+Android launch extra解析、profile／機種の正規化、CLI validationを追加し、Unity Pipelineで再コンパイル
+error 0、EditMode **218 / 218 PASS、failed / skipped / inconclusive 0**を確認した。
+
+初回Graph比較では5 Hzごとに数値文字列を生成し、同じline色を再設定していたため、48台で
+GC collection 9、frame p95 17.759 msとなった。表示文字列を0.1%刻みの共有cacheへ変更し、
+line色は範囲内／範囲外の状態変化時だけ更新するよう最適化した。表示内容、3系列、32 sample、
+角丸設定は変更していない。最適化後もEditMode **218 / 218 PASS**。
+
+最終Performance Gate APKは
+`Builds/Performance/AnalogInstrumentMR-v0.2.0-perfgate-quest3.apk`、98,410,589 bytes、
+SHA-256 `561d6388421c0dddca7ed3110e1e6d93b7ea249724e4d37eca00b706a412c8bf`。
+Quest 3、Kinetic Safety、距離1.35 m、72 Hz、各60秒で次を得た。
+
+| Count / profile | CPU p95 | Frame p95 | Delayed | GC | Fatal | Temperature |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 48 / None | 14.424 ms | 14.425 ms | 0.023% | 3 | 0 | 41.0°C |
+| 48 / Numeric | 14.429 ms | 14.425 ms | 0.023% | 0 | 0 | 41–42°C |
+| 48 / Graph（最適化前） | 17.753 ms | 17.759 ms | 0.023% | 9 | 0 | 42.0°C |
+| 48 / Graph（最適化後） | 16.615 ms | 16.618 ms | 0.023% | 0 | 0 | 42.0°C |
+| 24 / Graph（最適化後） | 15.174 ms | 15.177 ms | 0.046% | 0 | 0 | 42.0°C |
+| 48 / Graph（位相分散後） | 14.511 ms | 14.505 ms | 0.023% | 3 | 0 | 42.0°C |
+
+`Numeric`は筐体基準との差が測定誤差内。GraphはGCを除去し約1.14 ms改善したが、48台筐体基準より
+frame p95が2.193 ms高く、24→48台でも1.441 ms増えた。追加計測により、主因はLineRenderer総数ではなく
+48台を同一frameで更新するスパイクと判明した。5 Hzを維持して更新位相を均等分散するとframe p95は
+14.505 msとなり、筐体基準14.425 msとの差は0.080 msまで縮小した。このschedulerをproductionの
+Trend Monitor更新にも適用し、信号評価と計器出力は毎frameのまま、表示だけを分散した。
+
+production scheduler追加後はEditMode **220 / 220 PASS**。通常review APK
+`Builds/QuestReview/AnalogInstrumentMR-ConnectionParameters-review-quest3.apk`、98,409,993 bytes、
+SHA-256 `a3576421de9373d05d592870405542b6b0f7a99c8d308fbdaa870efb401cb02b`をQuest 3へinstallした。
+ユーザーは数値／右端追従、線の連続性、枝分かれなし、太さ／角の維持、ちらつきなしを**PASS**した。
+したがって48台動的Graphを受領し、固定budget mesh／LineRenderer置換は現時点では不要と判断する。
+
+Evidence:
+
+- 48 None: `perfgate-48-KineticSafety-20260901-194003.log` / device、
+  `3f44d11eea93a201455b8546533c8f428b6f7056471ec14bd3e6397ef93cc0d1` /
+  `654f0c0afcda38e885ead428b60f88b2bac9d96c6c30e8ca0a9fbb70388b796a`
+- 48 Numeric: `perfgate-48-KineticSafety-20260901-194149.log` / device、
+  `5188925e3df0c9900956ea4dd852f910ef36e5e9a6f35a2e15498b4ec191f39c` /
+  `46f0a4ee30c0550356cf8c53141cee58a3d3940f9fd391447f1db1cf7a3224f2`
+- 48 Graph pre-opt: `perfgate-48-KineticSafety-20260901-194337.log` / device、
+  `e34cf273d26ffaf54cba2ff82cc7f22780990f2e5cf1575c2bbbe62eaa89ec68` /
+  `be362f2bd6b8ea618d2c7f209a780648cc5ce937538904d506859909d7d904fb`
+- 48 Graph optimized: `perfgate-48-KineticSafety-20260901-194858.log` / device、
+  `0a6d20d57926d12aa46a171bf20d491e20c179cb16cd092f0fce952dc053584a` /
+  `75b20a365afa089f6701cfc10429b0a56fe2496a2fcc2a1ea160130629f4e19b`
+- 24 Graph optimized: `perfgate-24-KineticSafety-20260901-195135.log` / device、
+  `c62070999d3d1af4194b22c068054b23ef0241ad22c2fea3bc5f8ad8ebdd19e1` /
+  `1b676bf7c91bc9b83dd7b4c917130e721ac4a2c60006ea02123e6f3d3f6c7903`
+- 48 Graph phased: `perfgate-48-KineticSafety-20260901-200627.log` / device、
+  `9f693338a97e39764836a8597ad1ac8a35111bae8eff625b2a7b00fd62d2be48` /
+  `a19e405ed39284dda64625214e06e2e11c911d5e838bbb4765a7932f466d92c3`
+
+**Opus5の作業範囲に変更はない。**

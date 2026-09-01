@@ -174,6 +174,8 @@ namespace MatsuMotoMeterAR.Tests
                     var renderers = root.GetComponentsInChildren<Renderer>();
                     var hasMonitor =
                         kind == MockInstrumentKind.TrendMonitor;
+                    var hasWindowPanelGraphic =
+                        kind == MockInstrumentKind.WindowPanel;
                     var rendererBudget = spec.RendererBudget +
                         (hasMonitor
                             ? InstrumentGreyboxSpecification.SignalMonitorRendererBudget
@@ -189,7 +191,9 @@ namespace MatsuMotoMeterAR.Tests
                             InstrumentGreyboxSpecification.SharedMaterialBudgetPerInstrument +
                             (hasMonitor
                                 ? InstrumentGreyboxSpecification.SignalMonitorMaterialBudget
-                                : 0)));
+                                : hasWindowPanelGraphic
+                                    ? 2
+                                    : 0)));
 
                     var triangles = 0;
                     foreach (var filter in root.GetComponentsInChildren<MeshFilter>())
@@ -450,12 +454,30 @@ namespace MatsuMotoMeterAR.Tests
                     Assert.That(
                         afterManifest.name,
                         Does.EndWith("_ForgeBrass"));
-                    Assert.That(
-                        motion.MovingPart.parent,
-                        Is.SameAs(afterManifest.transform));
-                    Assert.That(
-                        afterManifest.MotionTarget.IsChildOf(motion.MovingPart),
-                        Is.True);
+                    if (kind == MockInstrumentKind.WindowPanel)
+                    {
+                        Assert.That(
+                            motion.Kind,
+                            Is.EqualTo(MockInstrumentMotion.MotionKind.Meter));
+                        Assert.That(
+                            motion.MovingPart.parent,
+                            Is.SameAs(logic));
+                        Assert.That(
+                            afterManifest.MotionTarget.IsChildOf(
+                                motion.MovingPart),
+                            Is.False,
+                            "The fixed display must not rotate with signal state.");
+                    }
+                    else
+                    {
+                        Assert.That(
+                            motion.MovingPart.parent,
+                            Is.SameAs(afterManifest.transform));
+                        Assert.That(
+                            afterManifest.MotionTarget.IsChildOf(
+                                motion.MovingPart),
+                            Is.True);
+                    }
                     Assert.That(
                         visualSocket.GetComponentsInChildren<Collider>(),
                         Is.Empty);

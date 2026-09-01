@@ -3,6 +3,7 @@
   "rootNamespace": "MatsuMotoMeterAR.Editor",
   "references": [
     "MatsuMotoMeterAR.Runtime",
+    "Unity.Pipeline",
     "Unity.RenderPipelines.Universal.Runtime",
     "Unity.XR.OpenXR",
     "Unity.XR.OpenXR.Features.MetaQuestSupport"

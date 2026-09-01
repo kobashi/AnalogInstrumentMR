@@ -1,5 +1,6 @@
 using MatsuMotoMeterAR.Instruments;
 using MatsuMotoMeterAR.PerformanceGate;
+using MatsuMotoMeterAR.Signals;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -105,6 +106,59 @@ namespace MatsuMotoMeterAR.Tests
             Assert.That(
                 PerformanceGateConfiguration.ParseKind(value),
                 Is.Null);
+        }
+
+        [TestCase("None", PerformanceGateDisplayMode.None)]
+        [TestCase("numeric", PerformanceGateDisplayMode.Numeric)]
+        [TestCase("GRAPH", PerformanceGateDisplayMode.Graph)]
+        [TestCase("invalid", PerformanceGateDisplayMode.None)]
+        [TestCase("", PerformanceGateDisplayMode.None)]
+        public void ParseDisplayMode_UsesKnownProfileOrNone(
+            string value,
+            PerformanceGateDisplayMode expected)
+        {
+            Assert.That(
+                PerformanceGateConfiguration.ParseDisplayMode(value),
+                Is.EqualTo(expected));
+        }
+
+        [TestCase(PerformanceGateDisplayMode.None, MockInstrumentKind.TrendMonitor,
+            PerformanceGateDisplayMode.None)]
+        [TestCase(PerformanceGateDisplayMode.Numeric, MockInstrumentKind.TrendMonitor,
+            PerformanceGateDisplayMode.Numeric)]
+        [TestCase(PerformanceGateDisplayMode.Graph, MockInstrumentKind.TrendMonitor,
+            PerformanceGateDisplayMode.Graph)]
+        [TestCase(PerformanceGateDisplayMode.Graph, MockInstrumentKind.RoundMeter,
+            PerformanceGateDisplayMode.None)]
+        public void ResolveDisplayMode_OnlyEnablesTrendMonitorProfiles(
+            PerformanceGateDisplayMode requested,
+            MockInstrumentKind kind,
+            PerformanceGateDisplayMode expected)
+        {
+            Assert.That(
+                PerformanceGateConfiguration.ResolveDisplayMode(requested, kind),
+                Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void MonitorRefreshScheduler_SpreadsFiveHertzAcrossFrames()
+        {
+            var scheduler = new SignalMonitorRefreshScheduler();
+            var refreshes = 0;
+            for (var frame = 0; frame < 72; frame++)
+                refreshes += scheduler.Accumulate(48, 1f / 72f);
+
+            Assert.That(refreshes, Is.InRange(239, 240));
+        }
+
+        [Test]
+        public void MonitorRefreshScheduler_WrapsStableIndices()
+        {
+            var scheduler = new SignalMonitorRefreshScheduler();
+            Assert.That(scheduler.TakeNextIndex(3), Is.EqualTo(0));
+            Assert.That(scheduler.TakeNextIndex(3), Is.EqualTo(1));
+            Assert.That(scheduler.TakeNextIndex(3), Is.EqualTo(2));
+            Assert.That(scheduler.TakeNextIndex(3), Is.EqualTo(0));
         }
 
     }

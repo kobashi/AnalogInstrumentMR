@@ -1,4 +1,3 @@
-using System.Globalization;
 using MatsuMotoMeterAR.Instruments;
 using MatsuMotoMeterAR.Rendering;
 using UnityEngine;
@@ -17,6 +16,8 @@ namespace MatsuMotoMeterAR.Signals
         private const float GraphBottom = -0.045f;
         private const float GraphTop = 0.045f;
         private const float GraphWidth = 0.0045f;
+        private const float ComposedGraphWidth = 0.006f;
+        private const float ComposedReadoutY = -0.068f;
         private const int GraphCornerVertices = 8;
         private const int GraphCapVertices = 6;
 
@@ -32,11 +33,42 @@ namespace MatsuMotoMeterAR.Signals
             new(0.65f, 0.68f, 0.70f, 1f);
         private static readonly Color InvalidColor =
             new(1f, 0.30f, 0.12f, 1f);
+        private static readonly Color ComposedColor =
+            new(0.96f, 0.98f, 1f, 1f);
+        private static readonly string[][] ChannelReadouts =
+            BuildChannelReadouts();
+        private static readonly string[][][] ComposedReadouts =
+            new string[5][][];
 
         private readonly Channel[] channels = new Channel[ChannelCapacity];
+        private readonly SignalSampleBuffer composedSamples =
+            new(SampleCapacity);
         private TextMesh statusLabel;
+        private TextMesh composedLabel;
+        private LineRenderer composedGraph;
+        private bool composedTouched;
+        private bool hasComposedKind;
+        private SignalCompositionKind composedKind;
+        private float composedNextSampleTime;
 
         public int ConnectedChannelCount { get; private set; }
+        public int ComposedSampleCount => composedSamples.Count;
+        public bool HasComposedOutput =>
+            composedLabel != null && composedLabel.gameObject.activeSelf;
+
+        public int TouchedChannelCount
+        {
+            get
+            {
+                var count = 0;
+                for (var index = 0; index < channels.Length; index++)
+                {
+                    if (channels[index].Touched)
+                        count++;
+                }
+                return count;
+            }
+        }
 
         private const float DisplayClearanceMeters = 0.0002f;
 
@@ -126,6 +158,7 @@ namespace MatsuMotoMeterAR.Signals
         {
             for (var index = 0; index < channels.Length; index++)
                 channels[index].Touched = false;
+            composedTouched = false;
         }
 
         public bool AddSample(string connectionId, float value)
@@ -154,6 +187,7 @@ namespace MatsuMotoMeterAR.Signals
                 channel.Samples.Clear();
                 channel.NextSampleTime = sampleTime;
                 channel.DiagnosticLogged = false;
+                channel.OutOfRangeState = null;
             }
             channel.Touched = true;
 
@@ -181,15 +215,72 @@ namespace MatsuMotoMeterAR.Signals
                 // instrument output instead of waiting for the next sample.
                 channel.Samples.SetNewest(displayValue);
             }
-            channel.Label.text = string.Format(
-                CultureInfo.InvariantCulture,
-                "{0} {1:0.0}%",
-                channelIndex + 1,
-                displayValue * 100f);
+            channel.Label.text =
+                ChannelReadouts[channelIndex][QuantizeReadout(displayValue)];
             channel.Label.color =
                 outOfRange ? InvalidColor : ChannelColors[channelIndex];
             UpdateLine(channelIndex, outOfRange);
             return true;
+        }
+
+        public void AddComposedSample(
+            SignalCompositionKind kind,
+            float value,
+            int validInputCount)
+        {
+            AddComposedSample(
+                kind,
+                value,
+                validInputCount,
+                Time.unscaledTime);
+        }
+
+        public void AddComposedSample(
+            SignalCompositionKind kind,
+            float value,
+            int validInputCount,
+            float sampleTime)
+        {
+            kind = SignalCompositionEditor.NormalizeKind((int)kind);
+            PrepareComposedKind(kind, sampleTime);
+            composedTouched = true;
+
+            if (float.IsNaN(value) || float.IsInfinity(value))
+            {
+                SetComposedUnavailable(kind);
+                return;
+            }
+
+            var displayValue = Mathf.Clamp01(value);
+            if (composedSamples.Count == 0 ||
+                sampleTime >= composedNextSampleTime)
+            {
+                composedSamples.Add(displayValue);
+                composedNextSampleTime =
+                    sampleTime + RefreshIntervalSeconds;
+            }
+            else
+            {
+                composedSamples.SetNewest(displayValue);
+            }
+
+            composedLabel.text = GetComposedReadout(
+                kind,
+                displayValue,
+                validInputCount);
+            composedLabel.color = ComposedColor;
+            UpdateComposedLine();
+        }
+
+        public void SetComposedUnavailable(SignalCompositionKind kind)
+        {
+            kind = SignalCompositionEditor.NormalizeKind((int)kind);
+            PrepareComposedKind(kind, Time.unscaledTime);
+            composedTouched = true;
+            composedSamples.Clear();
+            composedLabel.text = $"{CompositionToken(kind)} NO VALID INPUT";
+            composedLabel.color = InvalidColor;
+            composedGraph.gameObject.SetActive(false);
         }
 
         public void EndRefresh()
@@ -207,8 +298,21 @@ namespace MatsuMotoMeterAR.Signals
 
                 channel.ConnectionId = null;
                 channel.Samples.Clear();
+                channel.OutOfRangeState = null;
                 channel.Label.gameObject.SetActive(false);
                 channel.Graph.gameObject.SetActive(false);
+            }
+
+            if (composedTouched)
+            {
+                composedLabel.gameObject.SetActive(true);
+            }
+            else
+            {
+                composedSamples.Clear();
+                hasComposedKind = false;
+                composedLabel.gameObject.SetActive(false);
+                composedGraph.gameObject.SetActive(false);
             }
 
             statusLabel.gameObject.SetActive(ConnectedChannelCount == 0);
@@ -235,6 +339,31 @@ namespace MatsuMotoMeterAR.Signals
             RuntimeMaterialUtility.ApplyDepthTestedText(statusLabel);
             statusObject.GetComponent<MeshRenderer>().sortingOrder = 21;
 
+            var composedLabelObject = new GameObject("ComposedValue");
+            composedLabelObject.transform.SetParent(transform, false);
+            composedLabelObject.transform.localPosition =
+                new Vector3(0f, ComposedReadoutY, 0f);
+            composedLabel = composedLabelObject.AddComponent<TextMesh>();
+            composedLabel.anchor = TextAnchor.MiddleCenter;
+            composedLabel.alignment = TextAlignment.Center;
+            composedLabel.fontSize = 42;
+            composedLabel.characterSize = 0.00155f;
+            composedLabel.color = ComposedColor;
+            RuntimeMaterialUtility.ApplyDepthTestedText(composedLabel);
+            composedLabelObject.GetComponent<MeshRenderer>().sortingOrder = 22;
+            composedLabelObject.SetActive(false);
+
+            var composedLineObject = new GameObject("ComposedTrend");
+            composedLineObject.transform.SetParent(transform, false);
+            composedGraph = BuildGraph(
+                composedLineObject,
+                ComposedColor,
+                ComposedGraphWidth,
+                sortingOrder: 21);
+            composedLineObject.transform.localPosition =
+                new Vector3(0f, 0f, -0.0004f);
+            composedLineObject.SetActive(false);
+
             for (var index = 0; index < channels.Length; index++)
             {
                 var labelObject = new GameObject($"Channel{index + 1}Value");
@@ -255,33 +384,45 @@ namespace MatsuMotoMeterAR.Signals
 
                 var lineObject = new GameObject($"Channel{index + 1}Trend");
                 lineObject.transform.SetParent(transform, false);
-                var graph = lineObject.AddComponent<LineRenderer>();
-                graph.useWorldSpace = true;
-                graph.alignment = LineAlignment.TransformZ;
-                graph.startWidth = GraphWidth;
-                graph.endWidth = GraphWidth;
-                graph.numCapVertices = GraphCapVertices;
-                graph.numCornerVertices = GraphCornerVertices;
-                graph.loop = false;
-                graph.forceRenderingOff = false;
-                RuntimeMaterialUtility.ApplySharedUnlit(
-                    graph,
-                    ChannelColors[index]);
-                graph.startColor = ChannelColors[index];
-                graph.endColor = ChannelColors[index];
-                graph.shadowCastingMode =
-                    UnityEngine.Rendering.ShadowCastingMode.Off;
-                graph.receiveShadows = false;
+                var graph = BuildGraph(
+                    lineObject,
+                    ChannelColors[index],
+                    GraphWidth,
+                    sortingOrder: 20);
                 lineObject.transform.localPosition =
                     new Vector3(
                         0f,
                         (index - 1.5f) * 0.002f,
                         -0.0001f - index * 0.00005f);
-                graph.sortingOrder = 20;
                 lineObject.SetActive(false);
 
                 channels[index] = new Channel(label, graph);
             }
+        }
+
+        private static LineRenderer BuildGraph(
+            GameObject lineObject,
+            Color color,
+            float width,
+            int sortingOrder)
+        {
+            var graph = lineObject.AddComponent<LineRenderer>();
+            graph.useWorldSpace = true;
+            graph.alignment = LineAlignment.TransformZ;
+            graph.startWidth = width;
+            graph.endWidth = width;
+            graph.numCapVertices = GraphCapVertices;
+            graph.numCornerVertices = GraphCornerVertices;
+            graph.loop = false;
+            graph.forceRenderingOff = false;
+            RuntimeMaterialUtility.ApplySharedUnlit(graph, color);
+            graph.startColor = color;
+            graph.endColor = color;
+            graph.shadowCastingMode =
+                UnityEngine.Rendering.ShadowCastingMode.Off;
+            graph.receiveShadows = false;
+            graph.sortingOrder = sortingOrder;
+            return graph;
         }
 
         private static Quaternion DisplayRotation(
@@ -328,21 +469,19 @@ namespace MatsuMotoMeterAR.Signals
         {
             var channel = channels[channelIndex];
             channel.Graph.gameObject.SetActive(channel.Samples.Count >= 2);
-            if (channel.Samples.Count < 2)
+            if (channel.OutOfRangeState != outOfRange)
             {
                 SetLineColor(
                     channel.Graph,
                     outOfRange
                     ? InvalidColor
                     : ChannelColors[channelIndex]);
-                return;
+                channel.OutOfRangeState = outOfRange;
             }
+            if (channel.Samples.Count < 2)
+                return;
+
             BuildLine(channel.Graph, channel.Samples);
-            SetLineColor(
-                channel.Graph,
-                outOfRange
-                ? InvalidColor
-                : ChannelColors[channelIndex]);
             if (!channel.DiagnosticLogged)
             {
                 channel.DiagnosticLogged = true;
@@ -362,6 +501,91 @@ namespace MatsuMotoMeterAR.Signals
                     $"last={channel.Graph.GetPosition(channel.Graph.positionCount - 1)}, " +
                     $"world={channel.Graph.transform.position}.");
             }
+        }
+
+        private void PrepareComposedKind(
+            SignalCompositionKind kind,
+            float sampleTime)
+        {
+            if (hasComposedKind && composedKind == kind)
+                return;
+
+            composedKind = kind;
+            hasComposedKind = true;
+            composedSamples.Clear();
+            composedNextSampleTime = sampleTime;
+            composedGraph.gameObject.SetActive(false);
+        }
+
+        private void UpdateComposedLine()
+        {
+            composedGraph.gameObject.SetActive(composedSamples.Count >= 2);
+            if (composedSamples.Count < 2)
+                return;
+            BuildLine(composedGraph, composedSamples);
+        }
+
+        private static string CompositionToken(SignalCompositionKind kind)
+        {
+            return kind switch
+            {
+                SignalCompositionKind.Sum => "SUM",
+                SignalCompositionKind.Minimum => "MIN",
+                SignalCompositionKind.Maximum => "MAX",
+                SignalCompositionKind.Priority => "PRI",
+                _ => "AVG"
+            };
+        }
+
+        private static int QuantizeReadout(float value)
+        {
+            return Mathf.Clamp(Mathf.RoundToInt(value * 1000f), 0, 1000);
+        }
+
+        private static string[][] BuildChannelReadouts()
+        {
+            var result = new string[ChannelCapacity][];
+            for (var channel = 0; channel < result.Length; channel++)
+            {
+                result[channel] = new string[1001];
+                for (var value = 0; value < result[channel].Length; value++)
+                {
+                    result[channel][value] =
+                        $"{channel + 1} {value / 10}.{value % 10}%";
+                }
+            }
+            return result;
+        }
+
+        private static string GetComposedReadout(
+            SignalCompositionKind kind,
+            float value,
+            int validInputCount)
+        {
+            var kindIndex = Mathf.Clamp((int)kind, 0, ComposedReadouts.Length - 1);
+            var inputCount = Mathf.Clamp(validInputCount, 0, ChannelCapacity);
+            var byInputCount = ComposedReadouts[kindIndex];
+            if (byInputCount == null)
+            {
+                byInputCount = new string[ChannelCapacity + 1][];
+                ComposedReadouts[kindIndex] = byInputCount;
+            }
+
+            var values = byInputCount[inputCount];
+            if (values == null)
+            {
+                values = new string[1001];
+                var token = CompositionToken(kind);
+                for (var quantized = 0; quantized < values.Length; quantized++)
+                {
+                    values[quantized] =
+                        $"{token} {quantized / 10}.{quantized % 10}% · " +
+                        $"{inputCount} IN";
+                }
+                byInputCount[inputCount] = values;
+            }
+
+            return values[QuantizeReadout(value)];
         }
 
         private static void BuildLine(
@@ -410,6 +634,8 @@ namespace MatsuMotoMeterAR.Signals
                 if (channel != null && channel.Samples.Count >= 2)
                     BuildLine(channel.Graph, channel.Samples);
             }
+            if (composedSamples.Count >= 2)
+                BuildLine(composedGraph, composedSamples);
         }
 
         private sealed class Channel
@@ -428,6 +654,48 @@ namespace MatsuMotoMeterAR.Signals
             public bool Touched;
             public float NextSampleTime;
             public bool DiagnosticLogged;
+            public bool? OutOfRangeState;
+        }
+    }
+
+    public sealed class SignalMonitorRefreshScheduler
+    {
+        private float refreshBudget;
+        private int nextIndex;
+
+        public int Accumulate(int itemCount, float unscaledDeltaTime)
+        {
+            if (itemCount <= 0)
+            {
+                Reset();
+                return 0;
+            }
+
+            refreshBudget += Mathf.Max(0f, unscaledDeltaTime) * itemCount /
+                             SignalMonitorView.RefreshIntervalSeconds;
+            var refreshCount = Mathf.Min(
+                Mathf.FloorToInt(refreshBudget),
+                itemCount);
+            refreshBudget -= refreshCount;
+            return refreshCount;
+        }
+
+        public int TakeNextIndex(int itemCount)
+        {
+            if (itemCount <= 0)
+                return -1;
+
+            if (nextIndex >= itemCount)
+                nextIndex = 0;
+            var result = nextIndex;
+            nextIndex = (nextIndex + 1) % itemCount;
+            return result;
+        }
+
+        public void Reset()
+        {
+            refreshBudget = 0f;
+            nextIndex = 0;
         }
     }
 }

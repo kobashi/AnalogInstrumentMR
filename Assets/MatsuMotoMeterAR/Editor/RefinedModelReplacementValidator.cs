@@ -48,6 +48,9 @@ namespace MatsuMotoMeterAR.Editor
         private const string TrendMonitorP2ManifestPath =
             "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
             "TrendMonitor_P2.json";
+        private const string WindowPanelWp3ManifestPath =
+            "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
+            "WindowPanel_WP3_r2.json";
         private const float BoundsTolerance = 0.001f;
         private const float MountPlaneTolerance = 0.001f;
 
@@ -126,8 +129,8 @@ namespace MatsuMotoMeterAR.Editor
             new(
                 "WindowPanel",
                 MockInstrumentKind.WindowPanel,
-                "vane_pivot",
-                "vane",
+                "display_surface",
+                "display_surface",
                 requiredActive: false),
             new(
                 "TrendMonitor",
@@ -335,6 +338,14 @@ namespace MatsuMotoMeterAR.Editor
             ValidateCandidateManifest(MeterM2n8ManifestPath);
         }
 
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Validate Window Panel WP3 Manifest Candidate Staging")]
+        public static void ValidateWindowPanelWp3ManifestCandidate()
+        {
+            ValidateCandidateManifest(WindowPanelWp3ManifestPath);
+        }
+
         internal static void ValidateCandidateManifest(string manifestPath)
         {
             var manifest = CandidateStagingManifest.Load(manifestPath);
@@ -349,7 +360,14 @@ namespace MatsuMotoMeterAR.Editor
             foreach (var entry in manifest.entries)
             {
                 var theme = FindTheme(entry.theme);
-                var model = FindModel(entry.model);
+                var model = entry.model == "WindowPanel"
+                    ? new ModelEntry(
+                        "WindowPanel",
+                        MockInstrumentKind.WindowPanel,
+                        "display_surface",
+                        "display_surface",
+                        requiredActive: false)
+                    : FindModel(entry.model);
                 var path =
                     $"{stagingDirectory}/{theme.Folder}/Prefabs/" +
                     $"PF_Visual_{model.Key}_{theme.Folder}.prefab";
@@ -758,13 +776,18 @@ namespace MatsuMotoMeterAR.Editor
                             ? null
                             : V6ReplacementEnvelope(model.Kind),
                     triangleBudgetOverride:
-                        theme.Theme == MockInstrumentTheme.MachinedErgonomics &&
-                        model.Kind == MockInstrumentKind.Lever
-                            ? 7000
-                            : null,
+                        model.Kind == MockInstrumentKind.WindowPanel &&
+                        model.MotionTarget == "display_surface"
+                            ? 8000
+                            : theme.Theme ==
+                              MockInstrumentTheme.MachinedErgonomics &&
+                              model.Kind == MockInstrumentKind.Lever
+                                ? 7000
+                                : null,
                     materialBudgetOverride:
-                        theme.Theme == MockInstrumentTheme.MachinedErgonomics &&
-                        model.Kind == MockInstrumentKind.TrendMonitor
+                        model.Kind == MockInstrumentKind.TrendMonitor ||
+                        model.Kind == MockInstrumentKind.WindowPanel &&
+                        model.MotionTarget == "display_surface"
                             ? 3
                             : null,
                     useDisplayPlaneContract:
@@ -773,6 +796,13 @@ namespace MatsuMotoMeterAR.Editor
                     result.Problems.Add($"Root name must be {expectedName}.");
                 if (instance.transform.localScale != Vector3.one)
                     result.Problems.Add("Prefab root scale must be (1, 1, 1).");
+
+                if (model.Kind == MockInstrumentKind.WindowPanel &&
+                    model.MotionTarget == "display_surface")
+                {
+                    result.Problems.AddRange(
+                        WindowPanelCandidateContractValidator.Evaluate(instance));
+                }
 
                 if (sourceReport != null)
                 {
@@ -879,6 +909,16 @@ namespace MatsuMotoMeterAR.Editor
                         $"actual is {actualSha}: {entry.sourceFbx}");
                 }
             }
+            if (entry.revision == "WP3-r2" &&
+                (document.blender_version != "5.2.0 LTS" ||
+                 document.blender_binary !=
+                 "/Applications/Blender 5.2.app/Contents/MacOS/Blender"))
+            {
+                throw new InvalidDataException(
+                    $"WP3-r2 source report has unexpected Blender " +
+                    $"provenance: {document.blender_version}, " +
+                    $"{document.blender_binary}.");
+            }
             var expectation = new SourceReportExpectation
             {
                 Path = entry.sourceReport,
@@ -888,23 +928,38 @@ namespace MatsuMotoMeterAR.Editor
                 ExpectedFbx = entry.sourceFbx,
                 Triangles = triangles,
                 Renderers = renderers,
-                Submeshes = document.gates?.submesh_budget?.measured ?? 0,
+                Submeshes = document.submeshes > 0
+                    ? document.submeshes
+                    : document.gates?.submesh_budget?.measured ?? 0,
                 SubmeshBudget =
                     document.gates?.submesh_budget?.budget ?? 0,
                 Materials = document.material_slots?.Length ?? 0
             };
 
             var bounds = document.candidate?.bounds;
+            if (bounds == null &&
+                document.bounds_min?.Length == 3 &&
+                document.bounds_max?.Length == 3)
+            {
+                bounds = new CandidateSourceBounds
+                {
+                    min = document.bounds_min,
+                    max = document.bounds_max
+                };
+                document.bounds_space = "unity_xyz";
+            }
             if (bounds?.min?.Length == 3 && bounds.max?.Length == 3)
             {
                 var blenderSize = new Vector3(
                     bounds.max[0] - bounds.min[0],
                     bounds.max[1] - bounds.min[1],
                     bounds.max[2] - bounds.min[2]);
-                expectation.Bounds = new Vector3(
-                    blenderSize.x,
-                    blenderSize.z,
-                    blenderSize.y);
+                expectation.Bounds = document.bounds_space == "unity_xyz"
+                    ? blenderSize
+                    : new Vector3(
+                        blenderSize.x,
+                        blenderSize.z,
+                        blenderSize.y);
             }
             return expectation;
         }
@@ -1703,7 +1758,13 @@ namespace MatsuMotoMeterAR.Editor
             public string staged_sha256;
             public int triangles;
             public int renderers;
+            public int submeshes;
             public string[] material_slots;
+            public string bounds_space;
+            public float[] bounds_min;
+            public float[] bounds_max;
+            public string blender_binary;
+            public string blender_version;
             public CandidateSourceSnapshot candidate;
             public CandidateSourceGates gates;
         }

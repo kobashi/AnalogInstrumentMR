@@ -207,6 +207,49 @@ adb shell monkey -p com.DefaultCompany.MatsuMotoMeterAR 1
 - レバー、トグル、スロットル、パワースライダーについて全段階のRenderer実移動、
   軸一致、取付面後方への侵入を3テーマ分確認する。
 
+## Unity CLI / Pipeline
+
+- Unity CLI `1.0.0-beta.5`と`com.unity.pipeline` `0.5.0-exp.1`を使用する。
+- packageは`Packages/manifest.json`と`Packages/packages-lock.json`で固定する。
+- 起動中Editorは`Window > Pipeline > Start Server`でserverを開始し、次で接続状態を確認する。
+
+```sh
+unity status --json
+unity command --project-path "$PWD" --query run_tests --detail full --json
+```
+
+EditModeは接続中Editorへ非同期投入し、完了までstatusを確認する。
+
+```sh
+unity command --project-path "$PWD" run_tests \
+  --mode editor --async_tests true --timeout 300 --json
+unity command --project-path "$PWD" test_status --json
+```
+
+プロジェクト固有command:
+
+```sh
+unity command --project-path "$PWD" matsu_render_trend_monitor_review --json
+unity command --project-path "$PWD" matsu_audit_control_motion --json
+unity command --project-path "$PWD" matsu_audit_signal_visuals --json
+unity command --project-path "$PWD" matsu_build_performance_gate \
+  --dry_run true --json
+unity command --project-path "$PWD" \
+  matsu_build_performance_gate_status --json
+```
+
+実際のQuest performance gate APKをqueueする場合だけ、明示的に
+`matsu_build_performance_gate --confirm true`を使用する。commandはHTTP応答後にbuildを開始し、
+`matsu_build_performance_gate_status`で`queued / running / completed / failed`を確認する。
+confirm省略時は実行を拒否する。既存APKがある場合、dry-runのartifact情報はその既存fileを示すため、
+新しいbuild成功証跡として扱わない。
+
+Codexのsandbox内ではlocalhost HTTP接続が制限される場合があるため、`unity status`、
+`unity list`、`unity command`は必要に応じてlocalhost接続権限付きで実行する。descriptorの
+`Library/Pipeline/.unity-pipeline-port`には認証tokenが含まれるため、内容をlog／report／gitへ
+出力しない。CLI／Pipelineはいずれもbeta／experimental版なので、version更新は別変更として
+EditMode、visual review、APK buildを再検証する。
+
 ## Definition of done for v0.2.0-concept.1
 
 - パススルー背景で起動する。

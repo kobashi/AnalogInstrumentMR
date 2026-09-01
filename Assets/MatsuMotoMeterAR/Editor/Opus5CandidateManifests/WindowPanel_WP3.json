@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "WindowPanel_WP3",
+  "integrationStage": "GateB",
+  "entries": [
+    {
+      "theme": "OrbitalAnalog",
+      "model": "WindowPanel",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/SM_WindowPanel_OrbitalAnalog_WP3.fbx",
+      "sourceReport": "",
+      "revision": "WP3-r1",
+      "includedRevisions": ["WP3-r1"],
+      "requiredRevisions": ["WP3-r1"]
+    },
+    {
+      "theme": "ForgeBrass",
+      "model": "WindowPanel",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/SM_WindowPanel_ForgeBrass_WP3.fbx",
+      "sourceReport": "",
+      "revision": "WP3-r1",
+      "includedRevisions": ["WP3-r1"],
+      "requiredRevisions": ["WP3-r1"]
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "WindowPanel",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/SM_WindowPanel_KineticSafety_WP3.fbx",
+      "sourceReport": "",
+      "revision": "WP3-r1",
+      "includedRevisions": ["WP3-r1"],
+      "requiredRevisions": ["WP3-r1"]
+    },
+    {
+      "theme": "MachinedErgonomics",
+      "model": "WindowPanel",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/SM_WindowPanel_MachinedErgonomics_WP3.fbx",
+      "sourceReport": "",
+      "revision": "WP3-r1",
+      "includedRevisions": ["WP3-r1"],
+      "requiredRevisions": ["WP3-r1"]
+    }
+  ]
+}

@@ -10,8 +10,8 @@ namespace MatsuMotoMeterAR.PlacementPersistence
     public sealed class PlacementDocument
     {
         public const int LegacySchemaVersion = 1;
-        public const int PreviousSchemaVersion = 4;
-        public const int CurrentSchemaVersion = 5;
+        public const int PreviousSchemaVersion = 6;
+        public const int CurrentSchemaVersion = 7;
         public const int MaximumActivePlacements = 48;
         public const int MaximumStoredPlacements = 192;
         public const int MaximumConnections = 192;
@@ -30,6 +30,10 @@ namespace MatsuMotoMeterAR.PlacementPersistence
         public const float DefaultOutputMinimum = 0.2f;
         public const float DefaultOutputMaximum = 0.8f;
         public const float DefaultThresholdValue = 0.5f;
+        public const int AutomaticTargetInputSlot = -1;
+        public const int DefaultCompositionPriority = 0;
+        public const int MinimumCompositionPriority = 0;
+        public const int MaximumCompositionPriority = 3;
 
         public string connectionId;
         public string sourcePlacementId;
@@ -41,6 +45,8 @@ namespace MatsuMotoMeterAR.PlacementPersistence
         public float outputMaximum = DefaultOutputMaximum;
         public float thresholdValue = DefaultThresholdValue;
         public int thresholdComparison = (int)SignalThresholdComparison.Above;
+        public int targetInputSlot = AutomaticTargetInputSlot;
+        public int compositionPriority = DefaultCompositionPriority;
 
         public SignalConnectionRecord Clone()
         {
@@ -55,7 +61,9 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                 outputMinimum = outputMinimum,
                 outputMaximum = outputMaximum,
                 thresholdValue = thresholdValue,
-                thresholdComparison = thresholdComparison
+                thresholdComparison = thresholdComparison,
+                targetInputSlot = targetInputSlot,
+                compositionPriority = compositionPriority
             };
         }
     }
@@ -71,6 +79,9 @@ namespace MatsuMotoMeterAR.PlacementPersistence
         public SerializablePose localOffset = SerializablePose.Identity;
         public float normalizedValue;
         public int lifecycle = (int)PlacementLifecycle.Active;
+        public int windowPanelPreset = (int)WindowPanelGraphicPreset.Orbit;
+        public int signalCompositionKind =
+            (int)SignalCompositionKind.Average;
 
         public PlacementRecord Clone()
         {
@@ -83,7 +94,9 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                 surfaceKind = surfaceKind,
                 localOffset = localOffset,
                 normalizedValue = normalizedValue,
-                lifecycle = lifecycle
+                lifecycle = lifecycle,
+                windowPanelPreset = windowPanelPreset,
+                signalCompositionKind = signalCompositionKind
             };
         }
     }

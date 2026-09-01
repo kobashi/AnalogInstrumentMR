@@ -27,6 +27,27 @@ namespace MatsuMotoMeterAR.Editor
         private const string TrendMonitorP2ManifestPath =
             "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
             "TrendMonitor_P2.json";
+        private const string WindowPanelWp3ManifestPath =
+            "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
+            "WindowPanel_WP3_r2.json";
+        private static readonly MockInstrumentTheme[] ProductionTrendThemes =
+        {
+            MockInstrumentTheme.OrbitalAnalog,
+            MockInstrumentTheme.ForgeBrass,
+            MockInstrumentTheme.KineticSafety,
+            MockInstrumentTheme.MachinedErgonomics
+        };
+        private static readonly string[] ProductionTrendMonitorPaths =
+        {
+            "Assets/MatsuMotoMeterAR/Resources/OrbitalAnalog/Prefabs/" +
+            "PF_Visual_TrendMonitor_OrbitalAnalog.prefab",
+            "Assets/MatsuMotoMeterAR/Resources/ForgeBrass/Prefabs/" +
+            "PF_Visual_TrendMonitor_ForgeBrass.prefab",
+            "Assets/MatsuMotoMeterAR/Resources/KineticSafety/Prefabs/" +
+            "PF_Visual_TrendMonitor_KineticSafety.prefab",
+            "Assets/MatsuMotoMeterAR/Resources/MachinedErgonomics/Prefabs/" +
+            "PF_Visual_TrendMonitor_MachinedErgonomics.prefab"
+        };
         private const int TileSize = 512;
 
         [MenuItem(
@@ -43,6 +64,15 @@ namespace MatsuMotoMeterAR.Editor
         public static void RunSelected()
         {
             RenderManifest(CandidateStagingManifest.SelectedAssetPath());
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Render Selected Candidate Manifest Shape Review")]
+        public static void RunSelectedShapeReview()
+        {
+            RenderCandidateOnlyManifest(
+                CandidateStagingManifest.SelectedAssetPath());
         }
 
         [MenuItem(
@@ -109,6 +139,246 @@ namespace MatsuMotoMeterAR.Editor
             RenderCandidateOnlyManifest(TrendMonitorP2ManifestPath);
         }
 
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Render Production Trend Monitor Composition Review")]
+        public static void RunTrendMonitorCompositionReview()
+        {
+            const string outputPath =
+                "Builds/Reports/production-TrendMonitor-composition-review.png";
+            var cameraObject = new GameObject("[Review] Camera");
+            var lightObject = new GameObject("[Review] Light");
+            var camera = cameraObject.AddComponent<Camera>();
+            var light = lightObject.AddComponent<Light>();
+            var sheet = new Texture2D(
+                TileSize,
+                TileSize * ProductionTrendThemes.Length,
+                TextureFormat.RGBA32,
+                false);
+            try
+            {
+                ConfigureScene(camera, light);
+                Fill(sheet, new Color(0.012f, 0.018f, 0.025f, 1f));
+                for (var row = 0;
+                     row < ProductionTrendThemes.Length;
+                     row++)
+                {
+                    RenderTrendMonitorThemeIntoSheet(
+                        sheet,
+                        camera,
+                        ProductionTrendThemes[row],
+                        ProductionTrendMonitorPaths[row],
+                        useRuntimeWrapper:
+                            row == ProductionTrendThemes.Length - 1,
+                        row: row,
+                        rowCount: ProductionTrendThemes.Length);
+                }
+
+                Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
+                File.WriteAllBytes(outputPath, sheet.EncodeToPNG());
+                AssetDatabase.Refresh();
+                Debug.Log(
+                    "Production Trend Monitor composition review rendered. " +
+                    "Rows: OrbitalAnalog, ForgeBrass, KineticSafety, " +
+                    $"MachinedErgonomics. Output: {outputPath}");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(sheet);
+                UnityEngine.Object.DestroyImmediate(cameraObject);
+                UnityEngine.Object.DestroyImmediate(lightObject);
+            }
+        }
+
+        private static void RenderTrendMonitorThemeIntoSheet(
+            Texture2D sheet,
+            Camera camera,
+            MockInstrumentTheme theme,
+            string visualPrefabPath,
+            bool useRuntimeWrapper,
+            int row,
+            int rowCount)
+        {
+            // The three T1 visual prefabs are authored Z-forward and can be
+            // framed directly. Machined Ergonomics remains Y-forward at the
+            // FBX level, so use the runtime factory's production wrapper for
+            // that one row before applying the same front-camera review.
+            var instance = useRuntimeWrapper
+                ? MockInstrumentFactory.Create(
+                    MockInstrumentKind.TrendMonitor,
+                    Pose.identity,
+                    theme: theme)
+                : Instantiate(visualPrefabPath);
+            var target = new RenderTexture(
+                TileSize,
+                TileSize,
+                24,
+                RenderTextureFormat.ARGB32);
+            var image = new Texture2D(
+                TileSize,
+                TileSize,
+                TextureFormat.RGBA32,
+                false);
+            var previousActive = RenderTexture.active;
+            try
+            {
+                var framingRoot = instance;
+                if (useRuntimeWrapper)
+                {
+                    framingRoot = instance
+                        .GetComponent<InstrumentGreyboxContract>()
+                        ?.VisualSocket?.gameObject ?? instance;
+                }
+                var bounds = RendererBounds(framingRoot);
+                instance.transform.position -= new Vector3(
+                    bounds.center.x,
+                    bounds.center.y,
+                    0f);
+                bounds = RendererBounds(framingRoot);
+                ConfigureEmission(instance, false);
+                AddTrendGraph(instance);
+                var framing = new Framing(
+                    Mathf.Max(bounds.extents.x, bounds.extents.y) * 1.18f,
+                    bounds.size.z + 1f);
+                camera.orthographicSize = framing.OrthographicSize;
+                camera.transform.SetPositionAndRotation(
+                    new Vector3(0f, 0f, bounds.center.z + framing.CameraDistance),
+                    Quaternion.Euler(0f, 180f, 0f));
+                camera.targetTexture = target;
+                camera.Render();
+                RenderTexture.active = target;
+                image.ReadPixels(
+                    new Rect(0, 0, TileSize, TileSize),
+                    0,
+                    0);
+                image.Apply();
+                sheet.SetPixels(
+                    0,
+                    (rowCount - 1 - row) * TileSize,
+                    TileSize,
+                    TileSize,
+                    image.GetPixels());
+                sheet.Apply();
+            }
+            finally
+            {
+                camera.targetTexture = null;
+                RenderTexture.active = previousActive;
+                UnityEngine.Object.DestroyImmediate(image);
+                UnityEngine.Object.DestroyImmediate(target);
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Render Window Panel WP3 Shape Review")]
+        public static void RunWindowPanelWp3()
+        {
+            RenderCandidateOnlyManifest(WindowPanelWp3ManifestPath);
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Render Window Panel WP4 Preset Review")]
+        public static void RunWindowPanelWp4PresetReview()
+        {
+            RunWindowPanelWp4PresetReview(production: false);
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Render Window Panel WP4 Production Preset Review")]
+        public static void RunWindowPanelWp4ProductionPresetReview()
+        {
+            RunWindowPanelWp4PresetReview(production: true);
+        }
+
+        private static void RunWindowPanelWp4PresetReview(bool production)
+        {
+            var manifest = CandidateStagingManifest.Load(
+                WindowPanelWp3ManifestPath);
+            var presets = new[]
+            {
+                WindowPanelGraphicPreset.Orbit,
+                WindowPanelGraphicPreset.Rose,
+                WindowPanelGraphicPreset.Lissajous
+            };
+            var outputPath = production
+                ? "Builds/Reports/production-WindowPanel_WP4-" +
+                  "unity-preset-contact-sheet.png"
+                : "Builds/Reports/candidate-WindowPanel_WP3_r2-" +
+                  "unity-preset-contact-sheet.png";
+            var reportPath = production
+                ? "Builds/Reports/production-WindowPanel_WP4-" +
+                  "unity-preset-review.md"
+                : "Builds/Reports/candidate-WindowPanel_WP3_r2-" +
+                  "unity-preset-review.md";
+            var cameraObject = new GameObject("[Review] WP4 Preset Camera");
+            var lightObject = new GameObject("[Review] WP4 Preset Light");
+            var camera = cameraObject.AddComponent<Camera>();
+            var light = lightObject.AddComponent<Light>();
+            var sheet = new Texture2D(
+                TileSize * presets.Length,
+                TileSize * manifest.entries.Length,
+                TextureFormat.RGBA32,
+                false);
+            try
+            {
+                ConfigureScene(camera, light);
+                Fill(sheet, new Color(0.012f, 0.018f, 0.025f, 1f));
+                for (var row = 0; row < manifest.entries.Length; row++)
+                {
+                    var entry = manifest.entries[row];
+                    var path = production
+                        ? $"Assets/MatsuMotoMeterAR/Resources/" +
+                          $"{entry.theme}/Prefabs/" +
+                          $"PF_Visual_WindowPanel_{entry.theme}.prefab"
+                        : manifest.CandidatePrefabPath(entry);
+                    var framing = CalculateFraming(path);
+                    for (var column = 0; column < presets.Length; column++)
+                    {
+                        RenderIntoSheet(
+                            sheet,
+                            camera,
+                            path,
+                            framing,
+                            emissionEnabled: false,
+                            column: column,
+                            row: row,
+                            rowCount: manifest.entries.Length,
+                            showWindowPanelGraphic: true,
+                            windowPanelPreset: presets[column]);
+                    }
+                }
+                Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
+                File.WriteAllBytes(outputPath, sheet.EncodeToPNG());
+                File.WriteAllText(
+                    reportPath,
+                    "# Window Panel WP4 preset review\n\n" +
+                    "Result: **RENDERED**\n\n" +
+                    "- Rows: OrbitalAnalog / ForgeBrass / KineticSafety / " +
+                    "MachinedErgonomics\n" +
+                    "- Columns: Orbit / Rose / Lissajous\n" +
+                    (production
+                        ? "- Source: promoted production Resources prefabs\n" +
+                          "- Candidate dependencies: 0 (validated)\n"
+                        : "- Candidate: WindowPanel_WP3_r2 isolated staging\n" +
+                          "- Production assets: unchanged\n"));
+                AssetDatabase.Refresh();
+                Debug.Log(
+                    $"Window Panel WP4 " +
+                    $"{(production ? "production " : string.Empty)}" +
+                    $"preset review: {outputPath}");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(sheet);
+                UnityEngine.Object.DestroyImmediate(cameraObject);
+                UnityEngine.Object.DestroyImmediate(lightObject);
+            }
+        }
+
         internal static string RenderManifest(string manifestPath)
         {
             return RenderManifest(
@@ -143,6 +413,8 @@ namespace MatsuMotoMeterAR.Editor
                 $"Builds/Reports/candidate-{manifest.candidateId}-" +
                 (neutralShapeReview
                     ? "unity-neutral-shape-contact-sheet.png"
+                    : candidateOnly
+                    ? "unity-shape-contact-sheet.png"
                     : "unity-visual-contact-sheet.png");
             var cameraObject = new GameObject("[Review] Camera");
             var lightObject = new GameObject("[Review] Light");
@@ -165,26 +437,36 @@ namespace MatsuMotoMeterAR.Editor
                     if (candidateOnly)
                     {
                         var candidateFraming = CalculateFraming(candidatePath);
+                        var showTrendGraph = entry.model == "TrendMonitor";
+                        var showWindowPanelGraphic =
+                            entry.model == "WindowPanel";
                         RenderIntoSheet(
                             sheet, camera, candidatePath, candidateFraming,
                             emissionEnabled: false, column: 0, row: row,
                             rowCount: manifest.entries.Length,
-                            showTrendGraph: true);
+                            showTrendGraph: showTrendGraph,
+                            showWindowPanelGraphic: showWindowPanelGraphic);
                         RenderIntoSheet(
                             sheet, camera, candidatePath, candidateFraming,
                             emissionEnabled: false, column: 1, row: row,
                             rowCount: manifest.entries.Length,
-                            viewYawDegrees: -32f);
+                            viewYawDegrees: -32f,
+                            showTrendGraph: showTrendGraph,
+                            showWindowPanelGraphic: showWindowPanelGraphic);
                         RenderIntoSheet(
                             sheet, camera, candidatePath, candidateFraming,
                             emissionEnabled: false, column: 2, row: row,
                             rowCount: manifest.entries.Length,
-                            viewYawDegrees: 32f);
+                            viewYawDegrees: 32f,
+                            showTrendGraph: showTrendGraph,
+                            showWindowPanelGraphic: showWindowPanelGraphic);
                         RenderIntoSheet(
                             sheet, camera, candidatePath, candidateFraming,
                             emissionEnabled: false, column: 3, row: row,
                             rowCount: manifest.entries.Length,
-                            viewYawDegrees: 72f);
+                            viewYawDegrees: 72f,
+                            showTrendGraph: showTrendGraph,
+                            showWindowPanelGraphic: showWindowPanelGraphic);
                         continue;
                     }
                     var activePath =
@@ -349,7 +631,10 @@ namespace MatsuMotoMeterAR.Editor
             int rowCount,
             bool neutralMaterial = false,
             float viewYawDegrees = 0f,
-            bool showTrendGraph = false)
+            bool showTrendGraph = false,
+            bool showWindowPanelGraphic = false,
+            WindowPanelGraphicPreset windowPanelPreset =
+                WindowPanelGraphicPreset.Orbit)
         {
             var instance = Instantiate(path);
             var target = new RenderTexture(
@@ -372,12 +657,17 @@ namespace MatsuMotoMeterAR.Editor
                     bounds.center.y,
                     0f);
                 bounds = RendererBounds(instance);
-                if (showTrendGraph)
-                    AddTrendGraph(instance);
                 if (neutralMaterial)
                     neutral = ConfigureNeutralMaterial(instance);
                 else
                     ConfigureEmission(instance, emissionEnabled);
+                // Add runtime display overlays after candidate-material
+                // configuration. The emission-off review property block must
+                // not overwrite the overlay's own unlit display color.
+                if (showTrendGraph)
+                    AddTrendGraph(instance);
+                if (showWindowPanelGraphic)
+                    AddWindowPanelGraphic(instance, windowPanelPreset);
                 camera.orthographicSize = framing.OrthographicSize;
                 var yawRadians = viewYawDegrees * Mathf.Deg2Rad;
                 camera.transform.SetPositionAndRotation(
@@ -416,6 +706,7 @@ namespace MatsuMotoMeterAR.Editor
 
         private static void AddTrendGraph(GameObject instance)
         {
+            var contract = instance.GetComponent<InstrumentGreyboxContract>();
             var displaySurface = instance
                 .GetComponentInChildren<ThemeVisualManifest>(true)
                 ?.MotionTarget;
@@ -424,18 +715,94 @@ namespace MatsuMotoMeterAR.Editor
                 throw new MissingReferenceException(
                     $"{instance.name}: TrendMonitor display surface missing.");
             }
-            var monitor = SignalMonitorView.Create(
-                instance.transform,
-                displaySurface);
+            var monitor = instance
+                .GetComponentInChildren<SignalMonitorView>(true);
+            if (monitor == null)
+            {
+                monitor = SignalMonitorView.Create(
+                    contract?.LabelSocket ?? instance.transform,
+                    displaySurface);
+            }
+            else
+            {
+                monitor.AlignToDisplay(displaySurface);
+            }
+            var first = new[] { 0.15f, 0.65f, 0.30f, 0.85f };
+            var second = new[] { 0.80f, 0.45f, 0.70f, 0.20f };
             var sampleTime = 0f;
-            foreach (var value in new[] { 0.15f, 0.65f, 0.30f, 0.85f })
+            for (var index = 0; index < first.Length; index++)
             {
                 monitor.BeginRefresh();
-                monitor.AddSample("review-lever", value, sampleTime);
-                monitor.AddSample("review-meter", value, sampleTime);
+                monitor.AddSample(
+                    "review-lever",
+                    first[index],
+                    sampleTime);
+                monitor.AddSample(
+                    "review-meter",
+                    second[index],
+                    sampleTime);
+                monitor.AddComposedSample(
+                    SignalCompositionKind.Average,
+                    (first[index] + second[index]) * 0.5f,
+                    validInputCount: 2,
+                    sampleTime: sampleTime);
                 monitor.EndRefresh();
                 sampleTime += SignalMonitorView.RefreshIntervalSeconds;
             }
+
+            // The runtime depth-tested font shader is validated separately.
+            // Unity's editor RenderTexture path displays that transparent
+            // shader as the magenta error material, so use the font's own
+            // material only on this disposable review instance.
+            foreach (var text in monitor.GetComponentsInChildren<TextMesh>(true))
+            {
+                var renderer = text.GetComponent<MeshRenderer>();
+                if (renderer != null && text.font != null)
+                    renderer.sharedMaterial = text.font.material;
+            }
+        }
+
+        private static void AddWindowPanelGraphic(
+            GameObject instance,
+            WindowPanelGraphicPreset preset)
+        {
+            var displaySurface = instance
+                .GetComponentInChildren<ThemeVisualManifest>(true)
+                ?.MotionTarget;
+            if (displaySurface == null)
+            {
+                throw new MissingReferenceException(
+                    $"{instance.name}: Window Panel display surface missing.");
+            }
+
+            var displayMesh =
+                displaySurface.GetComponent<MeshFilter>()?.sharedMesh;
+            if (displayMesh == null)
+            {
+                throw new MissingReferenceException(
+                    $"{instance.name}: Window Panel display mesh missing.");
+            }
+            var displayVertices = displayMesh.vertices;
+            if (displayMesh.triangles.Length < 3 || displayVertices.Length < 3)
+            {
+                throw new MissingReferenceException(
+                    $"{instance.name}: Window Panel display triangles missing.");
+            }
+
+            var surfaceCenter = displaySurface.TransformPoint(
+                displayMesh.bounds.center);
+            var graphic = WindowPanelGraphicsPrototypeView.Create(
+                instance.transform);
+            graphic.transform.SetPositionAndRotation(
+                surfaceCenter + instance.transform.forward * 0.002f,
+                instance.transform.rotation * Quaternion.Euler(0f, 180f, 0f));
+            graphic.transform.localScale = Vector3.one * 0.54f;
+            graphic.SetPreset(preset);
+            graphic.SetSlot(0, 0.72f, true);
+            graphic.SetSlot(1, 0.50f, true);
+            graphic.SetSlot(2, 0.62f, true);
+            graphic.SetSlot(3, 0.45f, true);
+            graphic.ApplyNow();
         }
 
         private static GameObject Instantiate(string path)

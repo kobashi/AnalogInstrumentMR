@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "WindowPanel_WP3",
+  "integrationStage": "GateB",
+  "entries": [
+    {
+      "theme": "OrbitalAnalog",
+      "model": "WindowPanel",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/SM_WindowPanel_OrbitalAnalog_V6_Opus5_WP3.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/SM_WindowPanel_OrbitalAnalog_V6_Opus5_WP3.json",
+      "revision": "WP3",
+      "includedRevisions": ["WP3"],
+      "requiredRevisions": ["WP3"]
+    },
+    {
+      "theme": "ForgeBrass",
+      "model": "WindowPanel",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/SM_WindowPanel_ForgeBrass_V6_Opus5_WP3.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/SM_WindowPanel_ForgeBrass_V6_Opus5_WP3.json",
+      "revision": "WP3",
+      "includedRevisions": ["WP3"],
+      "requiredRevisions": ["WP3"]
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "WindowPanel",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/SM_WindowPanel_KineticSafety_V6_Opus5_WP3.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/SM_WindowPanel_KineticSafety_V6_Opus5_WP3.json",
+      "revision": "WP3",
+      "includedRevisions": ["WP3"],
+      "requiredRevisions": ["WP3"]
+    },
+    {
+      "theme": "MachinedErgonomics",
+      "model": "WindowPanel",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/SM_WindowPanel_MachinedErgonomics_V6_Opus5_WP3.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/SM_WindowPanel_MachinedErgonomics_V6_Opus5_WP3.json",
+      "revision": "WP3",
+      "includedRevisions": ["WP3"],
+      "requiredRevisions": ["WP3"]
+    }
+  ],
+  "gateCEvidence": {
+    "semanticUvAudit": "",
+    "fixedCameraVisualReview": "",
+    "motionAudit": "",
+    "unityStagingValidation": "",
+    "editModeTests": "",
+    "quest48Gate": "",
+    "quest64Stress": "",
+    "questValidationDeferral": "",
+    "rollbackPlan": ""
+  }
+}

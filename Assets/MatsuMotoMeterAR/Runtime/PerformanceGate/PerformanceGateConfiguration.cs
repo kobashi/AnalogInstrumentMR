@@ -3,6 +3,13 @@ using UnityEngine;
 
 namespace MatsuMotoMeterAR.PerformanceGate
 {
+    public enum PerformanceGateDisplayMode
+    {
+        None = 0,
+        Numeric = 1,
+        Graph = 2
+    }
+
     public static class PerformanceGateConfiguration
     {
         public const string CountExtra = "matsu_perf_count";
@@ -10,6 +17,7 @@ namespace MatsuMotoMeterAR.PerformanceGate
         public const string DurationExtra = "matsu_perf_duration";
         public const string DistanceExtra = "matsu_perf_distance";
         public const string KindExtra = "matsu_perf_kind";
+        public const string DisplayModeExtra = "matsu_perf_display";
         public const float DefaultDistanceMeters = 1.35f;
 
         private static bool loaded;
@@ -18,6 +26,7 @@ namespace MatsuMotoMeterAR.PerformanceGate
         private static int durationSeconds = 600;
         private static float distanceMeters = DefaultDistanceMeters;
         private static MockInstrumentKind? instrumentKind;
+        private static PerformanceGateDisplayMode displayMode;
 
         public static bool IsEnabled
         {
@@ -70,6 +79,15 @@ namespace MatsuMotoMeterAR.PerformanceGate
             {
                 EnsureLoaded();
                 return instrumentKind;
+            }
+        }
+
+        public static PerformanceGateDisplayMode DisplayMode
+        {
+            get
+            {
+                EnsureLoaded();
+                return displayMode;
             }
         }
 
@@ -138,6 +156,27 @@ namespace MatsuMotoMeterAR.PerformanceGate
             return null;
         }
 
+        public static PerformanceGateDisplayMode ParseDisplayMode(string value)
+        {
+            return !string.IsNullOrWhiteSpace(value) &&
+                   System.Enum.TryParse(
+                       value,
+                       true,
+                       out PerformanceGateDisplayMode parsed) &&
+                   System.Enum.IsDefined(typeof(PerformanceGateDisplayMode), parsed)
+                ? parsed
+                : PerformanceGateDisplayMode.None;
+        }
+
+        public static PerformanceGateDisplayMode ResolveDisplayMode(
+            PerformanceGateDisplayMode requested,
+            MockInstrumentKind? kind)
+        {
+            return kind == MockInstrumentKind.TrendMonitor
+                ? requested
+                : PerformanceGateDisplayMode.None;
+        }
+
         private static void EnsureLoaded()
         {
             if (loaded)
@@ -149,6 +188,7 @@ namespace MatsuMotoMeterAR.PerformanceGate
             durationSeconds = 600;
             distanceMeters = DefaultDistanceMeters;
             instrumentKind = null;
+            displayMode = PerformanceGateDisplayMode.None;
 
 #if UNITY_ANDROID && !UNITY_EDITOR
             try
@@ -171,6 +211,10 @@ namespace MatsuMotoMeterAR.PerformanceGate
                         DefaultDistanceMeters));
                 instrumentKind = ParseKind(
                     intent.Call<string>("getStringExtra", KindExtra));
+                displayMode = ResolveDisplayMode(
+                    ParseDisplayMode(
+                        intent.Call<string>("getStringExtra", DisplayModeExtra)),
+                    instrumentKind);
             }
             catch (AndroidJavaException exception)
             {

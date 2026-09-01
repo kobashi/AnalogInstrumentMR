@@ -42,6 +42,9 @@ namespace MatsuMotoMeterAR.Editor
         private const string TrendMonitorP2ManifestPath =
             "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
             "TrendMonitor_P2.json";
+        private const string WindowPanelWp3R2ManifestPath =
+            "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
+            "WindowPanel_WP3_r2.json";
 
         [MenuItem(
             "Tools/MatsuMotoMeterAR/Model Replacement/" +
@@ -164,6 +167,14 @@ namespace MatsuMotoMeterAR.Editor
         public static void BuildTrendMonitorP2Manifest()
         {
             BuildManifest(TrendMonitorP2ManifestPath);
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Build Window Panel WP4 Candidate Quest Review APK")]
+        public static void BuildWindowPanelWp4Candidate()
+        {
+            BuildManifest(WindowPanelWp3R2ManifestPath);
         }
 
         internal static string BuildManifest(string manifestPath)

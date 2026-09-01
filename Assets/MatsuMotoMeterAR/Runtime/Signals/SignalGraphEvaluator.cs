@@ -6,21 +6,25 @@ namespace MatsuMotoMeterAR.Signals
 {
     public sealed class SignalGraphEvaluator
     {
-        private readonly Dictionary<string, float> sums = new();
-        private readonly Dictionary<string, int> counts = new();
+        private readonly Dictionary<string, SignalCompositionAccumulator>
+            outputs = new();
 
         public void Evaluate(
             IReadOnlyList<SignalConnectionRecord> connections,
-            IReadOnlyDictionary<string, MockInstrumentInteraction> instruments)
+            IReadOnlyDictionary<string, MockInstrumentInteraction> instruments,
+            ISet<string> independentTargets = null,
+            IReadOnlyDictionary<string, SignalCompositionKind>
+                compositionKinds = null)
         {
-            sums.Clear();
-            counts.Clear();
+            outputs.Clear();
             if (connections == null || instruments == null)
                 return;
 
             foreach (var connection in connections)
             {
                 if (connection == null ||
+                    (independentTargets != null &&
+                     independentTargets.Contains(connection.targetPlacementId)) ||
                     !instruments.TryGetValue(
                         connection.sourcePlacementId,
                         out var source) ||
@@ -32,17 +36,30 @@ namespace MatsuMotoMeterAR.Signals
                 var transformed = InstrumentSignalPolicy.Transform(
                     source.NormalizedValue,
                     connection);
-                sums.TryGetValue(connection.targetPlacementId, out var sum);
-                counts.TryGetValue(connection.targetPlacementId, out var count);
-                sums[connection.targetPlacementId] = sum + transformed;
-                counts[connection.targetPlacementId] = count + 1;
+                if (!outputs.TryGetValue(
+                        connection.targetPlacementId,
+                        out var accumulator))
+                {
+                    var kind = SignalCompositionKind.Average;
+                    compositionKinds?.TryGetValue(
+                        connection.targetPlacementId,
+                        out kind);
+                    accumulator = new SignalCompositionAccumulator(
+                        kind);
+                }
+                accumulator.Add(
+                    transformed,
+                    connection.compositionPriority,
+                    connection.connectionId);
+                outputs[connection.targetPlacementId] = accumulator;
             }
 
-            foreach (var pair in sums)
+            foreach (var pair in outputs)
             {
                 if (!instruments.TryGetValue(pair.Key, out var target))
                     continue;
-                target.SetNormalizedValue(pair.Value / counts[pair.Key]);
+                if (pair.Value.TryGetValue(out var value))
+                    target.SetNormalizedValue(value);
             }
         }
 
@@ -52,11 +69,10 @@ namespace MatsuMotoMeterAR.Signals
             out int inputCount)
         {
             if (!string.IsNullOrEmpty(targetPlacementId) &&
-                sums.TryGetValue(targetPlacementId, out var sum) &&
-                counts.TryGetValue(targetPlacementId, out inputCount) &&
-                inputCount > 0)
+                outputs.TryGetValue(targetPlacementId, out var accumulator) &&
+                accumulator.TryGetValue(out value))
             {
-                value = sum / inputCount;
+                inputCount = accumulator.ValidCount;
                 return true;
             }
 

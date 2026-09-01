@@ -65,6 +65,53 @@ namespace MatsuMotoMeterAR.Tests
             Assert.That(manifest.entries[2].revision, Is.EqualTo("P1"));
         }
 
+        [Test]
+        public void Load_AcceptsTrendMonitorThemeShapesT1Manifest()
+        {
+            var manifest = CandidateStagingManifest.Load(
+                "Assets/MatsuMotoMeterAR/Editor/" +
+                "Opus5CandidateManifests/TrendMonitor_ThemeShapes_T1.json");
+
+            Assert.That(manifest.schemaVersion, Is.EqualTo(2));
+            Assert.That(
+                manifest.integrationStage,
+                Is.EqualTo(CandidateIntegrationStages.GateC));
+            Assert.That(
+                manifest.candidateId,
+                Is.EqualTo("TrendMonitor_ThemeShapes_T1"));
+            Assert.That(manifest.entries, Has.Length.EqualTo(3));
+            Assert.That(
+                manifest.entries[0].includedRevisions,
+                Is.EqualTo(new[] { "P1", "P2", "ThemeShapes_T1" }));
+            Assert.That(
+                manifest.entries[2].revision,
+                Is.EqualTo("ThemeShapes_T1"));
+        }
+
+        [Test]
+        public void Load_AcceptsTrendMonitorTextureT1Manifest()
+        {
+            var manifest = CandidateStagingManifest.Load(
+                "Assets/MatsuMotoMeterAR/Editor/" +
+                "Opus5CandidateManifests/TrendMonitor_Texture_T1.json");
+
+            Assert.That(manifest.schemaVersion, Is.EqualTo(2));
+            Assert.That(
+                manifest.integrationStage,
+                Is.EqualTo(CandidateIntegrationStages.GateC));
+            Assert.That(manifest.candidateId,
+                Is.EqualTo("TrendMonitor_Texture_T1"));
+            Assert.That(manifest.entries, Has.Length.EqualTo(3));
+            Assert.That(
+                manifest.entries[0].includedRevisions,
+                Is.EqualTo(new[]
+                {
+                    "P1", "P2", "ThemeShapes_T1", "Texture_T1"
+                }));
+            Assert.That(manifest.entries[2].revision,
+                Is.EqualTo("Texture_T1"));
+        }
+
         [TestCase("MAT_KineticSafety_V5_Readout", true)]
         [TestCase("MAT_KineticSafety_V6_Emissive", true)]
         [TestCase("MAT_KineticSafety_V5_Body", false)]
@@ -189,6 +236,32 @@ namespace MatsuMotoMeterAR.Tests
                              !check.Passed));
         }
 
+        [Test]
+        public void GateCReadiness_AcceptsExplicitQuestDeferral()
+        {
+            var manifest = ValidSchema2Manifest(CandidateIntegrationStages.GateC);
+            manifest.gateCEvidence = CompleteEvidence("present");
+            manifest.gateCEvidence.quest48Gate = string.Empty;
+            manifest.gateCEvidence.quest64Stress = string.Empty;
+            manifest.gateCEvidence.questValidationDeferral = "deferred";
+
+            var checks = CandidateGateCReadiness.Evaluate(
+                manifest,
+                path => path == "present" || path == "deferred" ||
+                        path == SourceReport);
+
+            Assert.That(checks, Has.All.Matches<CandidateGateCCheck>(
+                check => check.Passed));
+            Assert.That(
+                checks,
+                Has.Some.Matches<CandidateGateCCheck>(
+                    check => check.Id == "quest-48-gate" &&
+                             check.Detail == "DEFERRED: deferred"));
+            Assert.That(
+                CandidateGateCReadiness.BuildMarkdown(manifest, checks),
+                Does.Contain("| quest-48-gate | DEFERRED |"));
+        }
+
         [TestCase("UnknownTheme", "MeterRound", ".theme is unsupported")]
         [TestCase("KineticSafety", "UnknownModel", ".model is unsupported")]
         public void ValidateDefinition_RejectsUnsupportedIdentity(
@@ -201,6 +274,19 @@ namespace MatsuMotoMeterAR.Tests
             manifest.entries[0].model = model;
 
             AssertProblemsContain(manifest, expected);
+        }
+
+        [Test]
+        public void ValidateDefinition_AcceptsMachinedErgonomicsWindowPanel()
+        {
+            var manifest = ValidSchema2Manifest(CandidateIntegrationStages.GateB);
+            manifest.entries[0].theme = "MachinedErgonomics";
+            manifest.entries[0].model = "WindowPanel";
+            manifest.entries[0].revision = "WP3";
+            manifest.entries[0].includedRevisions = new[] { "WP3" };
+            manifest.entries[0].requiredRevisions = new[] { "WP3" };
+
+            Assert.That(manifest.ValidateDefinition(), Is.Empty);
         }
 
         [Test]
@@ -299,6 +385,7 @@ namespace MatsuMotoMeterAR.Tests
                 editModeTests = path,
                 quest48Gate = path,
                 quest64Stress = path,
+                questValidationDeferral = string.Empty,
                 rollbackPlan = path
             };
         }
