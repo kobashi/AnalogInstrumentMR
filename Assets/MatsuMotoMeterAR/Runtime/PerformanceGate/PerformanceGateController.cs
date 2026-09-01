@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using MatsuMotoMeterAR.Instruments;
+using MatsuMotoMeterAR.Signals;
 using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Profiling;
@@ -14,6 +15,8 @@ namespace MatsuMotoMeterAR.PerformanceGate
         // the final percentile and delayed-frame result cover the full run.
         private const int MaximumSamples = 150000;
         private const double VsyncMilliseconds = 1000.0 / 72.0;
+        private const string PerformanceInputA = "perf-a";
+        private const string PerformanceInputB = "perf-b";
 
         private readonly FrameTiming[] latestTiming = new FrameTiming[1];
         private readonly double[] cpuSamples = new double[MaximumSamples];
@@ -29,6 +32,9 @@ namespace MatsuMotoMeterAR.PerformanceGate
         private bool measurementActive;
         private bool reportWritten;
         private bool frameTimingAvailable;
+        private SignalMonitorView[] trendMonitors;
+        private readonly SignalMonitorRefreshScheduler
+            trendMonitorRefreshScheduler = new();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void Bootstrap()
@@ -79,6 +85,7 @@ namespace MatsuMotoMeterAR.PerformanceGate
                 $"frameTiming={frameTimingAvailable}, " +
                 $"distance={PerformanceGateConfiguration.DistanceMeters:0.00}m, " +
                 $"kind={PerformanceGateConfiguration.InstrumentKind?.ToString() ?? "Baseline"}, " +
+                $"profile={PerformanceGateConfiguration.DisplayMode}, " +
                 $"duration={PerformanceGateConfiguration.DurationSeconds}s.");
             SetStatus(
                 $"PERF WARMUP {WarmupSeconds:0}s\n" +
@@ -91,6 +98,8 @@ namespace MatsuMotoMeterAR.PerformanceGate
 
         private void Update()
         {
+            UpdateTrendMonitorDisplays();
+
             if (!measurementActive || reportWritten)
                 return;
 
@@ -129,6 +138,13 @@ namespace MatsuMotoMeterAR.PerformanceGate
         private void CreateScenario(Transform cameraTransform)
         {
             var count = PerformanceGateConfiguration.InstrumentCount;
+            if (PerformanceGateConfiguration.InstrumentKind ==
+                    MockInstrumentKind.TrendMonitor &&
+                PerformanceGateConfiguration.DisplayMode ==
+                    PerformanceGateDisplayMode.Graph)
+            {
+                trendMonitors = new SignalMonitorView[count];
+            }
             var forward = Vector3.ProjectOnPlane(cameraTransform.forward, Vector3.up).normalized;
             if (forward.sqrMagnitude < 0.001f)
                 forward = Vector3.forward;
@@ -153,6 +169,73 @@ namespace MatsuMotoMeterAR.PerformanceGate
                     pose,
                     theme: PerformanceGateConfiguration.Theme);
                 instrument.name = $"[PerfGate {index + 1:00}] {instrument.name}";
+
+                ConfigureTrendMonitor(instrument, index);
+            }
+        }
+
+        private void ConfigureTrendMonitor(GameObject instrument, int index)
+        {
+            if (PerformanceGateConfiguration.InstrumentKind !=
+                MockInstrumentKind.TrendMonitor)
+            {
+                return;
+            }
+
+            var monitor = instrument.GetComponentInChildren<SignalMonitorView>(true);
+            if (monitor == null)
+            {
+                Debug.LogError(
+                    $"[PerfGate] TrendMonitor display was not found at index {index}.");
+                return;
+            }
+
+            switch (PerformanceGateConfiguration.DisplayMode)
+            {
+                case PerformanceGateDisplayMode.None:
+                    monitor.gameObject.SetActive(false);
+                    break;
+                case PerformanceGateDisplayMode.Numeric:
+                    monitor.BeginRefresh();
+                    monitor.AddSample(PerformanceInputA, 0.5f, 0f);
+                    monitor.EndRefresh();
+                    break;
+                case PerformanceGateDisplayMode.Graph:
+                    trendMonitors[index] = monitor;
+                    break;
+            }
+        }
+
+        private void UpdateTrendMonitorDisplays()
+        {
+            if (trendMonitors == null || trendMonitors.Length == 0)
+                return;
+
+            var sampleTime = Time.unscaledTime;
+            var refreshCount = trendMonitorRefreshScheduler.Accumulate(
+                trendMonitors.Length,
+                Time.unscaledDeltaTime);
+
+            for (var refresh = 0; refresh < refreshCount; refresh++)
+            {
+                var index = trendMonitorRefreshScheduler.TakeNextIndex(
+                    trendMonitors.Length);
+                var monitor = trendMonitors[index];
+                if (monitor == null)
+                    continue;
+
+                var phase = sampleTime * 0.8f + index * 0.17f;
+                var inputA = 0.5f + Mathf.Sin(phase) * 0.42f;
+                var inputB = 0.5f + Mathf.Cos(phase * 0.61f) * 0.35f;
+                monitor.BeginRefresh();
+                monitor.AddSample(PerformanceInputA, inputA, sampleTime);
+                monitor.AddSample(PerformanceInputB, inputB, sampleTime);
+                monitor.AddComposedSample(
+                    SignalCompositionKind.Average,
+                    (inputA + inputB) * 0.5f,
+                    2,
+                    sampleTime);
+                monitor.EndRefresh();
             }
         }
 
@@ -198,7 +281,9 @@ namespace MatsuMotoMeterAR.PerformanceGate
             Debug.Log(
                 $"[PerfGate] FINAL diagnostic={diagnostic}, externalVerdict=PENDING, " +
                 $"count={PerformanceGateConfiguration.InstrumentCount}, " +
-                $"theme={PerformanceGateConfiguration.Theme}, elapsed={elapsed:0.0}s, " +
+                $"theme={PerformanceGateConfiguration.Theme}, " +
+                $"profile={PerformanceGateConfiguration.DisplayMode}, " +
+                $"elapsed={elapsed:0.0}s, " +
                 $"samples={sampleCount}, cpuP95={cpuP95:0.000}ms, " +
                 $"gpuP95={gpuP95:0.000}ms, frameP95={frameP95:0.000}ms, " +
                 $"delayed={delayedPercent:0.000}%, gcCollections={collections}, " +

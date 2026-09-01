@@ -53,6 +53,9 @@ namespace MatsuMotoMeterAR.Editor
         private const string TrendMonitorP2ManifestPath =
             "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
             "TrendMonitor_P2.json";
+        private const string WindowPanelWp3ManifestPath =
+            "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
+            "WindowPanel_WP3_r2.json";
 
         private static readonly ThemeEntry[] Themes =
         {
@@ -67,7 +70,11 @@ namespace MatsuMotoMeterAR.Editor
             new(
                 "KineticSafety",
                 new Color(0.02f, 0.62f, 0.76f),
-                3.4f)
+                3.4f),
+            new(
+                "MachinedErgonomics",
+                new Color(0.18f, 0.72f, 0.92f),
+                3.0f)
         };
 
         private static readonly ModelEntry[] Models =
@@ -191,6 +198,14 @@ namespace MatsuMotoMeterAR.Editor
             BuildCandidateManifest(TrendMonitorP2ManifestPath);
         }
 
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Build Window Panel WP3 Manifest Candidate Staging")]
+        public static void BuildWindowPanelWp3ManifestCandidate()
+        {
+            BuildCandidateManifest(WindowPanelWp3ManifestPath);
+        }
+
         internal static string BuildCandidateManifest(string manifestPath)
         {
             var manifest = CandidateStagingManifest.Load(manifestPath);
@@ -251,6 +266,9 @@ namespace MatsuMotoMeterAR.Editor
                         manifest.candidateId == "Meter_M2n8" ||
                         manifest.candidateId.StartsWith(
                             "TrendMonitor_",
+                            StringComparison.Ordinal) ||
+                        manifest.candidateId.StartsWith(
+                            "WindowPanel_",
                             StringComparison.Ordinal));
             }
 
@@ -699,42 +717,12 @@ namespace MatsuMotoMeterAR.Editor
                     $"SM_{model.Key}_{theme.Folder}_V6_Material.fbx");
             }
 
-            var opaque = BuildOpaqueMaterial(
-                materialRoot,
-                textureRoot,
-                theme.Folder,
-                "",
-                StandardBumpScale);
-            var emissive = BuildEmissiveMaterial(
-                materialRoot,
-                textureRoot,
-                theme,
-                "",
-                StandardBumpScale);
-            var largeOpaque = BuildOpaqueMaterial(
-                materialRoot,
-                textureRoot,
-                theme.Folder,
-                "_Large",
-                LargeBumpScale);
-            var largeEmissive = BuildEmissiveMaterial(
-                materialRoot,
-                textureRoot,
-                theme,
-                "_Large",
-                LargeBumpScale);
-            var mediumOpaque = BuildOpaqueMaterial(
-                materialRoot,
-                textureRoot,
-                theme.Folder,
-                "_Medium",
-                MediumBumpScale);
-            var mediumEmissive = BuildEmissiveMaterial(
-                materialRoot,
-                textureRoot,
-                theme,
-                "_Medium",
-                MediumBumpScale);
+            Material opaque;
+            Material emissive;
+            Material largeOpaque;
+            Material largeEmissive;
+            Material mediumOpaque;
+            Material mediumEmissive;
             if (useSolidRoleMaterials)
             {
                 opaque = BuildSolidRoleMaterial(
@@ -750,10 +738,63 @@ namespace MatsuMotoMeterAR.Editor
                 mediumOpaque = opaque;
                 mediumEmissive = emissive;
             }
+            else
+            {
+                opaque = BuildOpaqueMaterial(
+                    materialRoot,
+                    textureRoot,
+                    theme.Folder,
+                    "",
+                    StandardBumpScale);
+                emissive = BuildEmissiveMaterial(
+                    materialRoot,
+                    textureRoot,
+                    theme,
+                    "",
+                    StandardBumpScale);
+                largeOpaque = BuildOpaqueMaterial(
+                    materialRoot,
+                    textureRoot,
+                    theme.Folder,
+                    "_Large",
+                    LargeBumpScale);
+                largeEmissive = BuildEmissiveMaterial(
+                    materialRoot,
+                    textureRoot,
+                    theme,
+                    "_Large",
+                    LargeBumpScale);
+                mediumOpaque = BuildOpaqueMaterial(
+                    materialRoot,
+                    textureRoot,
+                    theme.Folder,
+                    "_Medium",
+                    MediumBumpScale);
+                mediumEmissive = BuildEmissiveMaterial(
+                    materialRoot,
+                    textureRoot,
+                    theme,
+                    "_Medium",
+                    MediumBumpScale);
+            }
             Material trendMonitorOpaque = null;
             Material trendMonitorReadout = null;
+            IReadOnlyDictionary<string, Material> windowPanelRoles = null;
             foreach (var model in models)
             {
+                if (model.Key == "WindowPanel" && useSolidRoleMaterials)
+                {
+                    windowPanelRoles = new Dictionary<string, Material>(
+                        StringComparer.OrdinalIgnoreCase)
+                    {
+                        ["Face"] = BuildWindowPanelRoleMaterial(
+                            materialRoot, theme, "Face"),
+                        ["Frame"] = BuildWindowPanelRoleMaterial(
+                            materialRoot, theme, "Frame"),
+                        ["Trim"] = BuildWindowPanelRoleMaterial(
+                            materialRoot, theme, "Trim")
+                    };
+                }
                 if (model.Key != "TrendMonitor")
                     continue;
                 trendMonitorOpaque = BuildTrendMonitorRoleMaterial(
@@ -786,8 +827,61 @@ namespace MatsuMotoMeterAR.Editor
                         ? largeEmissive
                         : IsMediumAsset(model.Key)
                             ? mediumEmissive
-                            : emissive);
+                            : emissive,
+                    model.Key == "WindowPanel"
+                        ? windowPanelRoles
+                        : null);
             }
+        }
+
+        private static Material BuildWindowPanelRoleMaterial(
+            string materialRoot,
+            ThemeEntry theme,
+            string role)
+        {
+            var material = LoadOrCreateMaterial(
+                $"{materialRoot}/MAT_{theme.Folder}_V6_WindowPanel_" +
+                $"{role}_Staging.mat");
+            foreach (var property in new[]
+                     {
+                         "_BaseMap", "_MainTex", "_BumpMap",
+                         "_MetallicGlossMap", "_EmissionMap"
+                     })
+            {
+                if (material.HasProperty(property))
+                    material.SetTexture(property, null);
+            }
+            material.DisableKeyword("_NORMALMAP");
+            material.DisableKeyword("_METALLICSPECGLOSSMAP");
+            material.DisableKeyword("_EMISSION");
+            material.SetColor("_EmissionColor", Color.black);
+
+            var color = (theme.Folder, role) switch
+            {
+                (_, "Face") => new Color(0.012f, 0.020f, 0.028f, 1f),
+                ("OrbitalAnalog", "Frame") =>
+                    new Color(0.10f, 0.15f, 0.19f, 1f),
+                ("OrbitalAnalog", _) =>
+                    new Color(0.16f, 0.48f, 0.55f, 1f),
+                ("ForgeBrass", "Frame") =>
+                    new Color(0.25f, 0.14f, 0.055f, 1f),
+                ("ForgeBrass", _) =>
+                    new Color(0.58f, 0.40f, 0.14f, 1f),
+                ("KineticSafety", "Frame") =>
+                    new Color(0.11f, 0.14f, 0.15f, 1f),
+                ("KineticSafety", _) =>
+                    new Color(0.78f, 0.58f, 0.02f, 1f),
+                ("MachinedErgonomics", "Frame") =>
+                    new Color(0.29f, 0.34f, 0.36f, 1f),
+                _ => new Color(0.12f, 0.58f, 0.68f, 1f)
+            };
+            material.color = color;
+            if (material.HasProperty("_BaseColor"))
+                material.SetColor("_BaseColor", color);
+            material.SetFloat("_Metallic", role == "Face" ? 0.02f : 0.52f);
+            material.SetFloat("_Smoothness", role == "Face" ? 0.30f : 0.58f);
+            EditorUtility.SetDirty(material);
+            return material;
         }
 
         private static Material BuildOpaqueMaterial(
@@ -1010,7 +1104,8 @@ namespace MatsuMotoMeterAR.Editor
             string theme,
             ModelEntry model,
             Material opaque,
-            Material emissive)
+            Material emissive,
+            IReadOnlyDictionary<string, Material> namedRoles = null)
         {
             var modelPath =
                 $"{modelRoot}/SM_{model.Key}_{theme}_V6_Material.fbx";
@@ -1047,10 +1142,11 @@ namespace MatsuMotoMeterAR.Editor
                          index++)
                     {
                         var sourceMaterial = sourceMaterials[index];
-                        replacements[index] =
-                            IsEmissiveMaterialRole(sourceMaterial?.name)
-                                ? emissive
-                                : opaque;
+                        replacements[index] = ResolveRoleMaterial(
+                            sourceMaterial?.name,
+                            opaque,
+                            emissive,
+                            namedRoles);
                     }
                     renderer.sharedMaterials = replacements;
                 }
@@ -1099,6 +1195,27 @@ namespace MatsuMotoMeterAR.Editor
             }
         }
 
+        private static Material ResolveRoleMaterial(
+            string sourceName,
+            Material opaque,
+            Material emissive,
+            IReadOnlyDictionary<string, Material> namedRoles)
+        {
+            if (namedRoles != null && !string.IsNullOrWhiteSpace(sourceName))
+            {
+                foreach (var role in namedRoles)
+                {
+                    if (sourceName.Contains(
+                            role.Key,
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        return role.Value;
+                    }
+                }
+            }
+            return IsEmissiveMaterialRole(sourceName) ? emissive : opaque;
+        }
+
         private static Transform FindNode(
             Transform root,
             string expectedName)
@@ -1117,7 +1234,7 @@ namespace MatsuMotoMeterAR.Editor
             GameObject imported,
             ModelEntry model)
         {
-            if (model.Key != "TrendMonitor")
+            if (model.MotionTarget != "display_surface")
             {
                 imported.transform.localRotation =
                     Quaternion.Euler(-90f, 0f, 0f);
@@ -1270,7 +1387,9 @@ namespace MatsuMotoMeterAR.Editor
                     new ResolvedCandidateEntry(
                         entry,
                         FindTheme(entry.theme),
-                        FindModel(entry.model)));
+                        entry.model == "WindowPanel"
+                            ? new ModelEntry("WindowPanel", "display_surface")
+                            : FindModel(entry.model)));
             }
             return resolved;
         }

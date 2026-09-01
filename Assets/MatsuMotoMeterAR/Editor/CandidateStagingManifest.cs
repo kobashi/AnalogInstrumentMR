@@ -12,7 +12,11 @@ namespace MatsuMotoMeterAR.Editor
         private const string AllowedSourceRoot =
             "ArtSource/Blender/BrushUp/Opus5/";
         private static readonly HashSet<string> SupportedThemes = new(
-            new[] { "OrbitalAnalog", "ForgeBrass", "KineticSafety" },
+            new[]
+            {
+                "OrbitalAnalog", "ForgeBrass", "KineticSafety",
+                "MachinedErgonomics"
+            },
             StringComparer.Ordinal);
         private static readonly HashSet<string> SupportedModels = new(
             new[]
@@ -337,6 +341,7 @@ namespace MatsuMotoMeterAR.Editor
         public string editModeTests;
         public string quest48Gate;
         public string quest64Stress;
+        public string questValidationDeferral;
         public string rollbackPlan;
     }
 }

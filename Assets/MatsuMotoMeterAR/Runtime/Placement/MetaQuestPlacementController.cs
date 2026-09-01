@@ -109,8 +109,13 @@ namespace MatsuMotoMeterAR.Placement
         private readonly List<string> staleConnectionLineIds = new();
         private readonly Dictionary<string, MockInstrumentInteraction>
             signalInteractions = new(StringComparer.Ordinal);
-        private readonly Dictionary<string, SignalMonitorView>
-            signalMonitors = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, SignalCompositionKind>
+            signalCompositionKinds = new(StringComparer.Ordinal);
+        private readonly List<RuntimePlacement> signalMonitorRefreshQueue = new();
+        private readonly SignalMonitorRefreshScheduler
+            signalMonitorRefreshScheduler = new();
+        private readonly HashSet<string> windowPanelTargetIds =
+            new(StringComparer.Ordinal);
         private readonly SignalGraphEvaluator signalGraphEvaluator = new();
         private readonly Stack<EditCommand> undoHistory = new();
         private readonly Stack<EditCommand> redoHistory = new();
@@ -136,6 +141,10 @@ namespace MatsuMotoMeterAR.Placement
             SignalTransformKind.Direct;
         private SignalTransformKind selectedConnectionPendingTransform =
             SignalTransformKind.Direct;
+        private int selectedConnectionPendingSlot =
+            SignalConnectionRecord.AutomaticTargetInputSlot;
+        private int selectedConnectionPendingPriority =
+            SignalConnectionRecord.DefaultCompositionPriority;
         private SignalConnectionRecord connectionParameterDraft;
         private SignalConnectionParameterField connectionParameterField;
         private RuntimePlacement groupMovePivot;
@@ -170,6 +179,8 @@ namespace MatsuMotoMeterAR.Placement
         private bool connectLeftTriggerEngaged;
         private bool connectAxisEngaged;
         private bool connectParameterFieldAxisEngaged;
+        private bool connectSlotAxisEngaged;
+        private bool connectTargetSettingAxisEngaged;
         private bool groupMoveArmed;
         private bool selectionAxisEngaged;
         private bool themeAxisEngaged;
@@ -223,6 +234,8 @@ namespace MatsuMotoMeterAR.Placement
             public GameObject Root;
             public MockInstrumentInteraction Interaction;
             public SignalMonitorView SignalMonitor;
+            public WindowPanelSignalRuntime WindowPanelSignal;
+            public WindowPanelGraphicsPrototypeView WindowPanelGraphic;
         }
 
         private sealed class HandOperationState
@@ -2173,6 +2186,8 @@ namespace MatsuMotoMeterAR.Placement
                 return;
             }
 
+            UpdateConnectTargetSettings(parameterAxis);
+
             var axisMagnitude = Mathf.Abs(transformAxis.x);
             if (axisMagnitude <= SelectionReleaseThreshold)
             {
@@ -2258,6 +2273,138 @@ namespace MatsuMotoMeterAR.Placement
                 UpdateConnectStatus();
         }
 
+        private void UpdateConnectTargetSettings(Vector2 axis)
+        {
+            var selectedTarget = selectedConnectionForRemoval == null
+                ? null
+                : FindPlacementById(
+                    selectedConnectionForRemoval.targetPlacementId);
+            var editsWindowPanelSlot = selectedTarget != null &&
+                                       GetPlacementKind(selectedTarget) ==
+                                       MockInstrumentKind.WindowPanel;
+            var editsPriority = selectedTarget?.Record != null &&
+                                SignalCompositionEditor.NormalizeKind(
+                                    selectedTarget.Record
+                                        .signalCompositionKind) ==
+                                SignalCompositionKind.Priority;
+            var slotMagnitude = Mathf.Abs(axis.x);
+            if (slotMagnitude <= SelectionReleaseThreshold)
+            {
+                connectSlotAxisEngaged = false;
+            }
+            else if ((editsWindowPanelSlot || editsPriority) &&
+                     !connectSlotAxisEngaged &&
+                     slotMagnitude >= SelectionThreshold)
+            {
+                connectSlotAxisEngaged = true;
+                if (editsWindowPanelSlot)
+                {
+                    selectedConnectionPendingSlot =
+                        WindowPanelInputSlotPolicy.CycleAvailable(
+                            placementDocument?.connections,
+                            selectedConnectionForRemoval.targetPlacementId,
+                            selectedConnectionForRemoval.connectionId,
+                            selectedConnectionPendingSlot,
+                            axis.x < 0f ? -1 : 1);
+                }
+                else
+                {
+                    selectedConnectionPendingPriority =
+                        SignalCompositionEditor.CyclePriority(
+                            selectedConnectionPendingPriority,
+                            axis.x < 0f ? -1 : 1);
+                }
+                PulseHaptics();
+                UpdateConnectStatus();
+            }
+
+            var targetPlacement = connectEditPlacement ?? connectTarget;
+            var editsTargetSetting =
+                selectedConnectionForRemoval == null &&
+                targetPlacement?.Record != null;
+            var targetKind = editsTargetSetting
+                ? GetPlacementKind(targetPlacement)
+                : MockInstrumentKind.RoundMeter;
+            var editsPreset = editsTargetSetting &&
+                              targetKind == MockInstrumentKind.WindowPanel;
+            var editsComposition = editsTargetSetting &&
+                                   SignalCompositionEditor
+                                       .CanConfigureTarget(targetKind);
+            var settingMagnitude = Mathf.Abs(axis.y);
+            if (settingMagnitude <= SelectionReleaseThreshold)
+            {
+                connectTargetSettingAxisEngaged = false;
+            }
+            else if ((editsPreset || editsComposition) &&
+                     !connectTargetSettingAxisEngaged &&
+                     settingMagnitude >= SelectionThreshold)
+            {
+                connectTargetSettingAxisEngaged = true;
+                var direction = axis.y < 0f ? 1 : -1;
+                if (editsPreset)
+                    CycleWindowPanelPreset(direction);
+                else
+                    CycleSignalComposition(targetPlacement, direction);
+            }
+        }
+
+        private void CycleSignalComposition(
+            RuntimePlacement placement,
+            int direction)
+        {
+            var record = placement?.Record;
+            if (record == null ||
+                !SignalCompositionEditor.CanConfigureTarget(
+                    GetPlacementKind(placement)))
+            {
+                return;
+            }
+
+            var previous = record.signalCompositionKind;
+            var next = SignalCompositionEditor.CycleKind(
+                previous,
+                direction);
+            record.signalCompositionKind = (int)next;
+            if (!SavePlacementDocument())
+            {
+                record.signalCompositionKind = previous;
+                SetConnectNotice("COMPOSITION SAVE FAILED", Color.red);
+                return;
+            }
+
+            UpdateSignalGraph();
+            SetConnectNotice(
+                $"COMPOSITION: {next.ToString().ToUpperInvariant()} | " +
+                $"OUTPUT {placement.Interaction?.NormalizedValue ?? 0f:0.00}",
+                ConnectionEditObjectColor,
+                0.6f);
+            PulseHaptics();
+        }
+
+        private void CycleWindowPanelPreset(int direction)
+        {
+            var record = (connectEditPlacement ?? connectTarget)?.Record;
+            if (record == null)
+                return;
+            var previous = record.windowPanelPreset;
+            const int presetCount = 3;
+            record.windowPanelPreset =
+                (previous + (direction < 0 ? -1 : 1) + presetCount) %
+                presetCount;
+            if (!SavePlacementDocument())
+            {
+                record.windowPanelPreset = previous;
+                SetConnectNotice("WINDOW PANEL PRESET SAVE FAILED", Color.red);
+                return;
+            }
+            SetConnectNotice(
+                $"WINDOW PANEL PRESET: " +
+                $"{((WindowPanelGraphicPreset)record.windowPanelPreset).ToString().ToUpperInvariant()}",
+                ConnectionEditObjectColor,
+                0.6f);
+            PulseHaptics();
+        }
+
         private void BeginConnectionParameterEdit()
         {
             if (selectedConnectionForRemoval == null)
@@ -2275,6 +2422,10 @@ namespace MatsuMotoMeterAR.Placement
                 selectedConnectionForRemoval.Clone();
             connectionParameterDraft.transformKind =
                 (int)selectedConnectionPendingTransform;
+            connectionParameterDraft.targetInputSlot =
+                selectedConnectionPendingSlot;
+            connectionParameterDraft.compositionPriority =
+                selectedConnectionPendingPriority;
             connectionParameterField =
                 SignalConnectionParameterEditor.FirstField(
                     selectedConnectionPendingTransform);
@@ -2405,6 +2556,8 @@ namespace MatsuMotoMeterAR.Placement
             destination.outputMaximum = source.outputMaximum;
             destination.thresholdValue = source.thresholdValue;
             destination.thresholdComparison = source.thresholdComparison;
+            destination.targetInputSlot = source.targetInputSlot;
+            destination.compositionPriority = source.compositionPriority;
         }
 
         private bool UpdateConnectTrigger(
@@ -2473,7 +2626,8 @@ namespace MatsuMotoMeterAR.Placement
 
             if (connectSource == null)
             {
-                if (kind == MockInstrumentKind.TrendMonitor)
+                if (kind == MockInstrumentKind.TrendMonitor ||
+                    kind == MockInstrumentKind.WindowPanel)
                 {
                     ClearConnectEditSelection();
                     connectTarget = placement;
@@ -2622,8 +2776,8 @@ namespace MatsuMotoMeterAR.Placement
             }
             else
             {
-                if (GetPlacementKind(connectTarget) ==
-                        MockInstrumentKind.TrendMonitor &&
+                var targetKind = GetPlacementKind(connectTarget);
+                if (targetKind == MockInstrumentKind.TrendMonitor &&
                     CountIncomingConnections(
                         connectTarget.Record.placementId) >=
                         InstrumentSignalPolicy.MaximumTrendMonitorInputs)
@@ -2631,6 +2785,20 @@ namespace MatsuMotoMeterAR.Placement
                     SetConnectNotice(
                         $"TREND MONITOR INPUT LIMIT " +
                         $"{InstrumentSignalPolicy.MaximumTrendMonitorInputs}",
+                        Color.yellow);
+                    return;
+                }
+                var targetInputSlot =
+                    SignalConnectionRecord.AutomaticTargetInputSlot;
+                if (targetKind == MockInstrumentKind.WindowPanel &&
+                    !WindowPanelInputSlotPolicy.TryFindLowestAvailable(
+                        placementDocument.connections,
+                        connectTarget.Record.placementId,
+                        out targetInputSlot))
+                {
+                    SetConnectNotice(
+                        $"WINDOW PANEL INPUT LIMIT " +
+                        $"{InstrumentSignalPolicy.MaximumWindowPanelInputs}",
                         Color.yellow);
                     return;
                 }
@@ -2651,7 +2819,8 @@ namespace MatsuMotoMeterAR.Placement
                         connectSource.Record.placementId,
                     targetPlacementId =
                         connectTarget.Record.placementId,
-                    transformKind = (int)pendingSignalTransform
+                    transformKind = (int)pendingSignalTransform,
+                    targetInputSlot = targetInputSlot
                 };
                 placementDocument.connections.Add(existing);
                 added = true;
@@ -2685,7 +2854,7 @@ namespace MatsuMotoMeterAR.Placement
         private void SelectNextConnectionForRemoval()
         {
             var selectedPlacement =
-                connectEditPlacement ?? connectSource;
+                connectEditPlacement ?? connectSource ?? connectTarget;
             if (selectedPlacement?.Record == null ||
                 placementDocument?.connections == null)
             {
@@ -2712,6 +2881,8 @@ namespace MatsuMotoMeterAR.Placement
             selectedConnectionForRemoval = next;
             selectedConnectionPendingTransform =
                 (SignalTransformKind)next.transformKind;
+            selectedConnectionPendingSlot = next.targetInputSlot;
+            selectedConnectionPendingPriority = next.compositionPriority;
             connectStatusHoldUntil = 0f;
             PulseHaptics();
             UpdateConnectStatus();
@@ -2755,6 +2926,10 @@ namespace MatsuMotoMeterAR.Placement
             selectedConnectionForRemoval = null;
             selectedConnectionPendingTransform =
                 SignalTransformKind.Direct;
+            selectedConnectionPendingSlot =
+                SignalConnectionRecord.AutomaticTargetInputSlot;
+            selectedConnectionPendingPriority =
+                SignalConnectionRecord.DefaultCompositionPriority;
             SetConnectNotice(
                 $"CONNECTION REMOVED | " +
                 $"{placementDocument.connections.Count}/" +
@@ -2780,11 +2955,18 @@ namespace MatsuMotoMeterAR.Placement
 
             var connection = selectedConnectionForRemoval;
             var previousTransform = connection.transformKind;
+            var previousSlot = connection.targetInputSlot;
+            var previousPriority = connection.compositionPriority;
             connection.transformKind =
                 (int)selectedConnectionPendingTransform;
+            connection.targetInputSlot = selectedConnectionPendingSlot;
+            connection.compositionPriority =
+                selectedConnectionPendingPriority;
             if (!SavePlacementDocument())
             {
                 connection.transformKind = previousTransform;
+                connection.targetInputSlot = previousSlot;
+                connection.compositionPriority = previousPriority;
                 SetConnectNotice(
                     "CONNECTION UPDATE FAILED",
                     Color.red);
@@ -2796,6 +2978,10 @@ namespace MatsuMotoMeterAR.Placement
             selectedConnectionForRemoval = null;
             selectedConnectionPendingTransform =
                 SignalTransformKind.Direct;
+            selectedConnectionPendingSlot =
+                SignalConnectionRecord.AutomaticTargetInputSlot;
+            selectedConnectionPendingPriority =
+                SignalConnectionRecord.DefaultCompositionPriority;
             connectStatusHoldUntil = 0f;
             SetConnectNotice(
                 $"{confirmedTransform.ToString().ToUpperInvariant()} APPLIED\n" +
@@ -2813,7 +2999,8 @@ namespace MatsuMotoMeterAR.Placement
 
             var transformLabel =
                 pendingSignalTransform.ToString().ToUpperInvariant();
-            var editPlacement = connectEditPlacement ?? connectSource;
+            var editPlacement =
+                connectEditPlacement ?? connectSource ?? connectTarget;
             if (connectionParameterDraft != null &&
                 selectedConnectionForRemoval != null)
             {
@@ -2863,6 +3050,13 @@ namespace MatsuMotoMeterAR.Placement
                     editPlacement.Record.placementId
                         ? "OUTPUT"
                         : "INPUT";
+                var editsWindowPanelInput = target != null &&
+                                            GetPlacementKind(target) ==
+                                            MockInstrumentKind.WindowPanel;
+                var editsPriorityInput = target?.Record != null &&
+                    SignalCompositionEditor.NormalizeKind(
+                        target.Record.signalCompositionKind) ==
+                    SignalCompositionKind.Priority;
                 var selectedIndex = 0;
                 var selectedCount = 0;
                 foreach (var candidate in placementDocument.connections)
@@ -2883,7 +3077,18 @@ namespace MatsuMotoMeterAR.Placement
                 SetStatus(
                     $"{direction} {selectedIndex}/{selectedCount} | " +
                     $"{selectedSourceName} -> {selectedTargetName}\n" +
-                    $"{selectedTransformLabel} | L STICK L/R: CHANGE\n" +
+                    $"{selectedTransformLabel}" +
+                    (editsWindowPanelInput
+                        ? $" | SLOT {SlotLabel(selectedConnectionPendingSlot)}"
+                        : editsPriorityInput
+                            ? $" | PRIORITY {selectedConnectionPendingPriority}"
+                        : string.Empty) +
+                    " | L STICK L/R: CHANGE\n" +
+                    (editsWindowPanelInput
+                        ? "R STICK L/R: SLOT | "
+                        : editsPriorityInput
+                            ? "R STICK L/R: PRIORITY | "
+                        : string.Empty) +
                     (SignalConnectionParameterEditor.Supports(
                             selectedConnectionPendingTransform)
                         ? "Y: PARAMETERS | "
@@ -2900,9 +3105,22 @@ namespace MatsuMotoMeterAR.Placement
                     connectEditPlacement.Record?.placementId);
                 var editName = MockInstrumentCatalog.GetDisplayName(
                     GetPlacementKind(connectEditPlacement));
+                var editsWindowPanel =
+                    GetPlacementKind(connectEditPlacement) ==
+                    MockInstrumentKind.WindowPanel;
+                var editsComposition =
+                    SignalCompositionEditor.CanConfigureTarget(
+                        GetPlacementKind(connectEditPlacement));
                 SetStatus(
                     $"SELECTED: {editName} | " +
                     $"{connectionCount} CONNECTION(S)\n" +
+                    (editsWindowPanel
+                        ? $"PRESET: {((WindowPanelGraphicPreset)connectEditPlacement.Record.windowPanelPreset).ToString().ToUpperInvariant()} | " +
+                          "R STICK U/D: CHANGE\n"
+                        : editsComposition
+                            ? $"COMPOSE: {SignalCompositionEditor.NormalizeKind(connectEditPlacement.Record.signalCompositionKind).ToString().ToUpperInvariant()} | " +
+                              "R STICK U/D: CHANGE\n"
+                        : string.Empty) +
                     "A: SELECT NEXT CONNECTION\n" +
                     "B: CANCEL",
                     ConnectionEditObjectColor);
@@ -2915,11 +3133,24 @@ namespace MatsuMotoMeterAR.Placement
                     GetPlacementKind(connectTarget));
                 var inputCount = CountIncomingConnections(
                     connectTarget.Record?.placementId);
+                var targetInputLimit = GetPlacementKind(connectTarget) ==
+                                       MockInstrumentKind.WindowPanel
+                    ? InstrumentSignalPolicy.MaximumWindowPanelInputs
+                    : InstrumentSignalPolicy.MaximumTrendMonitorInputs;
                 SetStatus(
                     $"TARGET: {monitorTargetName} | INPUTS {inputCount}/" +
-                    $"{InstrumentSignalPolicy.MaximumTrendMonitorInputs}\n" +
+                    $"{targetInputLimit}\n" +
+                    (GetPlacementKind(connectTarget) ==
+                         MockInstrumentKind.WindowPanel
+                        ? $"PRESET: {((WindowPanelGraphicPreset)connectTarget.Record.windowPanelPreset).ToString().ToUpperInvariant()} | " +
+                          "R STICK U/D\n"
+                        : SignalCompositionEditor.CanConfigureTarget(
+                            GetPlacementKind(connectTarget))
+                            ? $"COMPOSE: {SignalCompositionEditor.NormalizeKind(connectTarget.Record.signalCompositionKind).ToString().ToUpperInvariant()} | " +
+                              "R STICK U/D\n"
+                        : string.Empty) +
                     "SELECT INPUT SOURCE + TRIGGER\n" +
-                    "METERS ARE OBSERVABLE HERE | B: CANCEL",
+                    "A: NEXT CONNECTION | B: CANCEL",
                     ConnectTargetColor);
                 return;
             }
@@ -2955,8 +3186,24 @@ namespace MatsuMotoMeterAR.Placement
                 GetPlacementKind(connectTarget));
             SetStatus(
                 $"{sourceName} -> {targetName}\n" +
-                $"{transformLabel} | A CONFIRM | B CANCEL",
+                $"{transformLabel}" +
+                (GetPlacementKind(connectTarget) ==
+                     MockInstrumentKind.WindowPanel &&
+                 WindowPanelInputSlotPolicy.TryFindLowestAvailable(
+                     placementDocument?.connections,
+                     connectTarget.Record?.placementId,
+                     out var pendingSlot)
+                    ? $" | SLOT {SlotLabel(pendingSlot)}"
+                    : string.Empty) +
+                " | A CONFIRM | B CANCEL",
                 ConnectionColor(pendingSignalTransform));
+        }
+
+        private static string SlotLabel(int slot)
+        {
+            return WindowPanelInputSlotPolicy.IsValid(slot)
+                ? ((char)('A' + slot)).ToString()
+                : "AUTO";
         }
 
         private int CountConnections(string placementId)
@@ -3037,9 +3284,15 @@ namespace MatsuMotoMeterAR.Placement
             pendingSignalTransform = SignalTransformKind.Direct;
             selectedConnectionPendingTransform =
                 SignalTransformKind.Direct;
+            selectedConnectionPendingSlot =
+                SignalConnectionRecord.AutomaticTargetInputSlot;
+            selectedConnectionPendingPriority =
+                SignalConnectionRecord.DefaultCompositionPriority;
             connectionParameterDraft = null;
             connectAxisEngaged = false;
             connectParameterFieldAxisEngaged = false;
+            connectSlotAxisEngaged = false;
+            connectTargetSettingAxisEngaged = false;
         }
 
         private void ClearConnectEditSelection()
@@ -3051,13 +3304,20 @@ namespace MatsuMotoMeterAR.Placement
             selectedConnectionForRemoval = null;
             selectedConnectionPendingTransform =
                 SignalTransformKind.Direct;
+            selectedConnectionPendingSlot =
+                SignalConnectionRecord.AutomaticTargetInputSlot;
+            selectedConnectionPendingPriority =
+                SignalConnectionRecord.DefaultCompositionPriority;
             connectionParameterDraft = null;
             connectParameterFieldAxisEngaged = false;
+            connectSlotAxisEngaged = false;
+            connectTargetSettingAxisEngaged = false;
         }
 
         private void UpdateSignalGraph()
         {
             signalInteractions.Clear();
+            signalCompositionKinds.Clear();
             var connections = placementDocument?.connections;
             if (connections != null && connections.Count > 0)
             {
@@ -3070,13 +3330,18 @@ namespace MatsuMotoMeterAR.Placement
                     }
                     signalInteractions[placement.Record.placementId] =
                         placement.Interaction;
+                    signalCompositionKinds[placement.Record.placementId] =
+                        (SignalCompositionKind)
+                        placement.Record.signalCompositionKind;
                 }
             }
             signalGraphEvaluator.Evaluate(
                 connections,
-                signalInteractions);
+                signalInteractions,
+                RefreshWindowPanelSignals(connections),
+                signalCompositionKinds);
 
-            signalMonitors.Clear();
+            signalMonitorRefreshQueue.Clear();
             foreach (var placement in placements)
             {
                 if (placement?.SignalMonitor == null ||
@@ -3084,19 +3349,37 @@ namespace MatsuMotoMeterAR.Placement
                 {
                     continue;
                 }
-                placement.SignalMonitor.BeginRefresh();
-                signalMonitors[placement.Record.placementId] =
-                    placement.SignalMonitor;
+                signalMonitorRefreshQueue.Add(placement);
             }
 
+            var refreshCount = signalMonitorRefreshScheduler.Accumulate(
+                signalMonitorRefreshQueue.Count,
+                Time.unscaledDeltaTime);
+            for (var refresh = 0; refresh < refreshCount; refresh++)
+            {
+                var index = signalMonitorRefreshScheduler.TakeNextIndex(
+                    signalMonitorRefreshQueue.Count);
+                RefreshSignalMonitor(
+                    signalMonitorRefreshQueue[index],
+                    connections);
+            }
+        }
+
+        private void RefreshSignalMonitor(
+            RuntimePlacement placement,
+            IReadOnlyList<SignalConnectionRecord> connections)
+        {
+            var monitor = placement.SignalMonitor;
+            monitor.BeginRefresh();
             if (connections != null)
             {
                 foreach (var connection in connections)
                 {
                     if (connection == null ||
-                        !signalMonitors.TryGetValue(
+                        !string.Equals(
                             connection.targetPlacementId,
-                            out var monitor) ||
+                            placement.Record.placementId,
+                            StringComparison.Ordinal) ||
                         !signalInteractions.TryGetValue(
                             connection.sourcePlacementId,
                             out var source))
@@ -3111,8 +3394,52 @@ namespace MatsuMotoMeterAR.Placement
                 }
             }
 
-            foreach (var monitor in signalMonitors.Values)
-                monitor.EndRefresh();
+            var compositionKind = SignalCompositionEditor.NormalizeKind(
+                placement.Record.signalCompositionKind);
+            if (signalGraphEvaluator.TryGetOutput(
+                    placement.Record.placementId,
+                    out var composedValue,
+                    out var validInputCount))
+            {
+                monitor.AddComposedSample(
+                    compositionKind,
+                    composedValue,
+                    validInputCount);
+            }
+            else if (monitor.TouchedChannelCount > 0)
+            {
+                monitor.SetComposedUnavailable(compositionKind);
+            }
+
+            monitor.EndRefresh();
+        }
+
+        private ISet<string> RefreshWindowPanelSignals(
+            IReadOnlyList<SignalConnectionRecord> connections)
+        {
+            windowPanelTargetIds.Clear();
+            foreach (var placement in placements)
+            {
+                if (placement?.WindowPanelSignal == null ||
+                    placement.Record == null)
+                {
+                    continue;
+                }
+
+                var placementId = placement.Record.placementId;
+                windowPanelTargetIds.Add(placementId);
+                placement.WindowPanelSignal.Refresh(
+                    placementId,
+                    connections,
+                    signalInteractions);
+                placement.WindowPanelSignal.ApplyTo(
+                    placement.WindowPanelGraphic,
+                    (WindowPanelGraphicPreset)
+                    placement.Record.windowPanelPreset);
+                placement.Interaction?.SetNormalizedValue(
+                    placement.WindowPanelSignal.OutputValue);
+            }
+            return windowPanelTargetIds;
         }
 
         private void UpdateConnectionVisuals()
@@ -5602,7 +5929,14 @@ namespace MatsuMotoMeterAR.Placement
                     Root = newInstrument,
                     Interaction = interaction,
                     SignalMonitor = newInstrument
-                        .GetComponentInChildren<SignalMonitorView>(true)
+                        .GetComponentInChildren<SignalMonitorView>(true),
+                    WindowPanelSignal = selectedKind ==
+                                        MockInstrumentKind.WindowPanel
+                        ? new WindowPanelSignalRuntime()
+                        : null,
+                    WindowPanelGraphic = newInstrument
+                        .GetComponentInChildren<
+                            WindowPanelGraphicsPrototypeView>(true)
                 });
                 ClearEditHistory();
                 Debug.Log(
@@ -5903,7 +6237,14 @@ namespace MatsuMotoMeterAR.Placement
                     Root = root,
                     Interaction = interaction,
                     SignalMonitor = root
-                        .GetComponentInChildren<SignalMonitorView>(true)
+                        .GetComponentInChildren<SignalMonitorView>(true),
+                    WindowPanelSignal = kind ==
+                                        MockInstrumentKind.WindowPanel
+                        ? new WindowPanelSignalRuntime()
+                        : null,
+                    WindowPanelGraphic = root
+                        .GetComponentInChildren<
+                            WindowPanelGraphicsPrototypeView>(true)
                 };
                 SetPlacementLocalPose(
                     runtimePlacement,

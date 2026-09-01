@@ -10,6 +10,7 @@ INSTALL_APK="${INSTALL_APK:-1}"
 STARTUP_TIMEOUT_SECONDS="${STARTUP_TIMEOUT_SECONDS:-30}"
 DISTANCE_METERS="${DISTANCE_METERS:-1.35}"
 INSTRUMENT_KIND="${INSTRUMENT_KIND:-}"
+DISPLAY_MODE="${DISPLAY_MODE:-None}"
 ADB="${ADB:-/Applications/Unity/Hub/Editor/6000.3.19f1/PlaybackEngines/AndroidPlayer/SDK/platform-tools/adb}"
 APK="${APK:-Builds/Performance/AnalogInstrumentMR-v0.2.0-perfgate-quest3.apk}"
 PACKAGE="com.DefaultCompany.MatsuMotoMeterAR"
@@ -44,9 +45,19 @@ fi
 case "$INSTRUMENT_KIND" in
   ""|RoundMeter|Lever|ToggleSwitch|RotaryKnob|PushButton|IndicatorLamp|\
 WindowMeter|WindowPanel|StatusIndicator|ThrottleLever|PowerSlider|\
-RoundMeterMedium|RoundMeterLarge) ;;
+RoundMeterMedium|RoundMeterLarge|TrendMonitor) ;;
   *) echo "INSTRUMENT_KIND is not a supported MockInstrumentKind" >&2; exit 64 ;;
 esac
+
+case "$DISPLAY_MODE" in
+  None|Numeric|Graph) ;;
+  *) echo "DISPLAY_MODE must be None, Numeric, or Graph" >&2; exit 64 ;;
+esac
+
+if [[ "$DISPLAY_MODE" != "None" && "$INSTRUMENT_KIND" != "TrendMonitor" ]]; then
+  echo "DISPLAY_MODE Numeric/Graph requires INSTRUMENT_KIND=TrendMonitor" >&2
+  exit 64
+fi
 
 if [[ ! -x "$ADB" ]]; then
   echo "adb not found: $ADB" >&2
@@ -87,7 +98,7 @@ exec > >(tee -a "$REPORT") 2>&1
 echo "[host] report=$REPORT"
 echo "[host] apk=$APK"
 echo "[host] sha256=$(shasum -a 256 "$APK" | awk '{print $1}')"
-echo "[host] scenario=count:${COUNT} theme:${THEME} duration:${MEASUREMENT_SECONDS}s distance:${DISTANCE_METERS}m kind:${INSTRUMENT_KIND:-Baseline}"
+echo "[host] scenario=count:${COUNT} theme:${THEME} duration:${MEASUREMENT_SECONDS}s distance:${DISTANCE_METERS}m kind:${INSTRUMENT_KIND:-Baseline} profile:${DISPLAY_MODE}"
 if [[ "$INSTALL_APK" == "1" ]]; then
   "$ADB" install -r "$APK"
 else
@@ -104,7 +115,8 @@ start_app() {
     --ei matsu_perf_count "$COUNT" \
     --ei matsu_perf_duration "$MEASUREMENT_SECONDS" \
     --es matsu_perf_theme "$THEME" \
-    --ef matsu_perf_distance "$DISTANCE_METERS"
+    --ef matsu_perf_distance "$DISTANCE_METERS" \
+    --es matsu_perf_display "$DISPLAY_MODE"
   )
   if [[ -n "$INSTRUMENT_KIND" ]]; then
     command+=(--es matsu_perf_kind "$INSTRUMENT_KIND")

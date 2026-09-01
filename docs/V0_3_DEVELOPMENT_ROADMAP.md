@@ -89,21 +89,37 @@ monitorを先に置くことで、parameter編集の結果をQuest内で直接�
 次の3件は後工程で扱う。第4テーマproduction Gate、48 / 64 objects長時間試験、現在のrelease作業を
 止めて着手しない。実装開始時には個別candidate、固定画像、Quest Gateを設ける。
 
-1. **既存3テーマのTrend Monitorをテーマ固有形状へ再設計する。**
-   現状のKinetic Safety / Forge Brass / Orbital Analogは同一筐体形状で色だけが変わる。
-   各style guideに沿った筐体、bezel、取付方法、操作・保守意匠と専用textureへ作り直す。
+1. **形状・texture完了（2026-08-29）: 既存3テーマのTrend Monitorをテーマ固有形状へ再設計する。**
+   Kinetic Safety / Forge Brass / Orbital Analogの同一筐体を、ThemeShapes T1で各style guideに
+   沿った固有silhouette、bezel、取付意匠へ置換し、画像受領、Gate C、本番登録まで完了した。
+   `TrendMonitor_Texture_T1`はユーザーの固定画像受領後にGate Cへ進め、テーマ専用1K
+   BaseColor／Normal／MetallicSmoothnessと、筐体模様を混入させない暗色display materialを
+   productionへ登録した。Active Prefab 56 / 56、EditMode 165 / 165をPASSし、
+   Quest 48 / 64だけはユーザー指示により明示保留している。
    display plane寸法・正面方向・overlay fit・最大4入力・LineRenderer契約は共通化し、
    テーマ差によって表示面座標やruntime signal処理を分岐させない。
 2. **完了（2026-08-27）: Orbital Analog／Forge Brass meterのカバー上の重複目盛を除去。**
    MeterGlassScale G1としてMedium／Largeの`secondary_scale_*`だけを削除し、文字盤側の
    主目盛、針、230°の可動範囲を維持した。固定画像、Prefab、Quest 3実機、48配置gate、
    64配置stressをPASSし、元FBX GUIDを維持してproductionへ昇格済み。
-3. **Window Panelを4テーマ共通で非メーター型graphic instrumentへ再設計する。**
+3. **production desktop完了（2026-09-01）／Quest受入延期: Window Panelを4テーマ共通で非メーター型graphic instrumentへ再設計する。**
    meter、針、vane、アナログ目盛を使わず、2Dの幾何学的なparametric図形を表示する。
    複数入力を受け付け、入力ごとに位置、回転、scale、色、位相、変形量など明示されたparameterへ
    割り当て、連続animationとして描画する。入力欠損・無効値・停止時の表示方針、parameter範囲、
    合成順序、保存schemaを定義する。図形はテーマ固有frame / textureの内側で共通座標系を使い、
    Quest向けにallocation、更新Hz、頂点数、material数へ上限を設ける。
+
+   実装前契約は`docs/WINDOW_PANEL_GRAPHICS_CONTRACT.md`に固定した。最大4入力を平均せず
+   Energy / Balance / Phase / Detailの4 slotへ割り当て、Orbit / Rose / Lissajousの3 presetを
+   shared coordinateで描画する。WP1の隔離runtime prototype、WP2のschema v6／UI、WP3の
+   4-theme model candidateの順にGateを分離する。
+
+   WP1隔離runtime prototypeは2026-08-31にtechnical PASS。3 preset、4 slot、invalid表示、
+   256 vertex／768 index固定budget、geometry 100回再生成0 B、EditMode 173 / 173を確認した。
+   続くWP2でschema v6／Connect UI、WP3-r2でBlender 5.2由来の4テーマ固有frame、WP4で
+   production runtime統合まで完了した。production固定画像は4テーマ×3 presetの12 / 12 PASS、
+   candidate依存0、EditMode 187 / 187、候補defineなしの通常APK生成をPASSした。Quest上のvisual／
+   interaction／48／64だけはユーザー指示により延期する。
 
 Window Panelの再設計は単なる3D置換ではなく、複数入力compositionと新しい表示runtimeを伴う。
 Priority 4の入力合成モデルと整合させ、外観制作をsignal / persistence契約より先行させない。
@@ -111,6 +127,21 @@ Priority 4の入力合成モデルと整合させ、外観制作をsignal / pers
 ## Priority 4: multiple-input composition
 
 現在の暗黙的な平均合成を明示設定へ置き換える。
+
+**基盤完了（2026-09-01）:** 現行経路を監査し、`docs/MULTI_INPUT_COMPOSITION_CONTRACT.md`へ
+Average／Sum／Minimum／Maximum／Priority、無効入力、Priority tie-break、schema移行、allocation制約を
+固定した。第一段階としてallocation-free accumulatorを追加し、既存evaluatorをAverage互換のまま移行した。
+この第一段階のUnity EditModeは196 / 196 PASSだった。
+
+**schema/runtime完了（2026-09-01）:** schema v7へtarget単位の`signalCompositionKind`と
+connection単位の`compositionPriority`（0〜3）を追加した。v6はAverage／priority 0へ移行し、既存Window Panel
+slot、graphic preset、Range／Threshold parameterを維持する。runtimeは保存済みの5方式をtargetごとに評価する。
+Unity EditModeは203 / 203 PASS。設定UIとTrend Monitor合成診断は次段階とする。
+
+**desktop UI完了（2026-09-01）:** Connectモードで通常targetの合成方式を右stick上下から変更し、
+即時保存・再評価できる。Priority targetのconnectionは右stick左右でrank 0〜3をpreviewし、左stick押下で
+確定する。Window Panelのpreset／slot操作、Range／Threshold parameter編集を維持する。Unity EditModeは
+206 / 206 PASS。Quest操作受入とTrend Monitor合成診断は保留する。
 
 - Average / Sum / Min / Max / Priorityの最小構成
 - 入力欠損、無効値、更新停止時の方針

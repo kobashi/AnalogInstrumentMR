@@ -78,9 +78,10 @@ namespace MatsuMotoMeterAR.Editor
 
             var previousFrameTimingStats = PlayerSettings.enableFrameTimingStats;
             PlayerSettings.enableFrameTimingStats = true;
-            QuarantineDevAgentSettings();
+            var quarantined = false;
             try
             {
+                quarantined = QuarantineDevAgentSettings();
                 var report = BuildPipeline.BuildPlayer(options);
                 if (report.summary.result != BuildResult.Succeeded)
                 {
@@ -96,23 +97,55 @@ namespace MatsuMotoMeterAR.Editor
             finally
             {
                 PlayerSettings.enableFrameTimingStats = previousFrameTimingStats;
-                AssetDatabase.DeleteAsset(QuarantinedDevAgentSettingsPath);
+                if (quarantined)
+                    RestoreDevAgentSettings();
             }
         }
 
-        private static void QuarantineDevAgentSettings()
+        private static bool QuarantineDevAgentSettings()
         {
-            AssetDatabase.DeleteAsset(QuarantinedDevAgentSettingsPath);
             if (!File.Exists(DevAgentSettingsPath))
-                return;
+                return false;
+            if (File.Exists(QuarantinedDevAgentSettingsPath))
+            {
+                throw new IOException(
+                    "Build credential quarantine already exists: " +
+                    QuarantinedDevAgentSettingsPath);
+            }
 
             var error = AssetDatabase.MoveAsset(
                 DevAgentSettingsPath,
                 QuarantinedDevAgentSettingsPath);
             if (!string.IsNullOrEmpty(error))
             {
-                throw new InvalidOperationException(
-                    $"Could not quarantine {DevAgentSettingsPath}: {error}");
+                throw new IOException(
+                    $"Could not quarantine development credentials: {error}");
+            }
+            return true;
+        }
+
+        private static void RestoreDevAgentSettings()
+        {
+            if (!File.Exists(QuarantinedDevAgentSettingsPath))
+            {
+                throw new FileNotFoundException(
+                    "Quarantined development credentials were lost.",
+                    QuarantinedDevAgentSettingsPath);
+            }
+            if (File.Exists(DevAgentSettingsPath))
+            {
+                throw new IOException(
+                    "Cannot restore development credentials because the " +
+                    $"destination already exists: {DevAgentSettingsPath}");
+            }
+
+            var error = AssetDatabase.MoveAsset(
+                QuarantinedDevAgentSettingsPath,
+                DevAgentSettingsPath);
+            if (!string.IsNullOrEmpty(error))
+            {
+                throw new IOException(
+                    $"Could not restore development credentials: {error}");
             }
         }
     }

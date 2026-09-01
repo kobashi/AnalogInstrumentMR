@@ -159,7 +159,10 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                 StringComparer.OrdinalIgnoreCase);
             foreach (var sourceRecord in source.placements)
             {
-                if (!TryNormalizeRecord(sourceRecord, out var record) ||
+                if (!TryNormalizeRecord(
+                        sourceRecord,
+                        sourceSchemaVersion,
+                        out var record) ||
                     !placementIds.Add(record.placementId))
                 {
                     continue;
@@ -195,6 +198,8 @@ namespace MatsuMotoMeterAR.PlacementPersistence
             var endpointPairs = new HashSet<string>(StringComparer.Ordinal);
             var trendMonitorInputCounts = new Dictionary<string, int>(
                 StringComparer.Ordinal);
+            var windowPanelSlots = new Dictionary<string, bool[]>(
+                StringComparer.Ordinal);
             foreach (var sourceConnection in source.connections)
             {
                 if (normalized.connections.Count >=
@@ -227,6 +232,36 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                     }
                     trendMonitorInputCounts[connection.targetPlacementId] =
                         inputCount + 1;
+                }
+                else if (targetKind == MockInstrumentKind.WindowPanel)
+                {
+                    if (!windowPanelSlots.TryGetValue(
+                            connection.targetPlacementId,
+                            out var occupiedSlots))
+                    {
+                        occupiedSlots = new bool[
+                            InstrumentSignalPolicy.MaximumWindowPanelInputs];
+                        windowPanelSlots.Add(
+                            connection.targetPlacementId,
+                            occupiedSlots);
+                    }
+
+                    var requestedSlot = sourceSchemaVersion < 6
+                        ? SignalConnectionRecord.AutomaticTargetInputSlot
+                        : connection.targetInputSlot;
+                    if (!WindowPanelInputSlotPolicy.TryReserve(
+                            occupiedSlots,
+                            requestedSlot,
+                            out var assignedSlot))
+                    {
+                        continue;
+                    }
+                    connection.targetInputSlot = assignedSlot;
+                }
+                else
+                {
+                    connection.targetInputSlot =
+                        SignalConnectionRecord.AutomaticTargetInputSlot;
                 }
                 normalized.connections.Add(connection);
             }
@@ -273,8 +308,9 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                 source.transformKind)
                 ? source.transformKind
                 : (int)SignalTransformKind.Direct;
-            var usesLegacyDefaults = sourceSchemaVersion <
-                                     PlacementDocument.CurrentSchemaVersion;
+            // Configurable transform parameters were introduced in schema v5.
+            // Later schema migrations must preserve v5 transform parameters.
+            var usesLegacyDefaults = sourceSchemaVersion < 5;
             var inputMinimum = usesLegacyDefaults
                 ? SignalConnectionRecord.DefaultInputMinimum
                 : NormalizeUnitValue(
@@ -307,6 +343,12 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                 source.thresholdComparison)
                 ? source.thresholdComparison
                 : (int)SignalThresholdComparison.Above;
+            var compositionPriority = sourceSchemaVersion < 7
+                ? SignalConnectionRecord.DefaultCompositionPriority
+                : Mathf.Clamp(
+                    source.compositionPriority,
+                    SignalConnectionRecord.MinimumCompositionPriority,
+                    SignalConnectionRecord.MaximumCompositionPriority);
             connection = new SignalConnectionRecord
             {
                 connectionId = connectionId,
@@ -318,7 +360,9 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                 outputMinimum = outputMinimum,
                 outputMaximum = outputMaximum,
                 thresholdValue = thresholdValue,
-                thresholdComparison = thresholdComparison
+                thresholdComparison = thresholdComparison,
+                targetInputSlot = source.targetInputSlot,
+                compositionPriority = compositionPriority
             };
             return true;
         }
@@ -337,6 +381,7 @@ namespace MatsuMotoMeterAR.PlacementPersistence
 
         private static bool TryNormalizeRecord(
             PlacementRecord source,
+            int sourceSchemaVersion,
             out PlacementRecord record)
         {
             record = null;
@@ -380,6 +425,17 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                     source.instrumentTypeId)
                 ? source.instrumentTypeId
                 : MockInstrumentCatalog.GetTypeId(MockInstrumentKind.RoundMeter);
+            record.windowPanelPreset = Enum.IsDefined(
+                typeof(WindowPanelGraphicPreset),
+                source.windowPanelPreset)
+                ? source.windowPanelPreset
+                : (int)WindowPanelGraphicPreset.Orbit;
+            record.signalCompositionKind = sourceSchemaVersion >= 7 &&
+                                           Enum.IsDefined(
+                typeof(SignalCompositionKind),
+                source.signalCompositionKind)
+                ? source.signalCompositionKind
+                : (int)SignalCompositionKind.Average;
             record.surfaceKind = surface;
             record.localOffset = SerializablePose.FromPose(
                 new Pose(new Vector3(offset.px, offset.py, offset.pz), rotation));

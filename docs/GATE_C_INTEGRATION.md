@@ -40,9 +40,15 @@ schema v2 manifestの`gateCEvidence`には次のpathを設定する。
   "editModeTests": "Builds/Reports/editmode-results.xml",
   "quest48Gate": "Builds/Reports/perfgate-48-....log",
   "quest64Stress": "Builds/Reports/perfgate-64-....log",
+  "questValidationDeferral": "Builds/Reports/candidate-...-quest-deferral.md",
   "rollbackPlan": "docs/...-rollback.md"
 }
 ```
+
+通常は`quest48Gate`と`quest64Stress`を指定する。ユーザーが一定期間のQuest実機検証延期を
+明示した場合に限り、両pathを空にして`questValidationDeferral`へ延期の範囲・理由・残存リスク・
+再開条件を記録した証跡を指定できる。readiness表ではこの状態を`PASS`ではなく`DEFERRED`と表示する。
+延期は実機合格を意味せず、後日まとめて行うQuest回帰一覧から除外してはならない。
 
 Unityメニュー`Report Selected Candidate Gate C Readiness`は、lineageと各pathの存在を一覧化する。
 証跡の内容自体の合否判定は各監査toolが担当し、readiness reportは欠落と組み合わせ事故を防ぐ。

@@ -26,6 +26,8 @@ namespace MatsuMotoMeterAR.Signals
         public const float RangeMaximum = 0.8f;
         public const float Threshold = 0.5f;
         public const int MaximumTrendMonitorInputs = 4;
+        public const int MaximumWindowPanelInputs =
+            WindowPanelGraphicGeometry.SlotCount;
 
         public static bool CanSource(MockInstrumentKind kind)
         {
@@ -63,6 +65,11 @@ namespace MatsuMotoMeterAR.Signals
                 return false;
             if (target == MockInstrumentKind.TrendMonitor)
                 return CanObserve(source);
+            if (target == MockInstrumentKind.WindowPanel)
+            {
+                return source != MockInstrumentKind.WindowPanel &&
+                       CanObserve(source);
+            }
             return CanSource(source);
         }
 

@@ -106,11 +106,16 @@ Project windowでmanifest JSONを選ぶと、同じentry集合から次の処理
    - active OFF / active ON / candidate OFF / candidate ONの4列
    - manifestのentry順に1行ずつ出力
    - `Builds/Reports/candidate-<candidateId>-unity-visual-contact-sheet.png`
-2. `Audit Selected Candidate Manifest Motion`
+2. `Render Selected Candidate Manifest Shape Review`
+   - candidateの正面 / 左斜視 / 右斜視 / 側面の4列
+   - TrendMonitorは全視点に同じ数値・LineRenderer overlayを描き、斜視での端欠け、
+     z-fighting、背面透過を確認する
+   - `Builds/Reports/candidate-<candidateId>-unity-shape-contact-sheet.png`
+3. `Audit Selected Candidate Manifest Motion`
    - Meter、Lever、Toggle、Rotary、Button、Throttle、PowerSlider、WindowMeter、WindowPanelを対象
    - 全状態のlinear / angular travel、axis alignment、mount Zを記録
    - Lamp / StatusIndicatorのような静的・発光状態モデルはskipする
-3. `Build Selected Candidate Manifest Quest Review APK`
+4. `Build Selected Candidate Manifest Quest Review APK`
    - staging build、validator、motion auditを先に実行する
    - build中だけ`CandidateReviewConfiguration.json`をResourcesへ生成し、manifest記載prefabへ切り替える
    - build終了時に一時configurationを削除し、隔離した`DevAgentSettings.asset`を必ず復元する

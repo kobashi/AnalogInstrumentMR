@@ -22,6 +22,9 @@ namespace MatsuMotoMeterAR.Editor
         private const string MeterM2n8ManifestPath =
             "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
             "Meter_M2n8.json";
+        private const string WindowPanelWp3R2ManifestPath =
+            "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
+            "WindowPanel_WP3_r2.json";
         private const float MinimumVisibleMotionMeters = 0.005f;
         private const float MinimumVisibleRotationDegrees = 5f;
         private const float MinimumAxisAlignment = 0.98f;
@@ -159,6 +162,14 @@ namespace MatsuMotoMeterAR.Editor
             AuditManifest(MeterM2n8ManifestPath);
         }
 
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Audit Window Panel WP4 Candidate Display")]
+        public static void RunWindowPanelWp4()
+        {
+            AuditManifest(WindowPanelWp3R2ManifestPath);
+        }
+
         internal static string AuditManifest(string manifestPath)
         {
             var manifest = CandidateStagingManifest.Load(manifestPath);
@@ -180,8 +191,20 @@ namespace MatsuMotoMeterAR.Editor
             {
                 if (!TryFindEntry(candidate.model, out var entry))
                     continue;
+                var prefabPath = manifest.CandidatePrefabPath(candidate);
+                if (candidate.model == "WindowPanel" &&
+                    IsFixedDisplaySurface(prefabPath))
+                {
+                    AuditFixedDisplay(
+                        prefabPath,
+                        $"{candidate.theme}/{candidate.model}",
+                        report,
+                        failures);
+                    audited++;
+                    continue;
+                }
                 Audit(
-                    manifest.CandidatePrefabPath(candidate),
+                    prefabPath,
                     $"{candidate.theme}/{candidate.model}",
                     entry,
                     report,
@@ -204,6 +227,51 @@ namespace MatsuMotoMeterAR.Editor
                 $"{audited}/{audited}; static entries skipped=" +
                 $"{manifest.entries.Length - audited}. Report: {reportPath}");
             return reportPath;
+        }
+
+        private static bool IsFixedDisplaySurface(string path)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            var manifest = prefab?.GetComponent<ThemeVisualManifest>();
+            return manifest?.MotionTarget != null &&
+                   manifest.MotionTarget.name == "display_surface";
+        }
+
+        private static void AuditFixedDisplay(
+            string path,
+            string label,
+            StringBuilder report,
+            ICollection<string> failures)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            var visualManifest = prefab?.GetComponent<ThemeVisualManifest>();
+            var display = visualManifest?.MotionTarget;
+            var renderers = display == null
+                ? Array.Empty<Renderer>()
+                : display.GetComponentsInChildren<Renderer>(true);
+            var minimumMountZ = prefab == null || renderers.Length == 0
+                ? float.NegativeInfinity
+                : MinimumLocalForward(prefab.transform, renderers);
+            var passed = display != null &&
+                         display.name == "display_surface" &&
+                         renderers.Length > 0 &&
+                         minimumMountZ >= -MountPlaneTolerance;
+            if (!passed)
+            {
+                failures.Add(
+                    $"{label}: fixed display invalid; " +
+                    $"renderers={renderers.Length}, mountZ={minimumMountZ:F4}");
+            }
+
+            report.Append("| ")
+                .Append(label)
+                .Append(" | n/a | 0.0000 m | 0.00° | fixed display | ")
+                .Append(float.IsNegativeInfinity(minimumMountZ)
+                    ? "n/a"
+                    : minimumMountZ.ToString("F4") + " m")
+                .Append(" | ")
+                .Append(passed ? "PASS" : "FAIL")
+                .AppendLine(" |");
         }
 
         private static void Audit(

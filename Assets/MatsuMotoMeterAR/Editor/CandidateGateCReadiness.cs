@@ -24,6 +24,9 @@ namespace MatsuMotoMeterAR.Editor
 
     internal static class CandidateGateCReadiness
     {
+        private const string WindowPanelWp3R2ManifestPath =
+            "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
+            "WindowPanel_WP3_r2.json";
         private static readonly HashSet<string> MotionModels = new(
             new[]
             {
@@ -38,8 +41,20 @@ namespace MatsuMotoMeterAR.Editor
             "Report Selected Candidate Gate C Readiness")]
         public static void ReportSelectedManifest()
         {
-            var manifest = CandidateStagingManifest.Load(
-                CandidateStagingManifest.SelectedAssetPath());
+            Report(CandidateStagingManifest.SelectedAssetPath());
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Report Window Panel WP4 Gate C Readiness")]
+        public static void ReportWindowPanelWp4()
+        {
+            Report(WindowPanelWp3R2ManifestPath);
+        }
+
+        private static void Report(string manifestPath)
+        {
+            var manifest = CandidateStagingManifest.Load(manifestPath);
             var checks = Evaluate(manifest, File.Exists);
             var report = BuildMarkdown(manifest, checks);
             var directory = "Builds/Reports";
@@ -108,8 +123,16 @@ namespace MatsuMotoMeterAR.Editor
                 evidence?.unityStagingValidation,
                 fileExists));
             checks.Add(Artifact("edit-mode-tests", evidence?.editModeTests, fileExists));
-            checks.Add(Artifact("quest-48-gate", evidence?.quest48Gate, fileExists));
-            checks.Add(Artifact("quest-64-stress", evidence?.quest64Stress, fileExists));
+            checks.Add(ArtifactOrDeferral(
+                "quest-48-gate",
+                evidence?.quest48Gate,
+                evidence?.questValidationDeferral,
+                fileExists));
+            checks.Add(ArtifactOrDeferral(
+                "quest-64-stress",
+                evidence?.quest64Stress,
+                evidence?.questValidationDeferral,
+                fileExists));
             checks.Add(Artifact("rollback-plan", evidence?.rollbackPlan, fileExists));
             return checks;
         }
@@ -129,7 +152,7 @@ namespace MatsuMotoMeterAR.Editor
             foreach (var check in checks)
             {
                 builder.AppendLine(
-                    $"| {check.Id} | {(check.Passed ? "PASS" : "BLOCKED")} | " +
+                    $"| {check.Id} | {ResultLabel(check)} | " +
                     $"{check.Detail.Replace("|", "\\|")} |");
             }
             return builder.ToString();
@@ -145,6 +168,35 @@ namespace MatsuMotoMeterAR.Editor
                 id,
                 present,
                 string.IsNullOrWhiteSpace(path) ? "<missing>" : path);
+        }
+
+        private static CandidateGateCCheck ArtifactOrDeferral(
+            string id,
+            string path,
+            string deferralPath,
+            Func<string, bool> fileExists)
+        {
+            if (!string.IsNullOrWhiteSpace(path))
+                return Artifact(id, path, fileExists);
+
+            var deferred = !string.IsNullOrWhiteSpace(deferralPath) &&
+                           fileExists(deferralPath);
+            return new CandidateGateCCheck(
+                id,
+                deferred,
+                deferred
+                    ? $"DEFERRED: {deferralPath}"
+                    : "<missing; no deferral evidence>");
+        }
+
+        private static string ResultLabel(CandidateGateCCheck check)
+        {
+            if (!check.Passed)
+                return "BLOCKED";
+            return check.Detail.StartsWith(
+                "DEFERRED:", StringComparison.Ordinal)
+                ? "DEFERRED"
+                : "PASS";
         }
 
         private static string Join(string[] values)

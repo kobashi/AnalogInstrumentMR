@@ -147,6 +147,126 @@ namespace MatsuMotoMeterAR.Tests
         }
 
         [Test]
+        public void Evaluator_LeavesIndependentWindowPanelTargetUntouched()
+        {
+            var sourceRoot = MockInstrumentFactory.Create(
+                MockInstrumentKind.Lever,
+                Pose.identity);
+            var panelRoot = MockInstrumentFactory.Create(
+                MockInstrumentKind.WindowPanel,
+                Pose.identity);
+            var targetRoot = MockInstrumentFactory.Create(
+                MockInstrumentKind.RoundMeter,
+                Pose.identity);
+            try
+            {
+                var source = sourceRoot.GetComponent<InstrumentGreyboxContract>()
+                    .InstrumentInteraction;
+                var panel = panelRoot.GetComponent<InstrumentGreyboxContract>()
+                    .InstrumentInteraction;
+                var target = targetRoot.GetComponent<InstrumentGreyboxContract>()
+                    .InstrumentInteraction;
+                source.SetNormalizedValue(0.9f);
+                panel.SetNormalizedValue(0.7f);
+                var instruments = new Dictionary<string, MockInstrumentInteraction>
+                {
+                    ["source"] = source,
+                    ["panel"] = panel,
+                    ["target"] = target
+                };
+                var connections = new List<SignalConnectionRecord>
+                {
+                    new()
+                    {
+                        connectionId = "panel-input",
+                        sourcePlacementId = "source",
+                        targetPlacementId = "panel",
+                        targetInputSlot = 0
+                    },
+                    new()
+                    {
+                        connectionId = "panel-output",
+                        sourcePlacementId = "panel",
+                        targetPlacementId = "target"
+                    }
+                };
+
+                new SignalGraphEvaluator().Evaluate(
+                    connections,
+                    instruments,
+                    new HashSet<string> { "panel" });
+
+                Assert.That(panel.NormalizedValue, Is.EqualTo(0.7f).Within(0.0001f));
+                Assert.That(target.NormalizedValue, Is.EqualTo(0.7f).Within(0.0001f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(sourceRoot);
+                UnityEngine.Object.DestroyImmediate(panelRoot);
+                UnityEngine.Object.DestroyImmediate(targetRoot);
+            }
+        }
+
+        [Test]
+        public void WindowPanelRuntime_MapsSlotsWithoutAveragingAndUsesEnergyOutput()
+        {
+            var energyRoot = MockInstrumentFactory.Create(
+                MockInstrumentKind.Lever,
+                Pose.identity);
+            var phaseRoot = MockInstrumentFactory.Create(
+                MockInstrumentKind.RoundMeter,
+                Pose.identity);
+            try
+            {
+                var energy = energyRoot.GetComponent<InstrumentGreyboxContract>()
+                    .InstrumentInteraction;
+                var phase = phaseRoot.GetComponent<InstrumentGreyboxContract>()
+                    .InstrumentInteraction;
+                energy.SetNormalizedValue(0.75f);
+                phase.SetNormalizedValue(0.25f);
+                var instruments = new Dictionary<string, MockInstrumentInteraction>
+                {
+                    ["energy"] = energy,
+                    ["phase"] = phase
+                };
+                var connections = new List<SignalConnectionRecord>
+                {
+                    new()
+                    {
+                        connectionId = "energy-input",
+                        sourcePlacementId = "energy",
+                        targetPlacementId = "panel",
+                        targetInputSlot = 0
+                    },
+                    new()
+                    {
+                        connectionId = "phase-input",
+                        sourcePlacementId = "phase",
+                        targetPlacementId = "panel",
+                        targetInputSlot = 2,
+                        transformKind = (int)SignalTransformKind.Invert
+                    }
+                };
+                var runtime = new WindowPanelSignalRuntime();
+
+                runtime.Refresh("panel", connections, instruments);
+
+                Assert.That(runtime.ConnectedCount, Is.EqualTo(2));
+                Assert.That(runtime.OutputValue, Is.EqualTo(0.75f).Within(0.0001f));
+                Assert.That(runtime.TryGetSlot(0, out var slot0), Is.True);
+                Assert.That(slot0, Is.EqualTo(0.75f).Within(0.0001f));
+                Assert.That(runtime.TryGetSlot(1, out _), Is.False);
+                Assert.That(runtime.TryGetSlot(2, out var slot2), Is.True);
+                Assert.That(slot2, Is.EqualTo(0.75f).Within(0.0001f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(energyRoot);
+                UnityEngine.Object.DestroyImmediate(phaseRoot);
+            }
+        }
+
+        [Test]
         public void Factory_AddsDisplayOnlyToTrendMonitor()
         {
             var monitor = MockInstrumentFactory.Create(
@@ -561,6 +681,163 @@ namespace MatsuMotoMeterAR.Tests
                     leverGraph.transform.localPosition.y,
                     Is.Not.EqualTo(meterGraph.transform.localPosition.y));
                 Assert.That(leverGraph.startColor, Is.Not.EqualTo(meterGraph.startColor));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(socket);
+            }
+        }
+
+        [Test]
+        public void View_DrawsComposedOutputWithoutReplacingInputTraces()
+        {
+            var socket = new GameObject("LabelSocket");
+            try
+            {
+                var monitor = SignalMonitorView.Create(
+                    socket.transform,
+                    displaySurface: null);
+                foreach (var sample in new[]
+                         {
+                             (time: 0f, first: 0.25f, second: 0.75f),
+                             (time: SignalMonitorView.RefreshIntervalSeconds,
+                                 first: 0.75f, second: 0.25f)
+                         })
+                {
+                    monitor.BeginRefresh();
+                    Assert.That(
+                        monitor.AddSample("first", sample.first, sample.time),
+                        Is.True);
+                    Assert.That(
+                        monitor.AddSample("second", sample.second, sample.time),
+                        Is.True);
+                    monitor.AddComposedSample(
+                        SignalCompositionKind.Average,
+                        0.5f,
+                        validInputCount: 2,
+                        sampleTime: sample.time);
+                    monitor.EndRefresh();
+                }
+
+                Assert.That(monitor.ConnectedChannelCount, Is.EqualTo(2));
+                Assert.That(monitor.GetChannelSampleCount(0), Is.EqualTo(2));
+                Assert.That(monitor.GetChannelSampleCount(1), Is.EqualTo(2));
+                Assert.That(monitor.ComposedSampleCount, Is.EqualTo(2));
+                Assert.That(monitor.HasComposedOutput, Is.True);
+
+                var label = monitor.transform
+                    .Find("ComposedValue")
+                    .GetComponent<TextMesh>();
+                Assert.That(label.text, Is.EqualTo("AVG 50.0% · 2 IN"));
+                var graph = monitor.transform
+                    .Find("ComposedTrend")
+                    .GetComponent<LineRenderer>();
+                var channelGraph = monitor.transform
+                    .Find("Channel1Trend")
+                    .GetComponent<LineRenderer>();
+                Assert.That(graph.gameObject.activeSelf, Is.True);
+                Assert.That(graph.positionCount, Is.EqualTo(2));
+                Assert.That(graph.startWidth, Is.EqualTo(0.006f).Within(0.0001f));
+                Assert.That(graph.sortingOrder, Is.GreaterThan(channelGraph.sortingOrder));
+                Assert.That(
+                    graph.transform.localPosition.z,
+                    Is.LessThan(channelGraph.transform.localPosition.z));
+                var newest = graph.transform.InverseTransformPoint(
+                    graph.GetPosition(graph.positionCount - 1));
+                Assert.That(newest.x, Is.EqualTo(0.145f).Within(0.0001f));
+                Assert.That(newest.y, Is.EqualTo(0f).Within(0.0001f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(socket);
+            }
+        }
+
+        [Test]
+        public void View_ResetsOnlyComposedHistoryWhenKindChanges()
+        {
+            var socket = new GameObject("LabelSocket");
+            try
+            {
+                var monitor = SignalMonitorView.Create(
+                    socket.transform,
+                    displaySurface: null);
+                monitor.BeginRefresh();
+                Assert.That(monitor.AddSample("input", 0.25f, 0f), Is.True);
+                monitor.AddComposedSample(
+                    SignalCompositionKind.Average,
+                    0.25f,
+                    1,
+                    0f);
+                monitor.EndRefresh();
+                monitor.BeginRefresh();
+                Assert.That(
+                    monitor.AddSample(
+                        "input",
+                        0.75f,
+                        SignalMonitorView.RefreshIntervalSeconds),
+                    Is.True);
+                monitor.AddComposedSample(
+                    SignalCompositionKind.Average,
+                    0.75f,
+                    1,
+                    SignalMonitorView.RefreshIntervalSeconds);
+                monitor.EndRefresh();
+
+                Assert.That(monitor.GetChannelSampleCount(0), Is.EqualTo(2));
+                Assert.That(monitor.ComposedSampleCount, Is.EqualTo(2));
+
+                monitor.BeginRefresh();
+                Assert.That(monitor.AddSample("input", 0.5f, 0.4f), Is.True);
+                monitor.AddComposedSample(
+                    SignalCompositionKind.Maximum,
+                    0.5f,
+                    1,
+                    0.4f);
+                monitor.EndRefresh();
+
+                Assert.That(monitor.GetChannelSampleCount(0), Is.EqualTo(3));
+                Assert.That(monitor.ComposedSampleCount, Is.EqualTo(1));
+                Assert.That(
+                    monitor.transform.Find("ComposedValue")
+                        .GetComponent<TextMesh>().text,
+                    Is.EqualTo("MAX 50.0% · 1 IN"));
+                Assert.That(
+                    monitor.transform.Find("ComposedTrend").gameObject.activeSelf,
+                    Is.False);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(socket);
+            }
+        }
+
+        [Test]
+        public void View_ReportsNoValidComposedInput()
+        {
+            var socket = new GameObject("LabelSocket");
+            try
+            {
+                var monitor = SignalMonitorView.Create(
+                    socket.transform,
+                    displaySurface: null);
+                monitor.BeginRefresh();
+                Assert.That(
+                    monitor.AddSample("invalid", float.NaN, 0f),
+                    Is.True);
+                monitor.SetComposedUnavailable(SignalCompositionKind.Sum);
+                monitor.EndRefresh();
+
+                Assert.That(monitor.ConnectedChannelCount, Is.EqualTo(1));
+                Assert.That(monitor.ComposedSampleCount, Is.Zero);
+                Assert.That(monitor.HasComposedOutput, Is.True);
+                Assert.That(
+                    monitor.transform.Find("ComposedValue")
+                        .GetComponent<TextMesh>().text,
+                    Is.EqualTo("SUM NO VALID INPUT"));
+                Assert.That(
+                    monitor.transform.Find("ComposedTrend").gameObject.activeSelf,
+                    Is.False);
             }
             finally
             {

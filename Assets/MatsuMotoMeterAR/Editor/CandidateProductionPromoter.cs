@@ -43,6 +43,8 @@ namespace MatsuMotoMeterAR.Editor
             {
                 foreach (var asset in assets)
                 {
+                    Directory.CreateDirectory(
+                        Path.GetDirectoryName(asset.ActiveModel));
                     File.Copy(asset.StagedModel, asset.ActiveModel, true);
                     AssetDatabase.ImportAsset(
                         asset.ActiveModel,
@@ -86,16 +88,41 @@ namespace MatsuMotoMeterAR.Editor
                     $"PF_Visual_{entry.model}_{entry.theme}.prefab";
                 if (!File.Exists(stagedModel))
                     throw new FileNotFoundException("Staged model missing", stagedModel);
-                if (!File.Exists(activeModel))
+                var activeModelExists = File.Exists(activeModel);
+                var activePrefabExists = File.Exists(activePrefab);
+                var initialTrendMonitorRegistration =
+                    entry.model == "TrendMonitor" &&
+                    !activeModelExists &&
+                    !activePrefabExists;
+                if (!initialTrendMonitorRegistration && !activeModelExists)
                     throw new FileNotFoundException("Active model missing", activeModel);
-                if (!File.Exists(activePrefab))
+                if (!initialTrendMonitorRegistration && !activePrefabExists)
                     throw new FileNotFoundException("Active prefab missing", activePrefab);
+                if (activeModelExists != activePrefabExists)
+                {
+                    throw new InvalidDataException(
+                        $"Active model/prefab presence differs for " +
+                        $"{entry.theme}/{entry.model}.");
+                }
+                var materialRoot =
+                    $"Assets/MatsuMotoMeterAR/Content/Themes/{entry.theme}/" +
+                    "Materials";
+                var managedMaterials = entry.model == "TrendMonitor"
+                    ? new[]
+                    {
+                        $"{materialRoot}/" +
+                        $"MAT_{entry.theme}_V6_TrendMonitor_Opaque.mat",
+                        $"{materialRoot}/" +
+                        $"MAT_{entry.theme}_V6_TrendMonitor_Readout.mat"
+                    }
+                    : Array.Empty<string>();
                 assets.Add(
                     new PromotionAsset(
                         entry,
                         stagedModel,
                         activeModel,
-                        activePrefab));
+                        activePrefab,
+                        managedMaterials));
             }
             return assets;
         }
@@ -104,12 +131,16 @@ namespace MatsuMotoMeterAR.Editor
             IEnumerable<PromotionAsset> assets,
             string backupRoot)
         {
+            // Keep an auditable rollback location even when every promoted asset
+            // is an initial registration and therefore has no prior files.
+            Directory.CreateDirectory(backupRoot);
             foreach (var asset in assets)
             {
-                Backup(asset.ActiveModel, backupRoot);
-                Backup(asset.ActivePrefab, backupRoot);
-                Backup(asset.ActiveModel + ".meta", backupRoot);
-                Backup(asset.ActivePrefab + ".meta", backupRoot);
+                for (var index = 0; index < asset.ManagedPaths.Length; index++)
+                {
+                    if (asset.ManagedPathExisted[index])
+                        Backup(asset.ManagedPaths[index], backupRoot);
+                }
             }
         }
 
@@ -119,10 +150,13 @@ namespace MatsuMotoMeterAR.Editor
         {
             foreach (var asset in assets)
             {
-                Restore(asset.ActiveModel, backupRoot);
-                Restore(asset.ActivePrefab, backupRoot);
-                Restore(asset.ActiveModel + ".meta", backupRoot);
-                Restore(asset.ActivePrefab + ".meta", backupRoot);
+                for (var index = 0; index < asset.ManagedPaths.Length; index++)
+                {
+                    if (asset.ManagedPathExisted[index])
+                        Restore(asset.ManagedPaths[index], backupRoot);
+                    else
+                        DeleteIfCreated(asset.ManagedPaths[index]);
+                }
             }
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
         }
@@ -142,6 +176,12 @@ namespace MatsuMotoMeterAR.Editor
             if (!File.Exists(source))
                 throw new FileNotFoundException("Promotion backup missing", source);
             File.Copy(source, path, true);
+        }
+
+        private static void DeleteIfCreated(string path)
+        {
+            if (File.Exists(path))
+                File.Delete(path);
         }
 
         private static void RejectCandidateDependencies(
@@ -184,6 +224,11 @@ namespace MatsuMotoMeterAR.Editor
                     $"| `{asset.ActiveModel}` | `{Digest(asset.ActiveModel)}` |");
                 report.AppendLine(
                     $"| `{asset.ActivePrefab}` | `{Digest(asset.ActivePrefab)}` |");
+                foreach (var material in asset.ManagedMaterials)
+                {
+                    report.AppendLine(
+                        $"| `{material}` | `{Digest(material)}` |");
+                }
             }
             report.AppendLine();
             report.AppendLine("- Candidate dependencies: 0");
@@ -209,18 +254,37 @@ namespace MatsuMotoMeterAR.Editor
                 CandidateStagingEntry entry,
                 string stagedModel,
                 string activeModel,
-                string activePrefab)
+                string activePrefab,
+                string[] managedMaterials)
             {
                 Entry = entry;
                 StagedModel = stagedModel;
                 ActiveModel = activeModel;
                 ActivePrefab = activePrefab;
+                ManagedMaterials = managedMaterials ?? Array.Empty<string>();
+                ManagedPaths = new[]
+                    {
+                        activeModel,
+                        activeModel + ".meta",
+                        activePrefab,
+                        activePrefab + ".meta"
+                    }
+                    .Concat(
+                        ManagedMaterials.SelectMany(
+                            path => new[] { path, path + ".meta" }))
+                    .ToArray();
+                ManagedPathExisted = ManagedPaths
+                    .Select(File.Exists)
+                    .ToArray();
             }
 
             public CandidateStagingEntry Entry { get; }
             public string StagedModel { get; }
             public string ActiveModel { get; }
             public string ActivePrefab { get; }
+            public string[] ManagedMaterials { get; }
+            public string[] ManagedPaths { get; }
+            public bool[] ManagedPathExisted { get; }
         }
     }
 }

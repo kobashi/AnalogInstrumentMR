@@ -8,6 +8,22 @@
 
 ### Added
 
+- Quest性能GateへTrend Monitor専用の`None`（筐体のみ）、`Numeric`（静的1入力数値）、
+  `Graph`（2入力＋Average合成を5 Hz更新）の3表示profileを追加。同一48台配置で表示更新負荷を
+  分離比較でき、CLIはTrend Monitor以外への動的profile指定を起動前に拒否
+- Unity CLI `1.0.0-beta.5`とUnity Pipeline package `0.5.0-exp.1`を導入。
+  起動中のUnity 6000.3.19f1 Editorへlocalhost接続し、構造化JSONでテスト、監査、
+  capture、build等のcommandを実行できる開発経路を追加。Trend Monitor比較画像、
+  control motion、signal visual、確認必須のQuest performance gateをプロジェクト固有command化
+- Connectモードの複数入力合成UI。通常targetのAverage／Sum／Minimum／Maximum／Priorityを
+  右stick上下で即時保存・再評価し、Priority connectionのrank 0〜3を右stick左右でpreview、
+  左stick押下で確定可能。Window Panelのpreset／slot操作は維持
+- 複数入力合成のPriority 4基盤。Average／Sum／Minimum／Maximum／Priorityを
+  allocation-freeに評価するaccumulatorと設計契約を追加。既存runtimeはAverageのまま
+  同じ結果を維持し、保存schema／UIへの接続は次段階へ分離
+- Orbital Analog／Forge Brass／Kinetic Safetyそれぞれに固有形状を持つTrend Monitorの
+  production FBX、prefab、テーマ専用1K BaseColor／Normal／MetallicSmoothness、
+  textured housing／readout／dark displayの3 role material
 - 接続単位のRange入力min / max・出力min / max、およびThreshold値・ABOVE / BELOWを
   Quest内で編集、preview、取消、保存・復元できるparameter editor。保存schemaをv5へ更新し、
   v1〜v4接続は従来と同じ既定値へ移行
@@ -28,6 +44,13 @@
 
 ### Changed
 
+- placement schemaをv7へ更新し、通常targetのAverage／Sum／Minimum／Maximum／Priorityと、
+  connection priority 0〜3を保存・復元してruntime評価へ適用。v6データはAverage／priority 0へ移行し、
+  Window Panel slot、graphic preset、Range／Threshold parameterを維持
+- Window Panel WP2の永続化基盤としてplacement schema v6を導入。graphic presetと接続ごとの
+  input slot A〜Dを保存し、v1〜v5移行、slot重複／上限、未知presetを正規化。v5の
+  Range／Threshold編集値を維持するmigrationを追加。4 slot独立runtime評価、target-first接続、
+  空きslot自動割当、slot／preset編集HUDを追加
 - Kinetic Safety Leverは負向きだったグリップ主成分だけを修正し、上端キャップで内部露出を
   閉鎖。Orbital Analog Leverは棒とグリップ間を接合カラーで橋渡しし、両モデルとも既存
   `handle_pivot`、Renderer／Material契約、FBX GUIDを維持
@@ -47,6 +70,29 @@
 
 ### Validated
 
+- Unity Pipeline経由で起動中EditorのEditMode 220 / 220 PASS、failed 0、skipped 0を取得。
+  表示profile対応Performance Gate APKも確認必須の専用commandで生成し、Quest 3へのinstallをPASS
+- Quest 3でTrend Monitor 48台の`None`／`Numeric`／`Graph`を各60秒比較。
+  表示文字列cacheと状態変化時だけのline色更新によりGraphのGC collectionを9→0、
+  frame p95を17.759→16.618 msへ改善。さらに48台の5 Hz更新位相をフレーム間へ分散し、
+  14.505 msまで改善。筐体基準14.425 msと同等、線の追従・連続性・太さ・角・ちらつきをQuestでPASS
+- プロジェクト固有Pipeline command 5 / 5を登録。Trend Monitor review、control motion、
+  signal visualはartifact SHA-256付きでPASSし、performance gateはdry-run成功、confirmなし実行拒否
+- 合成方式cycle、priority wrap／clamp、target適用可否、Connect HUD/runtime統合後、
+  Unity EditMode 206 / 206 PASS、failed 0、skipped 0。Quest操作受入は保留
+- schema v7のv6 migration、unknown kind修復、priority clamp、clone／round-trip、5方式runtime評価後、
+  Unity EditMode 203 / 203 PASS、failed 0、skipped 0
+- 複数入力合成の純粋ポリシー追加と既存Average evaluatorの互換refactor後、
+  Unity EditMode 196 / 196 PASS、failed 0、skipped 0
+- Window Panel WP1はQuest 3でOrbit／Rose／Lissajous、invalid表示、frame内描画、裏面遮蔽、
+  線の連続性をPASS。WP2 schema v6、runtime、Connect UX追加後のUnity EditModeは181 / 181 PASS。
+  Questでpreset／slot／Range／Threshold操作と再起動復元もPASS
+- TrendMonitor Texture T1は3テーマのGate C、本番昇格、candidate dependency 0、
+  Active Prefab 56 / 56、Unity EditMode 165 / 165をPASS。Quest 48 / 64は
+  ユーザー指示により明示保留し、実機PASSには数えない
+- TrendMonitor ThemeShapes T1は3 / 3 Unity構造検証、候補とproduction FBXのSHA-256一致、
+  candidate dependency 0、Active Prefab検証、Unity EditMode 164 / 164をPASS。
+  Quest 48 / 64はユーザー指示により明示保留
 - Lever G2はBlender／FBX round-tripで全連結成分の正体積、boundary edge 0、
   non-manifold edge 0を確認。Active Prefab、5状態Motion Audit、Quest 3近接視覚確認をPASS
 - 接続parameter編集はUnity EditMode 162 / 162とQuest 3でRange／Threshold編集、

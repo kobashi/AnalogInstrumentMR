@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "WindowPanel_WP3_r2",
+  "integrationStage": "GateC",
+  "entries": [
+    {
+      "theme": "OrbitalAnalog",
+      "model": "WindowPanel",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/r2/SM_WindowPanel_OrbitalAnalog_WP3.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/r2/themes/WindowPanel_OrbitalAnalog_r2.json",
+      "revision": "WP3-r2",
+      "includedRevisions": ["WP3-r2"],
+      "requiredRevisions": ["WP3-r2"]
+    },
+    {
+      "theme": "ForgeBrass",
+      "model": "WindowPanel",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/r2/SM_WindowPanel_ForgeBrass_WP3.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/r2/themes/WindowPanel_ForgeBrass_r2.json",
+      "revision": "WP3-r2",
+      "includedRevisions": ["WP3-r2"],
+      "requiredRevisions": ["WP3-r2"]
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "WindowPanel",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/r2/SM_WindowPanel_KineticSafety_WP3.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/r2/themes/WindowPanel_KineticSafety_r2.json",
+      "revision": "WP3-r2",
+      "includedRevisions": ["WP3-r2"],
+      "requiredRevisions": ["WP3-r2"]
+    },
+    {
+      "theme": "MachinedErgonomics",
+      "model": "WindowPanel",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/r2/SM_WindowPanel_MachinedErgonomics_WP3.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/WindowPanel/WP3/r2/themes/WindowPanel_MachinedErgonomics_r2.json",
+      "revision": "WP3-r2",
+      "includedRevisions": ["WP3-r2"],
+      "requiredRevisions": ["WP3-r2"]
+    }
+  ],
+  "gateCEvidence": {
+    "semanticUvAudit": "Builds/Reports/candidate-WindowPanel_WP3_r2-semantic-material-audit.md",
+    "fixedCameraVisualReview": "Builds/Reports/candidate-WindowPanel_WP3_r2-unity-preset-contact-sheet.png",
+    "motionAudit": "Builds/Reports/candidate-WindowPanel_WP3_r2-motion-audit.md",
+    "unityStagingValidation": "Builds/Reports/candidate-WindowPanel_WP3_r2-staging-validation.md",
+    "editModeTests": "Builds/Reports/candidate-WindowPanel_WP3_r2-editmode-tests.md",
+    "quest48Gate": "",
+    "quest64Stress": "",
+    "questValidationDeferral": "Builds/Reports/candidate-WindowPanel_WP3_r2-quest-deferral.md",
+    "rollbackPlan": "docs/WINDOW_PANEL_WP3_R2_ROLLBACK.md"
+  }
+}

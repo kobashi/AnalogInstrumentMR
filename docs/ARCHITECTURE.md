@@ -58,12 +58,14 @@ Meta SDK の更新は adapter と専用 asmdef 内に閉じ込める。Meta 固�
 そのまま移行し、互換キーはconcept.4実機確認まで保持する。Quest実装は
 `MetaQuestAnchorService`を介してUUID一括load、個別localize、root bind、eraseを行う。
 
-schema v4は`schemaVersion`、`revision`、Roomごと最大48件・全Room合計最大192件の
+現行schema v7は`schemaVersion`、`revision`、Roomごと最大48件・全Room合計最大192件の
 配置recordと、最大192件の`SignalConnectionRecord`を持つ。各配置recordは
 `placementId`、`anchorId`、MRUK Room UUID、stable `instrumentTypeId`、surface、
-local offset、normalized value、lifecycleを保存する。接続recordはconnection ID、Source/Targetの
-placement ID、変換方式を保存する。global themeは引き続き独立設定とする。
-schema v1/v2/v3は読込時にv4へ移行して即時保存し、旧buildによる
+local offset、normalized value、lifecycle、Window Panel graphic preset、通常targetの
+signal composition kindを保存する。接続recordは
+connection ID、Source/Targetのplacement ID、変換方式、Range／Threshold parameter、Window Panelの
+明示input slot、composition priorityを保存する。global themeは引き続き独立設定とする。
+schema v1〜v6は読込時にv7へ移行して即時保存し、旧buildによる
 25件目以降の切り捨てを防ぐ。近接する配置は約2.75 m以内でAnchorを共有し、
 複数recordが同じ`anchorId`を参照できる。
 実行中に`GetCurrentRoom()`が1秒間安定して別Roomを返した場合は旧Roomのruntime
@@ -82,6 +84,25 @@ Room UUIDなしの旧recordは、復元に成功した最初のRoomへ所属さ�
 
 `v0.2.0-concept.1`ではthemeはglobal設定、配置数は1部屋最大48個、接続は最大
 192件、操作はcontroller優先とする。theme変更時もAnchor、pose、値、接続を維持する。
+
+通常targetの複数着信は、各connection固有の変換後にtarget単位で合成する。Priority 4の第一段階では
+既存互換のAverageを`SignalCompositionAccumulator`経由で評価し、Sum／Minimum／Maximum／Priorityの
+純粋ポリシーを用意した。有限値だけを0〜1へclampして採用し、有効入力0件ではtargetの直前値を維持する。
+Priorityは大きいrankを優先し、同rankはconnection IDのordinal順で決めるためJSON配列順へ依存しない。
+永続化とUIの契約は`docs/MULTI_INPUT_COMPOSITION_CONTRACT.md`に定義する。schema v7ではtargetごとの
+kindとconnectionごとのpriorityを保存してruntime評価へ適用する。Connectモードで通常targetを選択中は
+右stick上下でkindを即時保存・再評価し、Priority targetのconnection選択中は右stick左右でrank 0〜3を
+preview、左stick押下で確定する。Window Panelのpreset／slot操作は独立して維持する。
+Trend Monitorは最大4接続の変換後入力を色別の履歴として保持し、それらとは独立した白色の合成出力履歴を
+重ねる。合成表示はkind、0〜1へclampした値、有効入力数を示し、有効入力0件では`NO VALID INPUT`を表示する。
+kind変更時は合成履歴だけをresetし、個別入力履歴は維持する。更新は既存の0.2秒bucketを共有し、bucket途中の
+値変更は最新点を置換することで、計器出力と履歴の右端を同期させる。
+
+Window Panelのparametric graphics実装ではschema v6でconnectionの明示input slotとplacementの
+graphic presetを追加した。v1〜v5のWindow Panel着信接続は保存順にslot A〜Dへ割り当て、v5の
+Range／Threshold parameterは保持する。Window Panel着信は従来targetのAverage評価から分離し、4入力を
+Energy／Balance／Phase／Detailへ独立評価する。slot 0のEnergy変換値だけをWindow Panelの観測用出力とする。
+描画・UX契約は`docs/WINDOW_PANEL_GRAPHICS_CONTRACT.md`に定義する。
 
 ## Milestones
 

@@ -39,9 +39,23 @@ scripts/run-quest-performance-matrix.sh KineticSafety
 | `APK` | performance gate APK | 同一APKを両runで使用 |
 | `ADB` | Unity 6000.3.19f1 SDK | adb実体 |
 | `INSTALL_APK` | 1 | 端末側が新しいbuildなら0でinstallを省略 |
+| `DISPLAY_MODE` | None | TrendMonitorの`None` / `Numeric` / `Graph`表示profile |
 
 単独runでは`DISTANCE_METERS`と`INSTRUMENT_KIND`も指定できる。matrix acceptanceでは未指定とし、
-距離1.35 m、13 archetype混在baselineを使用する。
+距離1.35 m、既存6 archetype混在baselineを使用する。`INSTRUMENT_KIND=TrendMonitor`を
+指定すると、Trend Monitor単独の表示負荷を測定できる。`DISPLAY_MODE=None`は表示componentを
+無効化した筐体のみ、`Numeric`は静的な1入力数値、`Graph`は2入力とAverage合成線を5 Hzで更新する。
+`Numeric` / `Graph`は`INSTRUMENT_KIND=TrendMonitor`との組み合わせに限る。同じAPK、配置、theme、
+開始温度で3 profileを比較する。
+
+```sh
+MEASUREMENT_SECONDS=60 INSTRUMENT_KIND=TrendMonitor DISPLAY_MODE=None \
+  scripts/run-quest-performance-gate.sh 48 KineticSafety
+MEASUREMENT_SECONDS=60 INSTRUMENT_KIND=TrendMonitor DISPLAY_MODE=Numeric INSTALL_APK=0 \
+  scripts/run-quest-performance-gate.sh 48 KineticSafety
+MEASUREMENT_SECONDS=60 INSTRUMENT_KIND=TrendMonitor DISPLAY_MODE=Graph INSTALL_APK=0 \
+  scripts/run-quest-performance-gate.sh 48 KineticSafety
+```
 
 ## Recorded evidence
 

@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "TrendMonitor_ThemeShapes_T1",
+  "integrationStage": "GateC",
+  "entries": [
+    {
+      "theme": "OrbitalAnalog",
+      "model": "TrendMonitor",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/TrendMonitorThemes/T1/SM_TrendMonitor_OrbitalAnalog_V6_Opus5_T1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/TrendMonitorThemes/T1/SM_TrendMonitor_OrbitalAnalog_V6_Opus5_T1.json",
+      "revision": "ThemeShapes_T1",
+      "includedRevisions": ["P1", "P2", "ThemeShapes_T1"],
+      "requiredRevisions": ["P1", "P2", "ThemeShapes_T1"]
+    },
+    {
+      "theme": "ForgeBrass",
+      "model": "TrendMonitor",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/TrendMonitorThemes/T1/SM_TrendMonitor_ForgeBrass_V6_Opus5_T1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/TrendMonitorThemes/T1/SM_TrendMonitor_ForgeBrass_V6_Opus5_T1.json",
+      "revision": "ThemeShapes_T1",
+      "includedRevisions": ["P1", "P2", "ThemeShapes_T1"],
+      "requiredRevisions": ["P1", "P2", "ThemeShapes_T1"]
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "TrendMonitor",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/TrendMonitorThemes/T1/SM_TrendMonitor_KineticSafety_V6_Opus5_T1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/TrendMonitorThemes/T1/SM_TrendMonitor_KineticSafety_V6_Opus5_T1.json",
+      "revision": "ThemeShapes_T1",
+      "includedRevisions": ["P1", "P2", "ThemeShapes_T1"],
+      "requiredRevisions": ["P1", "P2", "ThemeShapes_T1"]
+    }
+  ],
+  "gateCEvidence": {
+    "semanticUvAudit": "ArtSource/Blender/BrushUp/Opus5/TrendMonitorThemes/T1/trend_monitor_theme_candidates_t1.json",
+    "fixedCameraVisualReview": "Builds/Reports/candidate-TrendMonitor_ThemeShapes_T1-unity-shape-contact-sheet.png",
+    "motionAudit": "Builds/Reports/candidate-TrendMonitor_ThemeShapes_T1-motion-audit.md",
+    "unityStagingValidation": "Builds/Reports/candidate-TrendMonitor_ThemeShapes_T1-staging-validation.md",
+    "editModeTests": "Builds/Reports/candidate-TrendMonitor_ThemeShapes_T1-gate-b.md",
+    "quest48Gate": "",
+    "quest64Stress": "",
+    "questValidationDeferral": "Builds/Reports/candidate-TrendMonitor_ThemeShapes_T1-quest-deferral.md",
+    "rollbackPlan": "docs/TREND_MONITOR_THEME_SHAPES_T1_ROLLBACK.md"
+  }
+}
