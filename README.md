@@ -18,16 +18,17 @@ Unity paths and namespaces as a historical development identifier.
 ## Project status
 
 The latest published pre-release is `v0.2.0-concept.1`. The `main` development
-baseline additionally includes Blender 5.2 authoring support, manifest-driven
-candidate Gate C validation, and the approved M2n8 Kinetic Safety meters.
+baseline is preparing the proposed `v0.3.0-concept.1` release candidate. It
+adds Blender 5.2 authoring support, manifest-driven candidate Gate C
+validation, four production themes, signal monitors, editable connection
+parameters, parametric Window Panels, and explicit multi-input composition.
 
 The application includes:
 
 - 14 instrument types in four functional categories: meters, indicators,
   switches, and motion controls
-- 53 authored visual prefabs across Orbital Analog, Forge Brass,
-  Kinetic Safety, and Machined Ergonomics; the original themes use the
-  runtime fallback for Trend Monitor
+- 56 authored visual prefabs: 14 instrument types in each of Orbital Analog,
+  Forge Brass, Kinetic Safety, and Machined Ergonomics
 - Operation, Edit, and Connect modes
 - two-hand beam/trigger interaction, contact buttons, and grip-motion lever,
   throttle, and power-slider controls
@@ -35,17 +36,27 @@ The application includes:
 - overlap avoidance, grid/nearby alignment, multi-selection, move,
   directional rotation, distribution preview, and confirmation
 - type-colored Direct, Invert, Range, and Threshold signal connections
-- schema-v4 persistence for up to 48 placements per Room, 192 placements
-  across all Rooms, and 192 connections, including Room UUID ownership and
-  runtime Current Room switching
+- Quest-side Range and Threshold parameter editing, with preview, cancel,
+  save, and restore
+- a four-input Trend Monitor with per-input history and a separate composed
+  output trace
+- a four-input Window Panel with Energy, Balance, Phase, and Detail slots and
+  Orbit, Rose, and Lissajous graphic presets
+- target-selectable Average, Sum, Minimum, Maximum, and Priority composition
+- schema-v7 persistence for up to 48 placements per Room, 192 placements
+  across all Rooms, and 192 connections, including Room UUID ownership,
+  connection parameters, display settings, composition settings, and runtime
+  Current Room switching
 - shared Spatial Anchors, restoration, and automatic re-anchoring
 
-The current development baseline passes all 154 Unity EditMode tests and all
-53 installed production visual-prefab checks. Quest 3 passed the Machined Ergonomics
-48-object 30-minute stability gate and the shortened 64-object 10-minute stress
-characterization, as well as the earlier baseline-relative matrix and M2n8 production
-smoke review. Quest 3S remains unverified. See
-[`docs/releases/v0.2.0-concept.1.md`](docs/releases/v0.2.0-concept.1.md).
+The current development baseline passes all 220 Unity EditMode tests, 56 active
+visual-prefab checks, 16 control-motion checks, and 8 signal-visual checks.
+Quest 3 passed the Machined Ergonomics 48-object 30-minute stability gate, the
+shortened 64-object 10-minute stress characterization, Trend Monitor display
+profiling, multi-input composition, Window Panel interaction, four-theme
+switching, and restart restoration. Quest 3S remains unverified. The candidate
+assessment is recorded in
+[`docs/releases/v0.3.0-concept.1.md`](docs/releases/v0.3.0-concept.1.md).
 
 The proposed next-development priorities are documented in
 [`docs/V0_3_DEVELOPMENT_ROADMAP.md`](docs/V0_3_DEVELOPMENT_ROADMAP.md).
