@@ -17,11 +17,10 @@ Unity paths and namespaces as a historical development identifier.
 
 ## Project status
 
-The latest published pre-release is `v0.2.0-concept.1`. The `main` development
-baseline is preparing the proposed `v0.3.0-concept.1` release candidate. It
-adds Blender 5.2 authoring support, manifest-driven candidate Gate C
-validation, four production themes, signal monitors, editable connection
-parameters, parametric Window Panels, and explicit multi-input composition.
+The latest published source pre-release is `v0.3.0-concept.1`. It adds Blender
+5.2 authoring support, manifest-driven candidate Gate C validation, four
+production themes, signal monitors, editable connection parameters,
+parametric Window Panels, and explicit multi-input composition.
 
 The application includes:
 
@@ -54,8 +53,8 @@ visual-prefab checks, 16 control-motion checks, and 8 signal-visual checks.
 Quest 3 passed the Machined Ergonomics 48-object 30-minute stability gate, the
 shortened 64-object 10-minute stress characterization, Trend Monitor display
 profiling, multi-input composition, Window Panel interaction, four-theme
-switching, and restart restoration. Quest 3S remains unverified. The candidate
-assessment is recorded in
+switching, and restart restoration. Quest 3S remains unverified by explicit
+project decision. The release evidence is recorded in
 [`docs/releases/v0.3.0-concept.1.md`](docs/releases/v0.3.0-concept.1.md).
 
 The proposed next-development priorities are documented in
