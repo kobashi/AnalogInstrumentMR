@@ -10,10 +10,23 @@ MR計器環境にすることである。機能追加と並行して、Quest 3�
 対象を絞った3D品質改善」とする。複雑な複数入力合成と信号処理nodeは、その基盤を再利用
 して後続sliceへ進める。
 
+## Current status (2026-09-02)
+
+The proposed v0.3 exit criteria are satisfied. The current baseline has 220 / 220
+EditMode tests, 56 / 56 active visual prefabs, 16 / 16 control-motion checks,
+8 / 8 signal-visual checks, and the recorded Quest 48 acceptance / 64 stress
+results. Trend Monitor, connection parameter editing, Window Panel, five-kind
+composition, persistence, and four-theme interaction have passed Quest 3.
+
+The next stage is release-candidate preparation, not an additional feature
+slice. Priority 5 safety processing is deferred until after the proposed
+`v0.3.0-concept.1` so it cannot silently expand or delay this release scope.
+
 ## Priority 0: baseline and release gates
 
-1. `main`の133 EditMode tests、39 active visual prefabs、Quest 48 / 64 matrixを
-   v0.3の回帰baselineとして固定する。
+1. 初期`main`の133 EditMode tests、39 active visual prefabs、Quest 48 / 64 matrixを
+   回帰baselineとして開始した。現在は220 EditMode tests、56 active visual prefabs、
+   motion 16 / 16、signal visual 8 / 8まで拡張している。
 2. 3D候補はactive assetへ直接上書きせず、manifest-driven isolated stagingから
    Gate Cを通す。
 3. 固定cameraのbaseline / candidate画像、Prefab Preview、Quest実機を視覚受入の
@@ -94,15 +107,16 @@ monitorを先に置くことで、parameter編集の結果をQuest内で直接�
    沿った固有silhouette、bezel、取付意匠へ置換し、画像受領、Gate C、本番登録まで完了した。
    `TrendMonitor_Texture_T1`はユーザーの固定画像受領後にGate Cへ進め、テーマ専用1K
    BaseColor／Normal／MetallicSmoothnessと、筐体模様を混入させない暗色display materialを
-   productionへ登録した。Active Prefab 56 / 56、EditMode 165 / 165をPASSし、
-   Quest 48 / 64だけはユーザー指示により明示保留している。
+   productionへ登録した。Active Prefab 56 / 56、EditMode 165 / 165をPASSした。その後、
+   Trend Monitor 48台でNone／Numeric／Graphを比較し、GraphのGC collection 0、frame p95
+   14.505 msまで改善してQuest 3表示性能をPASSした。
    display plane寸法・正面方向・overlay fit・最大4入力・LineRenderer契約は共通化し、
    テーマ差によって表示面座標やruntime signal処理を分岐させない。
 2. **完了（2026-08-27）: Orbital Analog／Forge Brass meterのカバー上の重複目盛を除去。**
    MeterGlassScale G1としてMedium／Largeの`secondary_scale_*`だけを削除し、文字盤側の
    主目盛、針、230°の可動範囲を維持した。固定画像、Prefab、Quest 3実機、48配置gate、
    64配置stressをPASSし、元FBX GUIDを維持してproductionへ昇格済み。
-3. **production desktop完了（2026-09-01）／Quest受入延期: Window Panelを4テーマ共通で非メーター型graphic instrumentへ再設計する。**
+3. **production／Quest interaction完了（2026-09-02）: Window Panelを4テーマ共通で非メーター型graphic instrumentへ再設計する。**
    meter、針、vane、アナログ目盛を使わず、2Dの幾何学的なparametric図形を表示する。
    複数入力を受け付け、入力ごとに位置、回転、scale、色、位相、変形量など明示されたparameterへ
    割り当て、連続animationとして描画する。入力欠損・無効値・停止時の表示方針、parameter範囲、
@@ -118,8 +132,10 @@ monitorを先に置くことで、parameter編集の結果をQuest内で直接�
    256 vertex／768 index固定budget、geometry 100回再生成0 B、EditMode 173 / 173を確認した。
    続くWP2でschema v6／Connect UI、WP3-r2でBlender 5.2由来の4テーマ固有frame、WP4で
    production runtime統合まで完了した。production固定画像は4テーマ×3 presetの12 / 12 PASS、
-   candidate依存0、EditMode 187 / 187、候補defineなしの通常APK生成をPASSした。Quest上のvisual／
-   interaction／48／64だけはユーザー指示により延期する。
+   candidate依存0、EditMode 187 / 187、候補defineなしの通常APK生成をPASSした。Quest 3では
+   4 slot、3 preset、Range／Threshold回帰、再起動復元、4テーマ表示と入力追従をPASSした。
+   Window Panel単独48／64性能matrixはこのreleaseでの合格を主張せず、既存の混在48 gateと
+   dedicated Trend Monitor profileを性能証跡とする。
 
 Window Panelの再設計は単なる3D置換ではなく、複数入力compositionと新しい表示runtimeを伴う。
 Priority 4の入力合成モデルと整合させ、外観制作をsignal / persistence契約より先行させない。
@@ -138,10 +154,11 @@ connection単位の`compositionPriority`（0〜3）を追加した。v6はAverag
 slot、graphic preset、Range／Threshold parameterを維持する。runtimeは保存済みの5方式をtargetごとに評価する。
 Unity EditModeは203 / 203 PASS。設定UIとTrend Monitor合成診断は次段階とする。
 
-**desktop UI完了（2026-09-01）:** Connectモードで通常targetの合成方式を右stick上下から変更し、
+**desktop／Quest完了（2026-09-02）:** Connectモードで通常targetの合成方式を右stick上下から変更し、
 即時保存・再評価できる。Priority targetのconnectionは右stick左右でrank 0〜3をpreviewし、左stick押下で
 確定する。Window Panelのpreset／slot操作、Range／Threshold parameter編集を維持する。Unity EditModeは
-206 / 206 PASS。Quest操作受入とTrend Monitor合成診断は保留する。
+最終的に220 / 220 PASS。Quest 3で5方式、Priority rank、Trend Monitorの個別入力と白色合成履歴、
+再起動復元、テーマ切替後のruntime再結合までPASSした。
 
 - Average / Sum / Min / Max / Priorityの最小構成
 - 入力欠損、無効値、更新停止時の方針
@@ -152,6 +169,9 @@ Unity EditModeは203 / 203 PASS。設定UIとTrend Monitor合成診断は次段�
 ことを避ける。
 
 ## Priority 5: safety signal processing
+
+**v0.3.0-concept.1後へ延期:** stale／invalid入力の時間情報とreset権限を先に設計する必要があり、
+現行candidateへ追加すると安全上の意味とrelease scopeの双方が不明確になるため含めない。
 
 Limiter、rate limit、manual reset、latched tripを候補とする。安全装置という名称だけで実機の
 安全保証を示さず、アプリ内の信号制約機能として扱う。
@@ -185,12 +205,14 @@ toolへ切り出す。新しいvalidator研究を3Dモデル改善より優先�
 
 ## Proposed v0.3 exit criteria
 
-- 独立Trend MonitorがQuest 3で最大4入力の数値・trendを表示し、操作sourceと
+- **PASS:** 独立Trend MonitorがQuest 3で最大4入力の数値・trendを表示し、操作sourceと
   読取専用meterの保存済み接続を観測できる
-- Range / Threshold parameterをQuest内で編集・保存・復元できる
-- 優先3D候補のうち少なくとも1 familyがGate Cと実機視覚受入を完了する
-- EditMode、39 prefab、motion、signal visual、Quest 48 gateがPASSする
-- Quest 64 stressの結果と、未解決の性能・視覚課題がrelease noteへ記録される
+- **PASS:** Range / Threshold parameterをQuest内で編集・保存・復元できる
+- **PASS:** 複数の優先3D familyがGate Cと実機視覚受入を完了する
+- **PASS:** EditMode 220 / 220、active prefab 56 / 56、motion 16 / 16、
+  signal visual 8 / 8、Quest 48 gateがPASSする
+- **PASS:** Quest 64 stressの結果と未解決の性能・視覚課題を
+  `docs/releases/v0.3.0-concept.1.md`へ記録する
 
 複数入力合成とsafety処理は基盤までをv0.3へ含められるが、exit criteriaを遅らせる場合は
 後続pre-releaseへ分ける。

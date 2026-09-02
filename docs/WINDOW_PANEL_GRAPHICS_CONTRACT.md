@@ -1,7 +1,7 @@
 # Window Panel Parametric Graphics Contract
 
-Status: **WP1 / WP2 PASS; WP3 model candidates next**
-Date: 2026-08-30
+Status: **WP1-WP4 PASS; Quest interaction PASS; dedicated WP-only performance pending**
+Date: 2026-09-02
 
 ## Purpose
 
@@ -104,7 +104,9 @@ schema v6はこの文書の承認だけでは有効化しない。runtime protot
    preset/slot edit、保存復元、独立runtime評価を実装した。
 4. **WP3 — 4-theme model candidates:** Opus 5へ`display_surface`契約を渡し、各theme固有frameを隔離生成する。
 5. **WP4 — Gate B/C:** 固定画像、Unity構造検証、EditMode、candidate dependency 0、rollbackを確認して昇格する。
-6. **WP5 — Quest:** 近接視認、裏面遮蔽、48 objectsをrelease Gate、64 objectsをstressとして測定する。
+6. **WP5 — Quest interaction PASS:** 近接視認、裏面遮蔽、4 slot、3 preset、保存復元、
+   4テーマ切替後の入力追従を確認した。Window Panel単独48 objects／64 objects性能matrixは
+   未実施であり、既存混在48 gateの代替PASSとは扱わない。
 
 WP1とWP3はinterface確定後に並行可能だが、WP3成果物をproductionへ入れるのはWP2完了後とする。
 
