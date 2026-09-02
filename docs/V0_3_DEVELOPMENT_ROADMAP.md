@@ -134,8 +134,8 @@ monitorを先に置くことで、parameter編集の結果をQuest内で直接�
    production runtime統合まで完了した。production固定画像は4テーマ×3 presetの12 / 12 PASS、
    candidate依存0、EditMode 187 / 187、候補defineなしの通常APK生成をPASSした。Quest 3では
    4 slot、3 preset、Range／Threshold回帰、再起動復元、4テーマ表示と入力追従をPASSした。
-   Window Panel単独48／64性能matrixはこのreleaseでの合格を主張せず、既存の混在48 gateと
-   dedicated Trend Monitor profileを性能証跡とする。
+   Window Panel単独48／64性能matrixはユーザー判断で明示スキップし、このreleaseでの合格を
+   主張しない。既存の混在48 gateとdedicated Trend Monitor profileを性能証跡とする。
 
 Window Panelの再設計は単なる3D置換ではなく、複数入力compositionと新しい表示runtimeを伴う。
 Priority 4の入力合成モデルと整合させ、外観制作をsignal / persistence契約より先行させない。
