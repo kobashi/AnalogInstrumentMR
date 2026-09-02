@@ -58,6 +58,8 @@ project decision. The release evidence is recorded in
 [`docs/releases/v0.3.0-concept.1.md`](docs/releases/v0.3.0-concept.1.md).
 
 The proposed next-development priorities are documented in
+[`docs/NEXT_DEVELOPMENT_SESSION_HANDOFF.md`](docs/NEXT_DEVELOPMENT_SESSION_HANDOFF.md).
+The completed v0.3 rationale and history remain in
 [`docs/V0_3_DEVELOPMENT_ROADMAP.md`](docs/V0_3_DEVELOPMENT_ROADMAP.md).
 
 This repository distributes source only. It does not provide or support an

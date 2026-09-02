@@ -12,15 +12,18 @@ MR計器環境にすることである。機能追加と並行して、Quest 3�
 
 ## Current status (2026-09-02)
 
-The proposed v0.3 exit criteria are satisfied. The current baseline has 220 / 220
+The proposed v0.3 exit criteria are satisfied and `v0.3.0-concept.1` has been
+published as a GitHub source pre-release. The current baseline has 220 / 220
 EditMode tests, 56 / 56 active visual prefabs, 16 / 16 control-motion checks,
 8 / 8 signal-visual checks, and the recorded Quest 48 acceptance / 64 stress
 results. Trend Monitor, connection parameter editing, Window Panel, five-kind
 composition, persistence, and four-theme interaction have passed Quest 3.
 
-The next stage is release-candidate preparation, not an additional feature
-slice. Priority 5 safety processing is deferred until after the proposed
-`v0.3.0-concept.1` so it cannot silently expand or delay this release scope.
+The release is closed. Future model/material refinement, UI improvement, and
+specification changes begin as a new development stage described in
+[`NEXT_DEVELOPMENT_SESSION_HANDOFF.md`](NEXT_DEVELOPMENT_SESSION_HANDOFF.md).
+Priority 5 safety processing remains deferred until its stale-input, reset,
+persistence, and non-certification semantics are approved.
 
 ## Priority 0: baseline and release gates
 
