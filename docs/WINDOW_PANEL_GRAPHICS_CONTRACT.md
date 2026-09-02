@@ -1,6 +1,6 @@
 # Window Panel Parametric Graphics Contract
 
-Status: **WP1-WP4 PASS; Quest interaction PASS; dedicated WP-only performance pending**
+Status: **WP1-WP4 PASS; Quest interaction PASS; dedicated WP-only performance skipped**
 Date: 2026-09-02
 
 ## Purpose
@@ -106,7 +106,7 @@ schema v6はこの文書の承認だけでは有効化しない。runtime protot
 5. **WP4 — Gate B/C:** 固定画像、Unity構造検証、EditMode、candidate dependency 0、rollbackを確認して昇格する。
 6. **WP5 — Quest interaction PASS:** 近接視認、裏面遮蔽、4 slot、3 preset、保存復元、
    4テーマ切替後の入力追従を確認した。Window Panel単独48 objects／64 objects性能matrixは
-   未実施であり、既存混在48 gateの代替PASSとは扱わない。
+   ユーザー判断で明示スキップし、既存混在48 gateの代替PASSとは扱わない。
 
 WP1とWP3はinterface確定後に並行可能だが、WP3成果物をproductionへ入れるのはWP2完了後とする。
 

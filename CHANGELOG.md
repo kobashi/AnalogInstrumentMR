@@ -6,6 +6,8 @@
 
 ## [Unreleased]
 
+## [0.3.0-concept.1] - 2026-09-02
+
 ### Added
 
 - Quest性能GateへTrend Monitor専用の`None`（筐体のみ）、`Numeric`（静的1入力数値）、

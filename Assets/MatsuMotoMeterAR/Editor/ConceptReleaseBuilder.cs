@@ -9,8 +9,8 @@ namespace MatsuMotoMeterAR.Editor
 {
     internal static class ConceptReleaseBuilder
     {
-        private const string Version = "0.2.0";
-        private const string ReleaseName = "v0.2.0-concept.1";
+        private const string Version = "0.3.0";
+        private const string ReleaseName = "v0.3.0-concept.1";
         private const string OutputDirectory = "Builds/Release";
         private const int MetaQuestBuildSubtarget = 6;
         private const string DevAgentSettingsPath =
