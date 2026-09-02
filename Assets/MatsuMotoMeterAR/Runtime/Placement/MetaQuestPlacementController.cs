@@ -5822,15 +5822,30 @@ namespace MatsuMotoMeterAR.Placement
             {
                 var placement = placements[index];
                 MockInstrumentFactory.ApplyTheme(placement.Root, selectedTheme);
-                placement.Interaction = placement.Root
-                    .GetComponent<InstrumentGreyboxContract>()
-                    .InstrumentInteraction;
+                RefreshPlacementRuntimeBindings(placement);
             }
+            UpdateSignalGraph();
             SetStatus(
                 $"THEME: {MockInstrumentThemeCatalog.GetDisplayName(selectedTheme)}\n" +
                 $"{CurrentRoomPlacementCount():00}/" +
                 $"{PlacementDocument.MaximumActivePlacements:00} IN ROOM",
                 Color.green);
+        }
+
+        private static void RefreshPlacementRuntimeBindings(
+            RuntimePlacement placement)
+        {
+            if (placement?.Root == null)
+                return;
+
+            var contract = placement.Root
+                .GetComponent<InstrumentGreyboxContract>();
+            placement.Interaction = contract?.InstrumentInteraction;
+            placement.SignalMonitor = placement.Root
+                .GetComponentInChildren<SignalMonitorView>(true);
+            placement.WindowPanelGraphic = placement.Root
+                .GetComponentInChildren<
+                    WindowPanelGraphicsPrototypeView>(true);
         }
 
         private async void PlaceInstrument()

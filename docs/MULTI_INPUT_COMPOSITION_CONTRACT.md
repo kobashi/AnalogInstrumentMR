@@ -2,10 +2,9 @@
 
 ## Status
 
-Priority 4 schema/runtime/desktop-UI and Trend Monitor diagnostics complete.
-Schema v7 persists composition settings and the runtime evaluates them with an
-allocation-free accumulator. Quest interaction acceptance is intentionally
-deferred.
+Priority 4 schema/runtime/desktop-UI, Trend Monitor diagnostics, and Quest 3
+interaction acceptance complete. Schema v7 persists composition settings and
+the runtime evaluates them with an allocation-free accumulator.
 
 ## Existing behavior
 
@@ -81,7 +80,16 @@ composition field because its slot semantics are already explicit.
 1. Pure accumulator and Average-compatible evaluator refactor. **Complete**
 2. Schema v7 migration, normalization, and runtime integration. **Complete**
 3. Connect-mode target setting, live preview, and Priority rank editing.
-   **Desktop complete; Quest acceptance deferred**
+   **Desktop and Quest 3 complete**
 4. Trend Monitor diagnostics for individual inputs and composed output.
-   **Desktop complete; Quest acceptance deferred**
-5. Desktop regression, then deferred Quest interaction/performance gates.
+   **Desktop and Quest 3 complete**
+5. Desktop regression, then Quest interaction/performance gates.
+   **Complete**
+
+## Quest 3 acceptance
+
+2026-09-02の通常runtime受入で、Average／Sum／Minimum／Maximum／Priority、
+priority rank 0〜3、Trend Monitorの個別入力と白色合成履歴、Window Panelの4 slotと
+Orbit／Rose／Lissajous、再起動復元を確認した。global theme切替時にWindow Panelの
+再生成済みgraphic viewへruntime参照を結び直す修正後、4テーマすべてでpreset変更と
+Energy／Balance／Phase／Detail入力追従をPASSした。修正後のUnity EditModeは220 / 220 PASS。
