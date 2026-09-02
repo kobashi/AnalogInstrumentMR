@@ -68,6 +68,13 @@
 - Kinetic Safetyの3サイズmeterをM2n8形状へ更新し、針の表示範囲を±115°へ拡大。
   active FBX／prefab GUIDを維持し、candidate依存をproductionから分離
 
+### Fixed
+
+- global theme切替でWindow Panelのtheme別visualを再生成した後、signal runtimeが破棄済みの
+  graphic viewを参照し続け、preset変更とEnergy／Balance／Phase／Detail入力が表示へ反映されなくなる
+  問題を修正。theme適用後にInteraction、Trend Monitor、Window Panelのruntime参照を再取得し、
+  同フレームでsignal graphを再評価する
+
 ### Validated
 
 - Unity Pipeline経由で起動中EditorのEditMode 220 / 220 PASS、failed 0、skipped 0を取得。
@@ -79,7 +86,9 @@
 - プロジェクト固有Pipeline command 5 / 5を登録。Trend Monitor review、control motion、
   signal visualはartifact SHA-256付きでPASSし、performance gateはdry-run成功、confirmなし実行拒否
 - 合成方式cycle、priority wrap／clamp、target適用可否、Connect HUD/runtime統合後、
-  Unity EditMode 206 / 206 PASS、failed 0、skipped 0。Quest操作受入は保留
+  Quest 3で5方式、Priority rank、Trend Monitor個別／合成履歴、Window Panel 4 slot／3 preset、
+  再起動復元をPASS。theme切替後のWindow Panel再結合修正後はUnity EditMode 220 / 220と、
+  4テーマすべてのpreset変更・入力追従をQuest 3でPASS
 - schema v7のv6 migration、unknown kind修復、priority clamp、clone／round-trip、5方式runtime評価後、
   Unity EditMode 203 / 203 PASS、failed 0、skipped 0
 - 複数入力合成の純粋ポリシー追加と既存Average evaluatorの互換refactor後、

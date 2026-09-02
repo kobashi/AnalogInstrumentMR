@@ -50,7 +50,7 @@ Meta SDK の更新は adapter と専用 asmdef 内に閉じ込める。Meta 固�
 
 計器定義は ScriptableObject とし、`instrumentTypeId`、対応面、Prefab、配置オフセット、アニメーション設定を保持する。配置インスタンスは独自 ID、計器種別、アンカー UUID、ローカル補正、バージョンを JSON に保存する。アンカーの pose とアプリデータを別管理し、片方が欠落した場合に安全に再配置できるようにする。
 
-配置データにはテーマ固有 prefab の参照を保存せず、安定した `instrumentTypeId` と `themeId` を保存する。テーマ変更時はアンカー、操作状態、計器値を維持し、表示用 prefab と演出だけを再構築する。テーマアセットが欠落した場合は default theme へフォールバックする。
+配置データにはテーマ固有 prefab の参照を保存せず、安定した `instrumentTypeId` と `themeId` を保存する。テーマ変更時はアンカー、操作状態、計器値を維持し、表示用 prefab と演出だけを再構築する。再構築後はInteraction、Trend Monitor、Window Panel graphic viewのruntime参照を新しいvisualへ結び直し、signal graphを即時再評価する。テーマアセットが欠落した場合は default theme へフォールバックする。
 
 `concept.3`までは1個のUUID、type ID、論理値を3つの`PlayerPrefs`キーへ保存した。
 `concept.4`では`IPlacementStore`配下のschema v1 JSON blobへ移行し、app固有の
