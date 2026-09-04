@@ -58,14 +58,34 @@ Meta SDK の更新は adapter と専用 asmdef 内に閉じ込める。Meta 固�
 そのまま移行し、互換キーはconcept.4実機確認まで保持する。Quest実装は
 `MetaQuestAnchorService`を介してUUID一括load、個別localize、root bind、eraseを行う。
 
-現行schema v7は`schemaVersion`、`revision`、Roomごと最大48件・全Room合計最大192件の
+現行schema v9は`schemaVersion`、`revision`、Roomごと最大48件・全Room合計最大192件の
 配置recordと、最大192件の`SignalConnectionRecord`を持つ。各配置recordは
 `placementId`、`anchorId`、MRUK Room UUID、stable `instrumentTypeId`、surface、
 local offset、normalized value、lifecycle、Window Panel graphic preset、通常targetの
 signal composition kindを保存する。接続recordは
 connection ID、Source/Targetのplacement ID、変換方式、Range／Threshold parameter、Window Panelの
 明示input slot、composition priorityを保存する。global themeは引き続き独立設定とする。
-schema v1〜v6は読込時にv7へ移行して即時保存し、旧buildによる
+schema v8はこれに最大64件の型付き`AudioPatchConnectionRecord`を追加し、Source/Targetの
+placement ID、port ID、port domainを保存する。Audio PatchはOscillator／Noise／LFOの
+`audio.out`からAudio Outputの`audio.in`、およびLFOからOscillatorの`pitch.in`／`fm.in`を
+対象とする。加えてLFOの`clock.out`からSequencerの`clock.in`、Sequencerの
+`control.out`からOscillatorの`pitch.in`を接続でき、外部clock未接続時はSequencerの内部clockへ
+自動fallbackする。Meterは値とmotor tone、Trend Monitorは値・符号付き傾き・spread・texture、
+Window PanelはEnergy・Balance・Phase・Detail・textureを型付き出力する。これらは従来のSignal target
+役を維持し、Connectモードで同じ計器を再選択した場合だけAudio Patch sourceへ切り替わる。
+左stick左右で出力portを選択し、ControlはOscillator pitchまたはDelay time、Audioは
+Oscillator FM、Delay、Audio Outputへ接続する。既存Signal接続とは別に評価する。Control edgeはblock先頭値をsample-and-holdし、
+Audio／Clock edgeはsample単位で評価する。runtimeはOutputから上流を辿って
+LFO→Sequencer→Oscillator→Outputを
+含む型付きgraphを構築する。Delayは20〜750 msの事前確保ring buffer、feedback上限0.92、
+内部state/output clampを持つ。通常のtopological compileでcycleを検出した場合、Delay入力境界だけを
+1 sampleの因果境界として再compileし、Delayを含まないzero-delay cycleは拒否する。
+ConnectモードではAudioをcyan、Controlをamber、Clockをvioletのcableで描画し、選択中はmagentaへ変える。
+音響moduleを選択してAで接続を巡回し、Bで選択中のpatchをtransactionalに削除する。
+schema v9はplacement recordにOscillator/LFO waveform、Noise color、Sequencerの16個の
+bipolar step値を追加する。Connectモードでmodule Sourceを選択後Yでparameter editorへ入り、
+左stickでwaveform/colorまたはstepを選択し、Sequencerは右stick上下で値を0.05刻みに変更する。
+Aまたは左stick押下で保存し、Bで編集前stateへ戻す。schema v1〜v8は読込時にv9へ移行して即時保存し、旧buildによる
 25件目以降の切り捨てを防ぐ。近接する配置は約2.75 m以内でAnchorを共有し、
 複数recordが同じ`anchorId`を参照できる。
 実行中に`GetCurrentRoom()`が1秒間安定して別Roomを返した場合は旧Roomのruntime

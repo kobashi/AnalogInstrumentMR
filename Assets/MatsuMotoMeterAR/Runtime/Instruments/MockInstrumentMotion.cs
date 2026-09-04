@@ -1,3 +1,4 @@
+using System;
 using MatsuMotoMeterAR.Rendering;
 using UnityEngine;
 
@@ -46,6 +47,8 @@ namespace MatsuMotoMeterAR.Instruments
         private int leverDirection = 1;
         private int throttleDirection = 1;
         private int powerSliderDirection = 1;
+
+        public event Action<InstrumentValueChange> ValueChanged;
 
         public MotionKind Kind => motionKind;
         public Transform MovingPart => movingPart;
@@ -160,14 +163,17 @@ namespace MatsuMotoMeterAR.Instruments
             ApplyState();
         }
 
-        public void Actuate(bool pressed)
+        public void Actuate(
+            bool pressed,
+            InstrumentValueChangeOrigin origin =
+                InstrumentValueChangeOrigin.Programmatic)
         {
             if (!configured)
                 return;
 
             if (motionKind == MotionKind.Press)
             {
-                SetNormalizedValue(pressed ? 1f : 0f);
+                SetNormalizedValue(pressed ? 1f : 0f, origin);
                 return;
             }
 
@@ -180,33 +186,47 @@ namespace MatsuMotoMeterAR.Instruments
                     // Meters are read-only in operation mode.
                     break;
                 case MotionKind.Lever:
-                    AdvanceLeverDetent();
+                    AdvanceLeverDetent(origin);
                     break;
                 case MotionKind.Toggle:
                 case MotionKind.Pulse:
-                    SetNormalizedValue(normalizedValue >= 0.5f ? 0f : 1f);
+                    SetNormalizedValue(
+                        normalizedValue >= 0.5f ? 0f : 1f,
+                        origin);
                     break;
                 case MotionKind.Rotate:
-                    SetNormalizedValue(Mathf.Repeat(normalizedValue + 0.125f, 1f));
+                    SetNormalizedValue(
+                        Mathf.Repeat(normalizedValue + 0.125f, 1f),
+                        origin);
                     break;
                 case MotionKind.Status:
                     SetNormalizedValue(
                         (DetentIndex + 1) %
                         StatusIndicatorStateCount /
-                        (float)(StatusIndicatorStateCount - 1));
+                        (float)(StatusIndicatorStateCount - 1),
+                        origin);
                     break;
                 case MotionKind.Throttle:
-                    AdvanceThrottleDetent();
+                    AdvanceThrottleDetent(origin);
                     break;
                 case MotionKind.PowerSlider:
-                    AdvancePowerSliderDetent();
+                    AdvancePowerSliderDetent(origin);
                     break;
             }
         }
 
-        public void SetNormalizedValue(float value)
+        public void SetNormalizedValue(
+            float value,
+            InstrumentValueChangeOrigin origin =
+                InstrumentValueChangeOrigin.Programmatic)
         {
-            normalizedValue = NormalizeValue(motionKind, value);
+            var previousValue = normalizedValue;
+            var previousDetent = DetentIndexFor(motionKind, previousValue);
+            var nextValue = NormalizeValue(motionKind, value);
+            if (Mathf.Abs(previousValue - nextValue) <= 0.000001f)
+                return;
+
+            normalizedValue = nextValue;
             if (motionKind == MotionKind.Lever)
             {
                 if (DetentIndex <= 0)
@@ -229,9 +249,19 @@ namespace MatsuMotoMeterAR.Instruments
                     powerSliderDirection = -1;
             }
             ApplyState();
+            ValueChanged?.Invoke(new InstrumentValueChange(
+                motionKind,
+                previousValue,
+                normalizedValue,
+                previousDetent,
+                DetentIndexFor(motionKind, normalizedValue),
+                origin));
         }
 
-        public void SetLeverDetentIndex(int detentIndex)
+        public void SetLeverDetentIndex(
+            int detentIndex,
+            InstrumentValueChangeOrigin origin =
+                InstrumentValueChangeOrigin.Programmatic)
         {
             if (motionKind != MotionKind.Lever)
                 return;
@@ -241,10 +271,14 @@ namespace MatsuMotoMeterAR.Instruments
                 0,
                 LeverDetentCount - 1);
             SetNormalizedValue(
-                clampedIndex / (float)(LeverDetentCount - 1));
+                clampedIndex / (float)(LeverDetentCount - 1),
+                origin);
         }
 
-        public void SetThrottleDetentIndex(int detentIndex)
+        public void SetThrottleDetentIndex(
+            int detentIndex,
+            InstrumentValueChangeOrigin origin =
+                InstrumentValueChangeOrigin.Programmatic)
         {
             if (motionKind != MotionKind.Throttle)
                 return;
@@ -254,10 +288,14 @@ namespace MatsuMotoMeterAR.Instruments
                 0,
                 ThrottleDetentCount - 1);
             SetNormalizedValue(
-                clampedIndex / (float)(ThrottleDetentCount - 1));
+                clampedIndex / (float)(ThrottleDetentCount - 1),
+                origin);
         }
 
-        public void SetPowerSliderDetentIndex(int detentIndex)
+        public void SetPowerSliderDetentIndex(
+            int detentIndex,
+            InstrumentValueChangeOrigin origin =
+                InstrumentValueChangeOrigin.Programmatic)
         {
             if (motionKind != MotionKind.PowerSlider)
                 return;
@@ -267,10 +305,11 @@ namespace MatsuMotoMeterAR.Instruments
                 0,
                 PowerSliderDetentCount - 1);
             SetNormalizedValue(
-                clampedIndex / (float)(PowerSliderDetentCount - 1));
+                clampedIndex / (float)(PowerSliderDetentCount - 1),
+                origin);
         }
 
-        private void AdvanceLeverDetent()
+        private void AdvanceLeverDetent(InstrumentValueChangeOrigin origin)
         {
             var currentIndex = DetentIndex;
             if (currentIndex >= LeverDetentCount - 1)
@@ -278,10 +317,10 @@ namespace MatsuMotoMeterAR.Instruments
             else if (currentIndex <= 0)
                 leverDirection = 1;
 
-            SetLeverDetentIndex(currentIndex + leverDirection);
+            SetLeverDetentIndex(currentIndex + leverDirection, origin);
         }
 
-        private void AdvanceThrottleDetent()
+        private void AdvanceThrottleDetent(InstrumentValueChangeOrigin origin)
         {
             var currentIndex = DetentIndex;
             if (currentIndex >= ThrottleDetentCount - 1)
@@ -289,10 +328,10 @@ namespace MatsuMotoMeterAR.Instruments
             else if (currentIndex <= 0)
                 throttleDirection = 1;
 
-            SetThrottleDetentIndex(currentIndex + throttleDirection);
+            SetThrottleDetentIndex(currentIndex + throttleDirection, origin);
         }
 
-        private void AdvancePowerSliderDetent()
+        private void AdvancePowerSliderDetent(InstrumentValueChangeOrigin origin)
         {
             var currentIndex = DetentIndex;
             if (currentIndex >= PowerSliderDetentCount - 1)
@@ -301,7 +340,8 @@ namespace MatsuMotoMeterAR.Instruments
                 powerSliderDirection = 1;
 
             SetPowerSliderDetentIndex(
-                currentIndex + powerSliderDirection);
+                currentIndex + powerSliderDirection,
+                origin);
         }
 
         private void ApplyState()
@@ -460,6 +500,21 @@ namespace MatsuMotoMeterAR.Instruments
             var detentIndex = Mathf.RoundToInt(
                 clamped * (stepCount - 1));
             return detentIndex / (float)(stepCount - 1);
+        }
+
+        private static int DetentIndexFor(MotionKind kind, float value)
+        {
+            var count = kind switch
+            {
+                MotionKind.Lever => LeverDetentCount,
+                MotionKind.Status => StatusIndicatorStateCount,
+                MotionKind.Throttle => ThrottleDetentCount,
+                MotionKind.PowerSlider => PowerSliderDetentCount,
+                _ => 0
+            };
+            return count > 0
+                ? Mathf.RoundToInt(Mathf.Clamp01(value) * (count - 1))
+                : -1;
         }
     }
 }

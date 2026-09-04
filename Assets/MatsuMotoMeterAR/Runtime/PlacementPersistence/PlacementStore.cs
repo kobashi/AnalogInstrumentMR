@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using MatsuMotoMeterAR.Anchors;
+using MatsuMotoMeterAR.Audio;
 using MatsuMotoMeterAR.Instruments;
 using MatsuMotoMeterAR.Signals;
 using UnityEngine;
@@ -146,7 +147,9 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                 schemaVersion = PlacementDocument.CurrentSchemaVersion,
                 revision = Math.Max(0, source?.revision ?? 0),
                 placements = new List<PlacementRecord>(),
-                connections = new List<SignalConnectionRecord>()
+                connections = new List<SignalConnectionRecord>(),
+                audioPatchConnections =
+                    new List<AudioPatchConnectionRecord>()
             };
             if (source?.placements == null)
                 return normalized;
@@ -190,6 +193,11 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                 }
                 normalized.placements.Add(record);
             }
+
+            NormalizeAudioPatchConnections(
+                source.audioPatchConnections,
+                normalized.audioPatchConnections,
+                activeTypeIds);
 
             if (source.connections == null)
                 return normalized;
@@ -266,6 +274,67 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                 normalized.connections.Add(connection);
             }
             return normalized;
+        }
+
+        private static void NormalizeAudioPatchConnections(
+            IReadOnlyList<AudioPatchConnectionRecord> sources,
+            ICollection<AudioPatchConnectionRecord> destination,
+            IReadOnlyDictionary<string, string> activeTypeIds)
+        {
+            if (sources == null)
+                return;
+            var connectionIds = new HashSet<string>(StringComparer.Ordinal);
+            var endpointPairs = new HashSet<string>(StringComparer.Ordinal);
+            var routedSources = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var source in sources)
+            {
+                if (destination.Count >=
+                    PlacementDocument.MaximumAudioPatchConnections)
+                    break;
+                if (source == null ||
+                    string.IsNullOrWhiteSpace(source.connectionId) ||
+                    string.IsNullOrWhiteSpace(source.sourcePlacementId) ||
+                    string.IsNullOrWhiteSpace(source.targetPlacementId))
+                    continue;
+
+                var connectionId = source.connectionId.Trim();
+                var sourceId = source.sourcePlacementId.Trim();
+                var targetId = source.targetPlacementId.Trim();
+                var sourcePortId = source.sourcePortId?.Trim();
+                var targetPortId = source.targetPortId?.Trim();
+                if (sourceId == targetId ||
+                    !connectionIds.Add(connectionId) ||
+                    !activeTypeIds.TryGetValue(sourceId, out var sourceTypeId) ||
+                    !activeTypeIds.TryGetValue(targetId, out var targetTypeId) ||
+                    !Enum.IsDefined(
+                        typeof(ModularAudioPortDomain),
+                        source.portDomain))
+                    continue;
+
+                var domain = (ModularAudioPortDomain)source.portDomain;
+                if (!ModularAudioPatchPolicy.CanConnect(
+                        MockInstrumentCatalog.FromTypeId(sourceTypeId),
+                        MockInstrumentCatalog.FromTypeId(targetTypeId),
+                        sourcePortId,
+                        targetPortId,
+                        domain))
+                    continue;
+
+                var endpointPair = sourceId + "\n" + sourcePortId + "\n" +
+                                   targetId + "\n" + targetPortId;
+                if (!endpointPairs.Add(endpointPair) ||
+                    !routedSources.Add(sourceId))
+                    continue;
+                destination.Add(new AudioPatchConnectionRecord
+                {
+                    connectionId = connectionId,
+                    sourcePlacementId = sourceId,
+                    targetPlacementId = targetId,
+                    sourcePortId = sourcePortId,
+                    targetPortId = targetPortId,
+                    portDomain = (int)domain
+                });
+            }
         }
 
         private static bool TryNormalizeConnection(
@@ -436,6 +505,18 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                 source.signalCompositionKind)
                 ? source.signalCompositionKind
                 : (int)SignalCompositionKind.Average;
+            record.audioWaveform = sourceSchemaVersion >= 9
+                ? ModularAudioParameterPolicy.NormalizeWaveform(
+                    source.audioWaveform)
+                : (int)ModularOscillatorWaveform.Sine;
+            record.audioNoiseColor = sourceSchemaVersion >= 9
+                ? ModularAudioParameterPolicy.NormalizeNoiseColor(
+                    source.audioNoiseColor)
+                : (int)ModularNoiseColor.White;
+            record.audioSequencerSteps = sourceSchemaVersion >= 9
+                ? ModularAudioParameterPolicy.NormalizeSequencerSteps(
+                    source.audioSequencerSteps)
+                : ModularAudioParameterPolicy.CreateDefaultSequencerSteps();
             record.surfaceKind = surface;
             record.localOffset = SerializablePose.FromPose(
                 new Pose(new Vector3(offset.px, offset.py, offset.pz), rotation));

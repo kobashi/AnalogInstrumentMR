@@ -1,215 +1,206 @@
 # Next development session handoff
 
-Status: **ready for a new development session**
+Status: **instrument-audio implementation is committed and ready for the next session**
 
-Prepared: 2026-09-02
+Prepared: 2026-09-04
 
-Released baseline: `v0.3.0-concept.1` at commit
+Released baseline: `v0.3.0-concept.1` at
 `368676403e21ca0295d4f20fda335adae272f688`
 
-## 1. Start point
+Implementation parent commit: `6e4c1967080dc72bd873b6f46beaf95c3256b327`
+(`Prepare next development session handoff`)
 
-`v0.3.0-concept.1` is closed and published as a GitHub source pre-release.
-At release close, `main`, `origin/main`, and the annotated release tag identified
-the same commit. Later documentation commits may move `main`; the immutable
-released baseline remains the tag commit above. The local worktree was clean
-when this handoff was prepared. The release contains the expanded-Git-LFS
-full-source archive and its SHA-256 manifest; the locally signed Quest APK is
-test evidence and was not published.
+Current branch: `codex/instrument-audio-contract`
 
-Do not reopen release preparation or reinterpret an explicitly skipped check as
-a release failure. Start future work from current `main` on a new `codex/` branch.
-Do not commit directly to `main`.
+## 1. Current repository state
 
-The next version number is intentionally undecided. Select it only after the
-first coherent scope is agreed; do not assume `v0.4` or another release label.
+The instrument-audio slice is implemented, verified, reviewed, and committed in
+the commit containing this handoff. Begin the next session by confirming that the
+working tree is clean and that the current branch contains this handoff.
 
-## 2. Source-of-truth order
+Do not select a new version, update the changelog, create a PR, push, or tag a
+release without an explicit instruction. The immutable released baseline remains
+`v0.3.0-concept.1`.
+
+`Assets/Resources/DevAgentSettings.asset` is an ignored local credential/settings
+asset. Never inspect, print, stage, or publish its contents. After the latest
+Quest build, the original path exists and the temporary quarantine path does not.
+
+## 2. Product decisions
+
+The following scope is approved and implemented:
+
+- Give each instrument type a distinct operating sound.
+- Use short click-like sounds for Switch ON/OFF, Lever, Slider steps, and
+  Lamp/Indicator illumination.
+- Vary Indicator/Lamp sound by level or stage.
+- Synthesize display-dependent sound for Monitor and Panel.
+- Give Meter a rotating-machine-like pitch response driven by its value.
+- Add a modular audio system with oscillator, noise, LFO, sequencer, delay, and
+  audio output nodes.
+- Allow Meter, Trend Monitor, and Window Panel outputs to feed the modular audio
+  graph while retaining their existing control-signal role.
+- Persist modular audio parameters and connections.
+
+The following validation decisions are also current:
+
+- Physical Quest listening and controller-operation acceptance is deferred.
+- The generic 48-object performance gate is skipped for this slice because it
+  does not measure the requested audio-specific load. This is **SKIPPED**, not
+  PASS.
+- If performance work is reopened, measure representative modular topology,
+  DSP/callback CPU, underruns, audio-thread allocation, and active voice counts.
+
+## 3. Implemented audio behavior
+
+### Instrument one-shots
+
+- Switch ON and OFF use distinct short cues.
+- Lever and Slider steps trigger short mechanical cues.
+- Lamp and Indicator transitions use stage-dependent cues.
+- Instrument theme/type influences the synthesis so device families do not all
+  sound identical.
+- Cues are synthesized at runtime; no external audio assets are required.
+
+### Continuous instrument sources
+
+- Meter exposes its value as a control output and a value-dependent motor tone
+  as an audio output. Pitch changes with the meter value.
+- Trend Monitor exposes value, signed slope, and spread as control outputs plus
+  a display-driven audio texture.
+- Window Panel exposes energy, balance, phase, and detail as control outputs plus
+  a display-driven audio texture.
+
+### Modular audio nodes
+
+- Oscillator: selectable waveform.
+- Noise: selectable noise color.
+- LFO: selectable waveform and control-rate modulation output.
+- Sequencer: fixed 16-step editable pattern.
+- Delay: audio processing node.
+- Audio Output: terminal playback node.
+
+The graph uses typed ports and preserves existing signal connections. Invalid
+audio/control connections are rejected by the connection contract.
+
+## 4. Connect-mode interaction
+
+Meter, Trend Monitor, and Window Panel have dual source roles:
+
+- Select once to use the existing control-signal source role.
+- Select the same source again to switch to its audio source role.
+- Use the left stick to cycle the available typed outputs.
+
+For Oscillator, Noise, LFO, and Sequencer parameters:
+
+1. Select the module as the Connect-mode source.
+2. Press `Y` to enter parameter editing.
+3. Move the left stick horizontally to change waveform/noise color, or to select
+   a sequencer step.
+4. Move the right stick vertically to change the selected sequencer value in
+   increments of `0.05`.
+5. Press `A` or the left-stick click to save.
+6. Press `B` to cancel and restore the original values.
+
+Changes audition immediately. Cancel and save failure both restore the prior
+runtime parameter state.
+
+## 5. Persistence and compatibility
+
+- Current placement schema: **v9**.
+- v8 and earlier placements migrate forward with safe audio defaults.
+- v9 persists per-placement `audioWaveform`, `audioNoiseColor`, and
+  `audioSequencerSteps`.
+- Sequencer persistence is normalized to a fixed 16-step pattern.
+- Runtime restoration applies saved parameters to the recreated audio nodes.
+- Existing Room ownership, placement restoration, control connections, and
+  schema v1-v8 migrations remain supported.
+
+Key contract documents:
+
+- [`INSTRUMENT_AUDIO_CONTRACT.md`](INSTRUMENT_AUDIO_CONTRACT.md)
+- [`ARCHITECTURE.md`](ARCHITECTURE.md)
+
+## 6. Verification evidence
+
+Latest completed checks:
+
+- Modular audio focused EditMode tests: **38 / 38 PASS**.
+- Placement/schema focused EditMode tests: **31 / 31 PASS**.
+- Full EditMode suite: **291 / 291 PASS**.
+- `git diff --check`: PASS.
+
+Latest full-suite artifacts:
+
+- Results: `/private/tmp/analog-module-params-full-tests.xml`
+- Log: `/private/tmp/analog-module-params-full-tests.log`
+
+Earlier unchanged structural baselines remain:
+
+- Active visual prefabs: **56 / 56**.
+- Control motion audit: **16 / 16**.
+- Signal visual audit: **8 / 8**.
+
+The documentation was changed after the 291-test run; production code was not.
+There is no reason to rerun Unity solely for the handoff edit.
+
+## 7. Quest build evidence
+
+Latest review APK:
+
+`Builds/QuestReview/AnalogInstrumentMR-InstrumentAudio-review-quest3.apk`
+
+SHA-256:
+
+`57a9a21bedb1a344a3de0a8f17da29ee5755a26859f73791804136c9bf8ff00d`
+
+The APK was installed to Quest 3 device `2G0YC1ZG2J02HL`, and a launch event was
+injected successfully. This proves build/install/launch plumbing only. It does
+not count as in-headset interaction, listening, spatial-audio, or comfort
+acceptance.
+
+## 8. Remaining closeout work
+
+No required implementation, review, or commit work remains in the approved
+slice. Possible next actions are:
+
+1. Choose version/changelog treatment only if the user opens a release task.
+2. Push or open a PR only if requested.
+
+Deferred work, not blockers for this slice:
+
+- In-headset controller-operation and listening acceptance.
+- Audio-specific Quest profiling under a representative modular graph.
+- Optional Gate/Trigger/Reset semantics.
+- Optional Delay feedback/mix and LFO depth controls.
+- Optional additional FBX/audio-module visual assets.
+- Broader output fan-out or advanced routing semantics.
+
+## 9. Source-of-truth order
 
 When older notes disagree, use this order:
 
-1. This handoff for the next-session boundary and priorities.
-2. [`releases/v0.3.0-concept.1.md`](releases/v0.3.0-concept.1.md) for released
-   behavior and validation evidence.
-3. [`V0_3_DEVELOPMENT_ROADMAP.md`](V0_3_DEVELOPMENT_ROADMAP.md) for completed
-   feature rationale and deferred work.
-4. Current production assets, runtime code, tests, and generated audit reports.
-5. [`OPUS5_CODEX_ALIGNMENT.md`](OPUS5_CODEX_ALIGNMENT.md) only as historical
-   evidence for a specific model revision or decision.
+1. This handoff for current worktree state and remaining actions.
+2. [`INSTRUMENT_AUDIO_CONTRACT.md`](INSTRUMENT_AUDIO_CONTRACT.md) for the audio
+   behavior, interaction, validation, and deferral decisions.
+3. Current runtime/editor code and tests.
+4. [`ARCHITECTURE.md`](ARCHITECTURE.md) for system structure.
+5. [`releases/v0.3.0-concept.1.md`](releases/v0.3.0-concept.1.md) for the last
+   released baseline.
 
-`OPUS5_CODEX_ALIGNMENT.md` contains superseded intermediate diagnoses and stop
-gates. Do not read its 300-plus sections as a current open-task list.
-`V6_KNOWN_DEFECTS.md` also contains candidate-era status text; verify each item
-against current production before treating it as an active defect.
+Historical roadmap/alignment documents may contain superseded schema versions,
+test totals, and open-task lists. Do not treat them as the current audio status.
 
-## 3. Released baseline that must remain intact
+## 10. Suggested continuation prompt
 
-- Unity `6000.3.19f1`; Blender authoring `5.2.x`.
-- Four themes and 14 instrument types: 56 active visual prefabs.
-- Operation, Edit, and Connect modes.
-- Direct, Invert, Range, and Threshold connections with editable parameters.
-- Average, Sum, Minimum, Maximum, and Priority multi-input composition.
-- Trend Monitor with up to four input histories and a composed-output history.
-- Window Panel with Energy, Balance, Phase, and Detail slots plus Orbit, Rose,
-  and Lissajous presets.
-- Placement schema v7, Room ownership, Spatial Anchors, persistence, and migration.
-- Supported placement gate remains 48 objects per Room; 64 is stress
-  characterization, not a supported count.
-- Latest recorded regression baseline: EditMode 220 / 220, active visual prefabs
-  56 / 56, control motion 16 / 16, signal visuals 8 / 8.
-
-Any schema or interaction change must preserve v1-v7 migration and existing
-saved placements unless a separately approved migration policy says otherwise.
-
-## 4. Remaining development lanes
-
-These are future-development items, not unfinished release actions. Keep the
-lanes separate so model work does not silently alter runtime contracts and UI
-work does not expand into signal-processing semantics.
-
-### Lane A — targeted 3D model and material refinement
-
-Start here because it has a concrete, already observed defect and limited
-runtime risk.
-
-1. **Machined Ergonomics Throttle and PowerSlider surface stripes.** Their body
-   Normal Map reads as an oversized repeating stripe at Quest viewing distance.
-   Freeze accepted geometry, motion, grip UVs, BaseColor, fastener access, and
-   collider behavior. Compare physical pitch, UV direction, and lower-strength
-   versus finer-grain normal treatments. Require fixed-camera A/B images before
-   promotion and Quest A/B before final acceptance.
-2. **Image-based production survey.** Render the current 56 active prefabs at
-   fixed front and oblique cameras, with motion endpoints and OFF/ON states where
-   relevant. Use visual review to nominate bounded defects; validator output by
-   itself is not evidence that a model looks better. Do not start a wholesale
-   56-model remodel.
-3. **Meter cover-glass decision.** Transparent curved glass is not currently a
-   standard requirement because of Quest transparency, sorting, and performance
-   cost. Add it only if an image/Quest comparison demonstrates sufficient value.
-4. **Sealed internal geometry optimization.** The accepted AuditKit sweep found
-   fully occluded internal disks, including the Medium/Large meter full-diameter
-   disks. Treat removal as optional optimization, not a visual defect. First
-   prove no structural, shading, or export role depends on each disk.
-
-For every new or modified Blender/FBX candidate:
-
-- keep production assets untouched until isolated staging and Gate C pass;
-- run the accepted Tier A AuditKit before Gate B;
-- preserve node names, pivots, material roles, GUIDs, motion range, and collider
-  contracts unless the approved task explicitly changes one;
-- provide part renders, assembled renders, fixed-camera baseline/candidate
-  comparisons, and a compact report;
-- do not commit `.blend1`, exploratory renders, or bulk diagnostic output;
-- ask before adding a Blender add-on, library, or external FBX validator.
-
-### Lane B — UI and interaction improvement
-
-No new UI design has been approved yet. Begin with a short usability audit, not
-an implementation sweep.
-
-1. Exercise Operation, Edit, and Connect on Quest and list operations that are
-   difficult to discover, require memorized controller input, or overload the
-   HUD. Include Range/Threshold editing, composition kind/rank, Window Panel
-   slot/preset selection, cancel/confirm, and restoration feedback.
-2. Turn the findings into a small interaction contract: user goal, current
-   sequence, proposed sequence, controller mapping, HUD state, cancel path,
-   persistence effect, and backward-compatibility effect.
-3. Implement one coherent UI slice at a time. Add EditMode tests for state
-   transitions and perform Quest acceptance before beginning the next slice.
-
-Do not redesign the accepted Trend Monitor and Window Panel rendering merely to
-make the code uniform. Change them only for an observed usability or visual
-problem. Keep runtime display coordinates theme-independent.
-
-### Lane C — specification changes
-
-The main deferred feature family is signal constraint processing:
-
-- stale/invalid input metadata and timeout semantics;
-- clamp and rate limiter;
-- latched threshold/trip;
-- explicit reset, reset authority, and persistence;
-- fail-safe value and feedback-loop evaluation order.
-
-This was intentionally excluded from `v0.3.0-concept.1`. Before code, define
-what timestamp is authoritative, how stale state propagates through transforms
-and composition, who may reset a latch, what survives restart, and how the UI
-avoids implying functional-safety certification. It may be deferred again.
-
-Other optional specification decisions are whether to obtain Quest/OpenXR GPU
-timing, whether 64 objects should ever become a supported count, and whether to
-add Quest 3S coverage. The prior decision to skip these remains valid until the
-user explicitly reopens them.
-
-## 5. Recommended execution order
-
-1. Create a new `codex/` branch from current `main` and reproduce the baseline.
-2. Complete Lane A item 1 as the first bounded candidate, including visual A/B.
-3. Run the UI usability audit and ask the user to approve one UI contract.
-4. Implement that single UI slice with tests and Quest acceptance.
-5. Decide whether Lane C has enough product value and semantic clarity to open.
-6. Only then select a version/release slice and update `CHANGELOG.md`.
-
-Large model changes, UI redesign, schema changes, and performance experiments
-should use separate branches and PRs. Merge only a coherent, independently
-reversible slice. Do not combine an Opus-generated model revision with unrelated
-Unity runtime changes in one commit.
-
-## 6. Verification and tooling
-
-Prefer Unity Pipeline against the running Editor for routine checks. Project
-commands are registered in
-`Assets/MatsuMotoMeterAR/Editor/ProjectPipelineCommands.cs`:
-
-- `matsu_render_trend_monitor_review`
-- `matsu_audit_control_motion`
-- `matsu_audit_signal_visuals`
-- `matsu_build_performance_gate`
-- `matsu_build_performance_gate_status`
-
-The performance build command requires explicit confirmation; do not bypass
-that guard. Use `ConceptReleaseBuilder` for a release APK because it safely
-quarantines and restores the ignored local Meta XR development-agent settings.
-Never inspect, log, stage, or publish that local credential/settings asset.
-
-Minimum checks are proportional to the change:
-
-- UI/runtime: compile, focused EditMode tests, full EditMode, persistence and
-  migration tests, then Quest interaction acceptance.
-- Model/material: Tier A, isolated staging, fixed images, prefab validation,
-  relevant motion/signal audit, Gate C, then Quest close-range acceptance.
-- Schema/spec: migration fixtures for every supported older version, clone and
-  round-trip tests, invalid-value normalization, restart restoration, and Quest.
-- Performance: fixed count/theme/distance/temperature/update profile and a
-  baseline-relative report. Never label a skipped run as PASS.
-
-## 7. Opus collaboration boundary
-
-The previous assigned Opus work is complete and no further Opus work is
-authorized. The Claude application/session may still be open, but its project
-task is in a stop state. Claude/Opus may be launched for a new, narrowly bounded
-model candidate after Codex writes the scope and stop gate. Codex owns
-production integration, documentation, Unity validation, git, PRs, and release
-decisions. Opus must not modify active production assets, Unity
-prefabs/materials, docs, git state, or external dependencies unless a new
-instruction explicitly changes that boundary.
-
-For the next Opus-assisted task, start a new alignment record rather than
-continuing the large historical transcript. Record only scope, allowed paths,
-frozen contracts, deliverables, evidence, and the exact stop gate.
-
-## 8. Copy-paste prompt for the new Codex session
-
-> Continue AnalogInstrumentMR from the published `v0.3.0-concept.1` baseline.
-> First read `docs/NEXT_DEVELOPMENT_SESSION_HANDOFF.md`,
-> `docs/releases/v0.3.0-concept.1.md`, the relevant current contract, and the
-> current production code/assets. Verify that tag `v0.3.0-concept.1` points to
-> commit `368676403e21ca0295d4f20fda335adae272f688`, that current `main` descends
-> from that baseline, and that the worktree is clean. Do not reopen release work or infer current
-> defects from superseded sections of `docs/OPUS5_CODEX_ALIGNMENT.md`.
-> Propose the first bounded slice from the handoff priorities, with acceptance
-> criteria and dependencies, and wait for agreement before large implementation.
-> Use a new `codex/` branch. Preserve the released runtime, schema-v7 migration,
-> 48-object support boundary, and current tests. For model work, require fixed
-> image-based comparison plus Tier A / Gate C; for UI or specification changes,
-> write the interaction or signal contract before implementation.
+> Continue AnalogInstrumentMR on branch `codex/instrument-audio-contract`.
+> Read `docs/NEXT_DEVELOPMENT_SESSION_HANDOFF.md` and
+> `docs/INSTRUMENT_AUDIO_CONTRACT.md`, then inspect the current committed audio
+> implementation and verify that the worktree is clean.
+> Preserve all existing user changes and never inspect
+> `Assets/Resources/DevAgentSettings.asset`. The instrument-audio slice is
+> implemented; full EditMode is 291/291 PASS and the Quest review APK hash is
+> recorded in the handoff. Physical Quest listening/interaction is deferred,
+> and the generic 48-object performance gate is SKIPPED because it is not an
+> audio-load measurement. Do not push, open a PR, change versioning, or tag
+> unless explicitly instructed.

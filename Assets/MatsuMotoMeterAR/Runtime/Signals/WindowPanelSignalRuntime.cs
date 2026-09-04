@@ -12,6 +12,8 @@ namespace MatsuMotoMeterAR.Signals
             new float[WindowPanelGraphicGeometry.SlotCount];
         private readonly bool[] connected =
             new bool[WindowPanelGraphicGeometry.SlotCount];
+        private readonly float[] resolved =
+            new float[WindowPanelGraphicGeometry.SlotCount];
 
         public float OutputValue { get; private set; } = 0.5f;
         public int ConnectedCount { get; private set; }
@@ -72,6 +74,14 @@ namespace MatsuMotoMeterAR.Signals
             }
             value = values[slot];
             return true;
+        }
+
+        public WindowPanelGraphicInputs GetGraphicInputs()
+        {
+            return WindowPanelGraphicGeometry.ResolveInputs(
+                values,
+                connected,
+                resolved);
         }
 
         public void ApplyTo(

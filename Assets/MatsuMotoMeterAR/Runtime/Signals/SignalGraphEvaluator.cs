@@ -59,7 +59,9 @@ namespace MatsuMotoMeterAR.Signals
                 if (!instruments.TryGetValue(pair.Key, out var target))
                     continue;
                 if (pair.Value.TryGetValue(out var value))
-                    target.SetNormalizedValue(value);
+                    target.SetNormalizedValue(
+                        value,
+                        InstrumentValueChangeOrigin.SignalGraph);
             }
         }
 

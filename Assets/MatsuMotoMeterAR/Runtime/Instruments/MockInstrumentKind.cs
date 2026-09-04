@@ -15,6 +15,12 @@ namespace MatsuMotoMeterAR.Instruments
         PowerSlider = 10,
         RoundMeterMedium = 11,
         RoundMeterLarge = 12,
-        TrendMonitor = 13
+        TrendMonitor = 13,
+        AudioOscillator = 14,
+        AudioNoise = 15,
+        AudioOutput = 16,
+        AudioLfo = 17,
+        AudioSequencer = 18,
+        AudioDelay = 19
     }
 }

@@ -40,6 +40,15 @@ namespace MatsuMotoMeterAR.Instruments
             Transform logic,
             bool preview)
         {
+            if (kind == MockInstrumentKind.AudioOscillator ||
+                kind == MockInstrumentKind.AudioNoise ||
+                kind == MockInstrumentKind.AudioLfo ||
+                kind == MockInstrumentKind.AudioSequencer ||
+                kind == MockInstrumentKind.AudioDelay ||
+                kind == MockInstrumentKind.AudioOutput)
+            {
+                return false;
+            }
             var resourcePath = ResourcePath(kind, theme);
             var prefab = Resources.Load<GameObject>(resourcePath);
             if (prefab == null)

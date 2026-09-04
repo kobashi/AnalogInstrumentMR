@@ -7,14 +7,15 @@ namespace MatsuMotoMeterAR.Instruments
         Meters = 0,
         Indicators = 1,
         Switches = 2,
-        MotionControls = 3
+        MotionControls = 3,
+        AudioModules = 4
     }
 
     public static class MockInstrumentCatalog
     {
         public const int PerformanceBaselineCount = 6;
-        public const int Count = 14;
-        public const int CategoryCount = 4;
+        public const int Count = 20;
+        public const int CategoryCount = 5;
 
         private static readonly MockInstrumentKind[] OrderedKinds =
         {
@@ -31,7 +32,13 @@ namespace MatsuMotoMeterAR.Instruments
             MockInstrumentKind.RotaryKnob,
             MockInstrumentKind.Lever,
             MockInstrumentKind.ThrottleLever,
-            MockInstrumentKind.PowerSlider
+            MockInstrumentKind.PowerSlider,
+            MockInstrumentKind.AudioOscillator,
+            MockInstrumentKind.AudioNoise,
+            MockInstrumentKind.AudioLfo,
+            MockInstrumentKind.AudioSequencer,
+            MockInstrumentKind.AudioDelay,
+            MockInstrumentKind.AudioOutput
         };
 
         public static string GetTypeId(MockInstrumentKind kind)
@@ -52,6 +59,12 @@ namespace MatsuMotoMeterAR.Instruments
                 MockInstrumentKind.RoundMeterMedium => "meter.round.medium",
                 MockInstrumentKind.RoundMeterLarge => "meter.round.large",
                 MockInstrumentKind.TrendMonitor => "monitor.trend",
+                MockInstrumentKind.AudioOscillator => "audio.oscillator",
+                MockInstrumentKind.AudioNoise => "audio.noise",
+                MockInstrumentKind.AudioLfo => "audio.lfo",
+                MockInstrumentKind.AudioSequencer => "audio.sequencer",
+                MockInstrumentKind.AudioDelay => "audio.delay",
+                MockInstrumentKind.AudioOutput => "audio.output",
                 _ => "meter.round"
             };
         }
@@ -74,6 +87,12 @@ namespace MatsuMotoMeterAR.Instruments
                 MockInstrumentKind.RoundMeterMedium => "ROUND METER M",
                 MockInstrumentKind.RoundMeterLarge => "ROUND METER L",
                 MockInstrumentKind.TrendMonitor => "TREND MONITOR",
+                MockInstrumentKind.AudioOscillator => "OSCILLATOR",
+                MockInstrumentKind.AudioNoise => "NOISE",
+                MockInstrumentKind.AudioLfo => "LFO",
+                MockInstrumentKind.AudioSequencer => "SEQUENCER",
+                MockInstrumentKind.AudioDelay => "DELAY",
+                MockInstrumentKind.AudioOutput => "AUDIO OUTPUT",
                 _ => "ROUND METER"
             };
         }
@@ -95,6 +114,12 @@ namespace MatsuMotoMeterAR.Instruments
                 "meter.round.medium" => MockInstrumentKind.RoundMeterMedium,
                 "meter.round.large" => MockInstrumentKind.RoundMeterLarge,
                 "monitor.trend" => MockInstrumentKind.TrendMonitor,
+                "audio.oscillator" => MockInstrumentKind.AudioOscillator,
+                "audio.noise" => MockInstrumentKind.AudioNoise,
+                "audio.lfo" => MockInstrumentKind.AudioLfo,
+                "audio.sequencer" => MockInstrumentKind.AudioSequencer,
+                "audio.delay" => MockInstrumentKind.AudioDelay,
+                "audio.output" => MockInstrumentKind.AudioOutput,
                 _ => MockInstrumentKind.RoundMeter
             };
         }
@@ -114,7 +139,13 @@ namespace MatsuMotoMeterAR.Instruments
                    typeId == "control.power_slider" ||
                    typeId == "meter.round.medium" ||
                    typeId == "meter.round.large" ||
-                   typeId == "monitor.trend";
+                   typeId == "monitor.trend" ||
+                   typeId == "audio.oscillator" ||
+                   typeId == "audio.noise" ||
+                   typeId == "audio.lfo" ||
+                   typeId == "audio.sequencer" ||
+                   typeId == "audio.delay" ||
+                   typeId == "audio.output";
         }
 
         public static MockInstrumentKind Cycle(MockInstrumentKind current, int direction)
@@ -151,6 +182,18 @@ namespace MatsuMotoMeterAR.Instruments
                     MockInstrumentCategory.Switches,
                 MockInstrumentKind.RotaryKnob =>
                     MockInstrumentCategory.Switches,
+                MockInstrumentKind.AudioOscillator =>
+                    MockInstrumentCategory.AudioModules,
+                MockInstrumentKind.AudioNoise =>
+                    MockInstrumentCategory.AudioModules,
+                MockInstrumentKind.AudioLfo =>
+                    MockInstrumentCategory.AudioModules,
+                MockInstrumentKind.AudioSequencer =>
+                    MockInstrumentCategory.AudioModules,
+                MockInstrumentKind.AudioDelay =>
+                    MockInstrumentCategory.AudioModules,
+                MockInstrumentKind.AudioOutput =>
+                    MockInstrumentCategory.AudioModules,
                 _ => MockInstrumentCategory.MotionControls
             };
         }
@@ -163,6 +206,7 @@ namespace MatsuMotoMeterAR.Instruments
                 MockInstrumentCategory.Meters => "METERS",
                 MockInstrumentCategory.Indicators => "INDICATORS",
                 MockInstrumentCategory.Switches => "SWITCHES",
+                MockInstrumentCategory.AudioModules => "AUDIO",
                 _ => "MOTION"
             };
         }
@@ -185,7 +229,9 @@ namespace MatsuMotoMeterAR.Instruments
                     MockInstrumentKind.IndicatorLamp,
                 (int)MockInstrumentCategory.Switches =>
                     MockInstrumentKind.ToggleSwitch,
-                _ => MockInstrumentKind.Lever
+                (int)MockInstrumentCategory.MotionControls =>
+                    MockInstrumentKind.Lever,
+                _ => MockInstrumentKind.AudioOscillator
             };
         }
 

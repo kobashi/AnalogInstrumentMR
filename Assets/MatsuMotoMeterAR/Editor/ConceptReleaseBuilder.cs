@@ -43,6 +43,15 @@ namespace MatsuMotoMeterAR.Editor
                 "Connection parameter review");
         }
 
+        [MenuItem("Tools/MatsuMotoMeterAR/Build Instrument Audio Review APK")]
+        public static void BuildInstrumentAudioReview()
+        {
+            BuildTo(
+                "Builds/QuestReview/" +
+                "AnalogInstrumentMR-InstrumentAudio-review-quest3.apk",
+                "Instrument audio review");
+        }
+
         private static void BuildTo(string outputPath, string label)
         {
             var scenes = EditorBuildSettings.scenes

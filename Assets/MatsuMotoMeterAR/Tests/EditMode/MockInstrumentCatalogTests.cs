@@ -43,6 +43,12 @@ namespace MatsuMotoMeterAR.Tests
         [TestCase(MockInstrumentKind.RoundMeterMedium, "meter.round.medium")]
         [TestCase(MockInstrumentKind.RoundMeterLarge, "meter.round.large")]
         [TestCase(MockInstrumentKind.TrendMonitor, "monitor.trend")]
+        [TestCase(MockInstrumentKind.AudioOscillator, "audio.oscillator")]
+        [TestCase(MockInstrumentKind.AudioNoise, "audio.noise")]
+        [TestCase(MockInstrumentKind.AudioLfo, "audio.lfo")]
+        [TestCase(MockInstrumentKind.AudioSequencer, "audio.sequencer")]
+        [TestCase(MockInstrumentKind.AudioDelay, "audio.delay")]
+        [TestCase(MockInstrumentKind.AudioOutput, "audio.output")]
         public void TypeIds_PreservePlacementDataContract(
             MockInstrumentKind kind,
             string expectedTypeId)
@@ -70,11 +76,11 @@ namespace MatsuMotoMeterAR.Tests
         public void Cycle_WrapsInBothDirections()
         {
             Assert.That(
-                MockInstrumentCatalog.Cycle(MockInstrumentKind.PowerSlider, 1),
+                MockInstrumentCatalog.Cycle(MockInstrumentKind.AudioOutput, 1),
                 Is.EqualTo(MockInstrumentKind.RoundMeter));
             Assert.That(
                 MockInstrumentCatalog.Cycle(MockInstrumentKind.RoundMeter, -1),
-                Is.EqualTo(MockInstrumentKind.PowerSlider));
+                Is.EqualTo(MockInstrumentKind.AudioOutput));
         }
 
         [Test]
@@ -103,6 +109,11 @@ namespace MatsuMotoMeterAR.Tests
                     MockInstrumentKind.RotaryKnob,
                     1),
                 Is.EqualTo(MockInstrumentKind.Lever));
+            Assert.That(
+                MockInstrumentCatalog.Cycle(
+                    MockInstrumentKind.PowerSlider,
+                    1),
+                Is.EqualTo(MockInstrumentKind.AudioOscillator));
         }
 
         [Test]
@@ -127,7 +138,12 @@ namespace MatsuMotoMeterAR.Tests
                 MockInstrumentCatalog.JumpCategory(
                     MockInstrumentKind.RoundMeter,
                     -1),
-                Is.EqualTo(MockInstrumentKind.Lever));
+                Is.EqualTo(MockInstrumentKind.AudioOscillator));
+            Assert.That(
+                MockInstrumentCatalog.JumpCategory(
+                    MockInstrumentKind.AudioOutput,
+                    1),
+                Is.EqualTo(MockInstrumentKind.RoundMeter));
         }
 
         [TestCase(MockInstrumentKind.Lever)]
@@ -190,6 +206,12 @@ namespace MatsuMotoMeterAR.Tests
         [TestCase(MockInstrumentKind.WindowPanel)]
         [TestCase(MockInstrumentKind.StatusIndicator)]
         [TestCase(MockInstrumentKind.TrendMonitor)]
+        [TestCase(MockInstrumentKind.AudioOscillator)]
+        [TestCase(MockInstrumentKind.AudioNoise)]
+        [TestCase(MockInstrumentKind.AudioLfo)]
+        [TestCase(MockInstrumentKind.AudioSequencer)]
+        [TestCase(MockInstrumentKind.AudioDelay)]
+        [TestCase(MockInstrumentKind.AudioOutput)]
         public void DisplayAndCompactControls_SupportAllSurfaces(MockInstrumentKind kind)
         {
             Assert.That(

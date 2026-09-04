@@ -1,3 +1,4 @@
+using MatsuMotoMeterAR.Audio;
 using MatsuMotoMeterAR.Rendering;
 using MatsuMotoMeterAR.Signals;
 using UnityEngine;
@@ -42,6 +43,25 @@ namespace MatsuMotoMeterAR.Instruments
                 instrumentInteraction =
                     interaction.gameObject.AddComponent<MockInstrumentInteraction>();
                 instrumentInteraction.Configure(motion, interactionCollider);
+                var audioController = audioSocket.gameObject
+                    .AddComponent<InstrumentAudioController>();
+                audioController.Configure(kind, theme, motion);
+                if (IsModularAudioKind(kind))
+                {
+                    var module = logic.gameObject
+                        .AddComponent<ModularAudioModuleRuntime>();
+                    module.Configure(kind, motion);
+                    if (kind == MockInstrumentKind.AudioOutput)
+                    {
+                        var graph = new ModularAudioGraph();
+                        var outputNode = graph.AddNode(module.Node);
+                        graph.SetOutputNode(outputNode);
+                        graph.Compile();
+                        audioSocket.gameObject
+                            .AddComponent<ModularAudioGraphPlayer>()
+                            .Configure(graph);
+                    }
+                }
             }
 
             root.AddComponent<InstrumentGreyboxContract>().Configure(
@@ -139,6 +159,9 @@ namespace MatsuMotoMeterAR.Instruments
                 contract.InstrumentInteraction.Configure(
                     contract.Logic.GetComponent<MockInstrumentMotion>(),
                     contract.InteractionCollider);
+                contract.AudioSocket
+                    .GetComponent<InstrumentAudioController>()
+                    ?.SetTheme(theme);
             }
             contract.SetTheme(theme);
             return true;
@@ -233,10 +256,157 @@ namespace MatsuMotoMeterAR.Instruments
                         theme,
                         palette);
                     break;
+                case MockInstrumentKind.AudioOscillator:
+                case MockInstrumentKind.AudioNoise:
+                case MockInstrumentKind.AudioLfo:
+                case MockInstrumentKind.AudioSequencer:
+                case MockInstrumentKind.AudioDelay:
+                case MockInstrumentKind.AudioOutput:
+                    BuildModularAudioModule(
+                        kind,
+                        visualSocket,
+                        logic,
+                        preview,
+                        theme,
+                        palette);
+                    break;
                 default:
                     BuildRoundMeter(visualSocket, logic, preview, palette);
                     break;
             }
+        }
+
+        private static void BuildModularAudioModule(
+            MockInstrumentKind kind,
+            Transform visual,
+            Transform logic,
+            bool preview,
+            MockInstrumentTheme theme,
+            MockInstrumentThemeCatalog.Palette palette)
+        {
+            var moduleName = kind switch
+            {
+                MockInstrumentKind.AudioOscillator => "AudioOscillator",
+                MockInstrumentKind.AudioNoise => "AudioNoise",
+                MockInstrumentKind.AudioLfo => "AudioLfo",
+                MockInstrumentKind.AudioSequencer => "AudioSequencer",
+                MockInstrumentKind.AudioDelay => "AudioDelay",
+                _ => "AudioOutput"
+            };
+            var visualRoot = new GameObject(
+                $"PF_Visual_{moduleName}_{RuntimeThemeName(theme)}");
+            visualRoot.transform.SetParent(visual, false);
+            CreatePrimitive(
+                PrimitiveType.Cube,
+                "Module Housing",
+                visualRoot.transform,
+                new Vector3(0f, 0f, 0.032f),
+                new Vector3(0.24f, 0.20f, 0.064f),
+                Quaternion.identity,
+                ColorFor(preview, palette.Housing));
+            CreatePrimitive(
+                PrimitiveType.Cube,
+                "Module Face",
+                visualRoot.transform,
+                new Vector3(0f, 0f, 0.067f),
+                new Vector3(0.215f, 0.175f, 0.008f),
+                Quaternion.identity,
+                ColorFor(preview, palette.Face));
+
+            var knobPivot = CreatePivot(
+                visualRoot.transform,
+                "Parameter Knob Pivot",
+                new Vector3(0f, 0.035f, 0.082f));
+            CreatePrimitive(
+                PrimitiveType.Cylinder,
+                "Parameter Knob",
+                knobPivot,
+                Vector3.zero,
+                new Vector3(0.045f, 0.022f, 0.045f),
+                Quaternion.Euler(90f, 0f, 0f),
+                ColorFor(preview, palette.Dark));
+            CreatePrimitive(
+                PrimitiveType.Cube,
+                "Parameter Index",
+                knobPivot,
+                new Vector3(0f, 0.024f, 0.024f),
+                new Vector3(0.007f, 0.036f, 0.006f),
+                Quaternion.identity,
+                ColorFor(preview, palette.Primary));
+
+            var portColor = kind switch
+            {
+                MockInstrumentKind.AudioOscillator => palette.Primary,
+                MockInstrumentKind.AudioNoise => palette.Warning,
+                MockInstrumentKind.AudioLfo => palette.Ready,
+                MockInstrumentKind.AudioSequencer => palette.Primary,
+                MockInstrumentKind.AudioDelay => palette.Warning,
+                _ => palette.Ready
+            };
+            var portCount = kind switch
+            {
+                MockInstrumentKind.AudioOscillator => 4,
+                MockInstrumentKind.AudioNoise => 2,
+                MockInstrumentKind.AudioLfo => 5,
+                MockInstrumentKind.AudioSequencer => 2,
+                MockInstrumentKind.AudioDelay => 3,
+                _ => 1
+            };
+            for (var index = 0; index < portCount; index++)
+            {
+                var portX = portCount == 1
+                    ? 0f
+                    : Mathf.Lerp(-0.075f, 0.075f,
+                        index / (float)(portCount - 1));
+                CreatePrimitive(
+                    PrimitiveType.Cylinder,
+                    $"Port {index + 1}",
+                    visualRoot.transform,
+                    new Vector3(portX, -0.052f, 0.081f),
+                    new Vector3(0.018f, 0.012f, 0.018f),
+                    Quaternion.Euler(90f, 0f, 0f),
+                    ColorFor(preview, portColor));
+            }
+
+            visualRoot.AddComponent<ThemeVisualManifest>().Configure(knobPivot);
+
+            if (!preview)
+            {
+                var hadMotion = logic.GetComponent<MockInstrumentMotion>() != null;
+                var motion = GetOrAddMotion(logic);
+                motion.Configure(
+                    MockInstrumentMotion.MotionKind.Rotate,
+                    knobPivot,
+                    Vector3.forward,
+                    48f,
+                    0f);
+                if (!hadMotion)
+                {
+                    var initialValue = kind switch
+                    {
+                        MockInstrumentKind.AudioNoise => 0.35f,
+                        MockInstrumentKind.AudioSequencer => 0.25f,
+                        _ => 0.5f
+                    };
+                    motion.SetNormalizedValue(initialValue);
+                }
+            }
+        }
+
+        private static bool IsModularAudioKind(MockInstrumentKind kind)
+        {
+            return kind == MockInstrumentKind.AudioOscillator ||
+                   kind == MockInstrumentKind.AudioNoise ||
+                   kind == MockInstrumentKind.AudioLfo ||
+                   kind == MockInstrumentKind.AudioSequencer ||
+                   kind == MockInstrumentKind.AudioDelay ||
+                   kind == MockInstrumentKind.AudioOutput ||
+                   kind == MockInstrumentKind.RoundMeter ||
+                   kind == MockInstrumentKind.RoundMeterMedium ||
+                   kind == MockInstrumentKind.RoundMeterLarge ||
+                   kind == MockInstrumentKind.WindowMeter ||
+                   kind == MockInstrumentKind.TrendMonitor ||
+                   kind == MockInstrumentKind.WindowPanel;
         }
 
         private static void DestroyObject(Object value)

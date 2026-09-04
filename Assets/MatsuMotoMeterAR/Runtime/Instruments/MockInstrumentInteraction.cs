@@ -26,12 +26,17 @@ namespace MatsuMotoMeterAR.Instruments
                 return;
 
             IsPressed = pressed;
-            Motion?.Actuate(pressed);
+            Motion?.Actuate(
+                pressed,
+                InstrumentValueChangeOrigin.UserInteraction);
         }
 
-        public void SetNormalizedValue(float value)
+        public void SetNormalizedValue(
+            float value,
+            InstrumentValueChangeOrigin origin =
+                InstrumentValueChangeOrigin.Programmatic)
         {
-            Motion?.SetNormalizedValue(value);
+            Motion?.SetNormalizedValue(value, origin);
         }
 
         public void SetLeverDetentIndex(int detentIndex)

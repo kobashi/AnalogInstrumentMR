@@ -111,6 +111,16 @@ namespace MatsuMotoMeterAR.Instruments
                     new Vector3(0f, 0f, 0.05f),
                     new Vector3(0.44f, 0.28f, 0.10f),
                     3),
+                MockInstrumentKind.AudioOscillator or
+                MockInstrumentKind.AudioNoise or
+                MockInstrumentKind.AudioLfo or
+                MockInstrumentKind.AudioSequencer or
+                MockInstrumentKind.AudioDelay or
+                MockInstrumentKind.AudioOutput => new InstrumentGreyboxSpec(
+                    new Vector3(0.24f, 0.20f, 0.10f),
+                    new Vector3(0f, 0f, 0.05f),
+                    new Vector3(0.24f, 0.20f, 0.10f),
+                    9),
                 _ => new InstrumentGreyboxSpec(
                     new Vector3(0.17f, 0.17f, 0.082f),
                     new Vector3(0f, 0f, 0.032f),

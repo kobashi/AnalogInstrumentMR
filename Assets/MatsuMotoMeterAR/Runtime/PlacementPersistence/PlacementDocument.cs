@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using MatsuMotoMeterAR.Anchors;
+using MatsuMotoMeterAR.Audio;
 using MatsuMotoMeterAR.Signals;
 using UnityEngine;
 
@@ -10,16 +11,42 @@ namespace MatsuMotoMeterAR.PlacementPersistence
     public sealed class PlacementDocument
     {
         public const int LegacySchemaVersion = 1;
-        public const int PreviousSchemaVersion = 6;
-        public const int CurrentSchemaVersion = 7;
+        public const int PreviousSchemaVersion = 8;
+        public const int CurrentSchemaVersion = 9;
         public const int MaximumActivePlacements = 48;
         public const int MaximumStoredPlacements = 192;
         public const int MaximumConnections = 192;
+        public const int MaximumAudioPatchConnections = 64;
 
         public int schemaVersion = CurrentSchemaVersion;
         public long revision;
         public List<PlacementRecord> placements = new();
         public List<SignalConnectionRecord> connections = new();
+        public List<AudioPatchConnectionRecord> audioPatchConnections = new();
+    }
+
+    [Serializable]
+    public sealed class AudioPatchConnectionRecord
+    {
+        public string connectionId;
+        public string sourcePlacementId;
+        public string targetPlacementId;
+        public string sourcePortId = ModularAudioPatchPolicy.AudioOutputPortId;
+        public string targetPortId = ModularAudioPatchPolicy.AudioInputPortId;
+        public int portDomain = (int)ModularAudioPortDomain.Audio;
+
+        public AudioPatchConnectionRecord Clone()
+        {
+            return new AudioPatchConnectionRecord
+            {
+                connectionId = connectionId,
+                sourcePlacementId = sourcePlacementId,
+                targetPlacementId = targetPlacementId,
+                sourcePortId = sourcePortId,
+                targetPortId = targetPortId,
+                portDomain = portDomain
+            };
+        }
     }
 
     [Serializable]
@@ -82,6 +109,12 @@ namespace MatsuMotoMeterAR.PlacementPersistence
         public int windowPanelPreset = (int)WindowPanelGraphicPreset.Orbit;
         public int signalCompositionKind =
             (int)SignalCompositionKind.Average;
+        public int audioWaveform =
+            (int)ModularOscillatorWaveform.Sine;
+        public int audioNoiseColor =
+            (int)ModularNoiseColor.White;
+        public float[] audioSequencerSteps =
+            ModularAudioParameterPolicy.CreateDefaultSequencerSteps();
 
         public PlacementRecord Clone()
         {
@@ -96,7 +129,12 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                 normalizedValue = normalizedValue,
                 lifecycle = lifecycle,
                 windowPanelPreset = windowPanelPreset,
-                signalCompositionKind = signalCompositionKind
+                signalCompositionKind = signalCompositionKind,
+                audioWaveform = audioWaveform,
+                audioNoiseColor = audioNoiseColor,
+                audioSequencerSteps = audioSequencerSteps != null
+                    ? (float[])audioSequencerSteps.Clone()
+                    : null
             };
         }
     }

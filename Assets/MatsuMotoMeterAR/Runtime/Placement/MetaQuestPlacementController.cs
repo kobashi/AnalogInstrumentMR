@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using MatsuMotoMeterAR.Anchors;
+using MatsuMotoMeterAR.Audio;
 using MatsuMotoMeterAR.Development;
 using MatsuMotoMeterAR.Instruments;
 using MatsuMotoMeterAR.InteractionModes;
@@ -77,6 +78,14 @@ namespace MatsuMotoMeterAR.Placement
             DirectConnectionColor;
         private static readonly Color ConnectionEditObjectColor =
             new(1f, 0.55f, 0.12f, 1f);
+        private static readonly Color AudioPatchColor =
+            new(0.15f, 1f, 0.78f, 0.95f);
+        private static readonly Color ControlPatchColor =
+            new(1f, 0.76f, 0.12f, 0.95f);
+        private static readonly Color ClockPatchColor =
+            new(0.67f, 0.38f, 1f, 0.95f);
+        private static readonly Color SelectedAudioPatchColor =
+            new(1f, 0.30f, 0.85f, 1f);
 
         private static readonly LabelFilter PlacementPlaneFilter = new(
             componentTypes: MRUKAnchor.ComponentType.Plane);
@@ -111,6 +120,12 @@ namespace MatsuMotoMeterAR.Placement
             signalInteractions = new(StringComparer.Ordinal);
         private readonly Dictionary<string, SignalCompositionKind>
             signalCompositionKinds = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, ModularAudioModuleRuntime>
+            modularAudioModules = new(StringComparer.Ordinal);
+        private readonly Dictionary<string, ModularAudioGraphPlayer>
+            modularAudioOutputs = new(StringComparer.Ordinal);
+        private readonly ModularAudioPatchRuntime modularAudioPatchRuntime =
+            new();
         private readonly List<RuntimePlacement> signalMonitorRefreshQueue = new();
         private readonly SignalMonitorRefreshScheduler
             signalMonitorRefreshScheduler = new();
@@ -137,6 +152,7 @@ namespace MatsuMotoMeterAR.Placement
         private GameObject connectTargetMarker;
         private GameObject connectEditMarker;
         private SignalConnectionRecord selectedConnectionForRemoval;
+        private AudioPatchConnectionRecord selectedAudioPatchForRemoval;
         private SignalTransformKind pendingSignalTransform =
             SignalTransformKind.Direct;
         private SignalTransformKind selectedConnectionPendingTransform =
@@ -147,6 +163,9 @@ namespace MatsuMotoMeterAR.Placement
             SignalConnectionRecord.DefaultCompositionPriority;
         private SignalConnectionRecord connectionParameterDraft;
         private SignalConnectionParameterField connectionParameterField;
+        private RuntimePlacement audioParameterEditPlacement;
+        private PlacementRecord audioParameterOriginal;
+        private int audioParameterStepIndex;
         private RuntimePlacement groupMovePivot;
         private RuntimePlacement lastAlignmentReference;
         private AlignmentAnchorMode nextAlignmentAnchorMode =
@@ -181,6 +200,11 @@ namespace MatsuMotoMeterAR.Placement
         private bool connectParameterFieldAxisEngaged;
         private bool connectSlotAxisEngaged;
         private bool connectTargetSettingAxisEngaged;
+        private bool audioParameterFieldAxisEngaged;
+        private bool audioParameterValueAxisEngaged;
+        private bool pendingLfoAudioRate;
+        private bool pendingObservableAudioSource;
+        private int pendingObservableOutputIndex;
         private bool groupMoveArmed;
         private bool selectionAxisEngaged;
         private bool themeAxisEngaged;
@@ -233,6 +257,9 @@ namespace MatsuMotoMeterAR.Placement
             public GameObject AnchorRoot;
             public GameObject Root;
             public MockInstrumentInteraction Interaction;
+            public InstrumentAudioController Audio;
+            public ModularAudioModuleRuntime AudioModule;
+            public ModularAudioGraphPlayer AudioGraphPlayer;
             public SignalMonitorView SignalMonitor;
             public WindowPanelSignalRuntime WindowPanelSignal;
             public WindowPanelGraphicsPrototypeView WindowPanelGraphic;
@@ -1882,7 +1909,9 @@ namespace MatsuMotoMeterAR.Placement
                     normalizedValue =
                         hand.GripStartValue + movement / travel;
                 }
-                hand.GripInteraction.SetNormalizedValue(normalizedValue);
+                hand.GripInteraction.SetNormalizedValue(
+                    normalizedValue,
+                    InstrumentValueChangeOrigin.UserInteraction);
                 if (hand.GripLastDetent !=
                     hand.GripInteraction.DetentIndex)
                 {
@@ -2118,7 +2147,7 @@ namespace MatsuMotoMeterAR.Placement
                 SetStatus(
                     roomPrefix + "CONNECT MODE | X: OPERATE\n" +
                     "INPUT TRIGGER -> OUTPUT TRIGGER\n" +
-                    "L STICK L/R: TRANSFORM | A CONFIRM\n" +
+                    "L STICK L/R: TRANSFORM | A CONFIRM | Y PARAM\n" +
                     "ONE OBJECT: A NEXT CONNECTION\n" +
                     "L STICK PRESS: APPLY | B DELETE/CANCEL",
                     ConnectBeamColor);
@@ -2168,6 +2197,15 @@ namespace MatsuMotoMeterAR.Placement
             bool confirmPressed,
             bool cancelPressed)
         {
+            if (audioParameterEditPlacement != null)
+            {
+                UpdateAudioParameterInput(
+                    transformAxis,
+                    parameterAxis,
+                    transformConfirmPressed || confirmPressed,
+                    cancelPressed);
+                return;
+            }
             if (connectionParameterDraft != null)
             {
                 UpdateConnectionParameterInput(
@@ -2179,10 +2217,24 @@ namespace MatsuMotoMeterAR.Placement
                 return;
             }
 
-            if (parameterEditPressed &&
-                selectedConnectionForRemoval != null)
+            if (parameterEditPressed)
             {
-                BeginConnectionParameterEdit();
+                if (selectedConnectionForRemoval != null)
+                {
+                    BeginConnectionParameterEdit();
+                }
+                else if (connectSource != null && connectTarget == null &&
+                         ModularAudioParameterPolicy.SupportsEditing(
+                             GetPlacementKind(connectSource)))
+                {
+                    BeginAudioParameterEdit();
+                }
+                else
+                {
+                    SetConnectNotice(
+                        "SELECT AN EDITABLE MODULE SOURCE FIRST",
+                        Color.yellow);
+                }
                 return;
             }
 
@@ -2195,6 +2247,7 @@ namespace MatsuMotoMeterAR.Placement
             }
             else if (!connectAxisEngaged &&
                      axisMagnitude >= SelectionThreshold &&
+                     selectedAudioPatchForRemoval == null &&
                      (selectedConnectionForRemoval != null ||
                       connectSource != null))
             {
@@ -2209,7 +2262,27 @@ namespace MatsuMotoMeterAR.Placement
                     PulseHaptics();
                     UpdateConnectStatus();
                 }
-                else
+                else if (GetPlacementKind(connectSource) ==
+                         MockInstrumentKind.AudioLfo)
+                {
+                    pendingLfoAudioRate = !pendingLfoAudioRate;
+                    PulseHaptics();
+                    UpdateConnectStatus();
+                }
+                else if (ModularAudioPatchPolicy.GetSelectableOutputCount(
+                             GetPlacementKind(connectSource)) > 1 &&
+                         pendingObservableAudioSource)
+                {
+                    pendingObservableOutputIndex =
+                        ModularAudioPatchPolicy.CycleSelectableOutput(
+                            GetPlacementKind(connectSource),
+                            pendingObservableOutputIndex,
+                            direction);
+                    PulseHaptics();
+                    UpdateConnectStatus();
+                }
+                else if (!ModularAudioPatchPolicy.CanSource(
+                             GetPlacementKind(connectSource)))
                 {
                     pendingSignalTransform =
                         InstrumentSignalPolicy.Cycle(
@@ -2247,7 +2320,8 @@ namespace MatsuMotoMeterAR.Placement
 
             if (cancelPressed)
             {
-                if (selectedConnectionForRemoval != null)
+                if (selectedConnectionForRemoval != null ||
+                    selectedAudioPatchForRemoval != null)
                 {
                     DeleteSelectedConnection();
                 }
@@ -2560,6 +2634,256 @@ namespace MatsuMotoMeterAR.Placement
             destination.compositionPriority = source.compositionPriority;
         }
 
+        private void BeginAudioParameterEdit()
+        {
+            if (connectSource?.Record == null ||
+                !ModularAudioParameterPolicy.SupportsEditing(
+                    GetPlacementKind(connectSource)))
+            {
+                return;
+            }
+
+            audioParameterEditPlacement = connectSource;
+            audioParameterOriginal = connectSource.Record.Clone();
+            audioParameterStepIndex =
+                connectSource.AudioModule?.Node is
+                    ModularSequencerNode sequencer
+                    ? Mathf.Clamp(
+                        sequencer.CurrentStep,
+                        0,
+                        sequencer.StepCount - 1)
+                    : 0;
+            audioParameterFieldAxisEngaged = false;
+            audioParameterValueAxisEngaged = false;
+            connectStatusHoldUntil = 0f;
+            PulseHaptics();
+            UpdateAudioParameterEditStatus();
+        }
+
+        private void UpdateAudioParameterInput(
+            Vector2 fieldAxis,
+            Vector2 valueAxis,
+            bool confirmPressed,
+            bool cancelPressed)
+        {
+            var placement = audioParameterEditPlacement;
+            if (placement?.Record == null || placement.AudioModule == null)
+            {
+                CancelAudioParameterEdit(true);
+                SetConnectNotice("MODULE NO LONGER EXISTS", Color.red);
+                return;
+            }
+
+            var kind = GetPlacementKind(placement);
+            var fieldMagnitude = Mathf.Abs(fieldAxis.x);
+            if (fieldMagnitude <= SelectionReleaseThreshold)
+            {
+                audioParameterFieldAxisEngaged = false;
+            }
+            else if (!audioParameterFieldAxisEngaged &&
+                     fieldMagnitude >= SelectionThreshold)
+            {
+                audioParameterFieldAxisEngaged = true;
+                var direction = fieldAxis.x < 0f ? -1 : 1;
+                switch (kind)
+                {
+                    case MockInstrumentKind.AudioOscillator:
+                    case MockInstrumentKind.AudioLfo:
+                        placement.Record.audioWaveform =
+                            ModularAudioParameterPolicy.CycleWaveform(
+                                placement.Record.audioWaveform,
+                                direction);
+                        break;
+                    case MockInstrumentKind.AudioNoise:
+                        placement.Record.audioNoiseColor =
+                            ModularAudioParameterPolicy.CycleNoiseColor(
+                                placement.Record.audioNoiseColor,
+                                direction);
+                        break;
+                    case MockInstrumentKind.AudioSequencer:
+                        var stepCount =
+                            (placement.AudioModule.Node as
+                                ModularSequencerNode)?.StepCount ?? 8;
+                        audioParameterStepIndex =
+                            ModularAudioParameterPolicy.CycleStepIndex(
+                                audioParameterStepIndex,
+                                stepCount,
+                                direction);
+                        break;
+                }
+                ApplyAudioParameters(placement);
+                PulseHaptics();
+            }
+
+            var valueMagnitude = Mathf.Abs(valueAxis.y);
+            if (valueMagnitude <= SelectionReleaseThreshold)
+            {
+                audioParameterValueAxisEngaged = false;
+            }
+            else if (!audioParameterValueAxisEngaged &&
+                     valueMagnitude >= SelectionThreshold &&
+                     kind == MockInstrumentKind.AudioSequencer)
+            {
+                audioParameterValueAxisEngaged = true;
+                EnsureSequencerParameterArray(placement.Record);
+                var previous = placement.Record.audioSequencerSteps[
+                    audioParameterStepIndex];
+                placement.Record.audioSequencerSteps[
+                    audioParameterStepIndex] =
+                    ModularAudioParameterPolicy.AdjustStepValue(
+                        previous,
+                        valueAxis.y < 0f ? -1 : 1);
+                ApplyAudioParameters(placement);
+                PulseHaptics();
+            }
+
+            if (confirmPressed)
+            {
+                ConfirmAudioParameterEdit();
+                return;
+            }
+            if (cancelPressed)
+            {
+                CancelAudioParameterEdit(true);
+                SetConnectNotice("MODULE EDIT CANCELLED", Color.yellow);
+                return;
+            }
+            UpdateAudioParameterEditStatus();
+        }
+
+        private void ConfirmAudioParameterEdit()
+        {
+            var placement = audioParameterEditPlacement;
+            if (placement?.Record == null || audioParameterOriginal == null)
+            {
+                CancelAudioParameterEdit(true);
+                return;
+            }
+            if (!SavePlacementDocument())
+            {
+                CopyAudioParameterState(
+                    audioParameterOriginal,
+                    placement.Record);
+                ApplyAudioParameters(placement);
+                ClearAudioParameterEditState();
+                SetConnectNotice("MODULE PARAMETER SAVE FAILED", Color.red);
+                return;
+            }
+
+            var kind = GetPlacementKind(placement);
+            ClearAudioParameterEditState();
+            SetConnectNotice(
+                $"{MockInstrumentCatalog.GetDisplayName(kind)} " +
+                "PARAMETERS APPLIED\nY: EDIT AGAIN",
+                ModuleSourceColor(kind));
+            PulseHaptics();
+        }
+
+        private void CancelAudioParameterEdit(bool restore)
+        {
+            var placement = audioParameterEditPlacement;
+            if (restore && placement?.Record != null &&
+                audioParameterOriginal != null)
+            {
+                CopyAudioParameterState(
+                    audioParameterOriginal,
+                    placement.Record);
+                ApplyAudioParameters(placement);
+            }
+            ClearAudioParameterEditState();
+        }
+
+        private void ClearAudioParameterEditState()
+        {
+            audioParameterEditPlacement = null;
+            audioParameterOriginal = null;
+            audioParameterStepIndex = 0;
+            audioParameterFieldAxisEngaged = false;
+            audioParameterValueAxisEngaged = false;
+            connectStatusHoldUntil = 0f;
+        }
+
+        private void UpdateAudioParameterEditStatus()
+        {
+            var placement = audioParameterEditPlacement;
+            if (placement?.Record == null)
+                return;
+            var kind = GetPlacementKind(placement);
+            string parameter;
+            switch (kind)
+            {
+                case MockInstrumentKind.AudioOscillator:
+                case MockInstrumentKind.AudioLfo:
+                    parameter =
+                        $"WAVEFORM: {((ModularOscillatorWaveform)ModularAudioParameterPolicy.NormalizeWaveform(placement.Record.audioWaveform)).ToString().ToUpperInvariant()}\n" +
+                        "L STICK L/R: WAVEFORM";
+                    break;
+                case MockInstrumentKind.AudioNoise:
+                    parameter =
+                        $"COLOR: {((ModularNoiseColor)ModularAudioParameterPolicy.NormalizeNoiseColor(placement.Record.audioNoiseColor)).ToString().ToUpperInvariant()}\n" +
+                        "L STICK L/R: COLOR";
+                    break;
+                case MockInstrumentKind.AudioSequencer:
+                    EnsureSequencerParameterArray(placement.Record);
+                    var sequencer = placement.AudioModule?.Node as
+                        ModularSequencerNode;
+                    var stepCount = sequencer?.StepCount ?? 8;
+                    audioParameterStepIndex = Mathf.Clamp(
+                        audioParameterStepIndex,
+                        0,
+                        stepCount - 1);
+                    var stepValue = placement.Record.audioSequencerSteps[
+                        audioParameterStepIndex];
+                    parameter =
+                        $"STEP {audioParameterStepIndex + 1}/{stepCount}: " +
+                        $"{stepValue:+0.00;-0.00;0.00}\n" +
+                        "L STICK L/R: STEP | R STICK U/D: VALUE";
+                    break;
+                default:
+                    parameter = "NO EDITABLE PARAMETER";
+                    break;
+            }
+            SetStatus(
+                $"MODULE EDIT: {MockInstrumentCatalog.GetDisplayName(kind)}\n" +
+                parameter + "\nA / L STICK PRESS: APPLY | B: CANCEL",
+                ModuleSourceColor(kind));
+        }
+
+        private static void EnsureSequencerParameterArray(
+            PlacementRecord record)
+        {
+            if (record == null ||
+                record.audioSequencerSteps?.Length ==
+                ModularAudioParameterPolicy.SequencerStepCapacity)
+            {
+                return;
+            }
+            record.audioSequencerSteps =
+                ModularAudioParameterPolicy.NormalizeSequencerSteps(
+                    record.audioSequencerSteps);
+        }
+
+        private static void CopyAudioParameterState(
+            PlacementRecord source,
+            PlacementRecord destination)
+        {
+            destination.audioWaveform = source.audioWaveform;
+            destination.audioNoiseColor = source.audioNoiseColor;
+            destination.audioSequencerSteps =
+                ModularAudioParameterPolicy.NormalizeSequencerSteps(
+                    source.audioSequencerSteps);
+        }
+
+        private static void ApplyAudioParameters(RuntimePlacement placement)
+        {
+            if (placement?.Record == null || placement.AudioModule == null)
+                return;
+            placement.AudioModule.ApplyPersistentParameters(
+                placement.Record.audioWaveform,
+                placement.Record.audioNoiseColor,
+                placement.Record.audioSequencerSteps);
+        }
+
         private bool UpdateConnectTrigger(
             ref bool engaged,
             float triggerValue,
@@ -2593,17 +2917,40 @@ namespace MatsuMotoMeterAR.Placement
             }
 
             var kind = GetPlacementKind(placement);
+            if (connectSource == null && connectTarget == null &&
+                ReferenceEquals(connectEditPlacement, placement) &&
+                ModularAudioPatchPolicy.GetSelectableOutputCount(kind) > 0)
+            {
+                SelectConnectSource(placement, false, true);
+                return;
+            }
             if (connectSource == null && connectTarget != null)
             {
                 var targetKind = GetPlacementKind(connectTarget);
                 if (ReferenceEquals(connectTarget, placement))
                 {
+                    if (ModularAudioPatchPolicy.GetSelectableOutputCount(
+                            kind) > 0)
+                    {
+                        SelectConnectSource(placement, false, true);
+                        return;
+                    }
                     SetConnectNotice(
                         "SOURCE AND TARGET MUST DIFFER",
                         Color.yellow);
                     return;
                 }
-                if (!InstrumentSignalPolicy.CanConnect(kind, targetKind))
+                var canConnectAsAudio =
+                    ModularAudioPatchPolicy.TryGetRoute(
+                        kind,
+                        targetKind,
+                        ModularAudioPortDomain.Control,
+                        out _,
+                        out _,
+                        out _);
+                var canConnectAsSignal =
+                    InstrumentSignalPolicy.CanConnect(kind, targetKind);
+                if (!canConnectAsAudio && !canConnectAsSignal)
                 {
                     SetConnectNotice(
                         $"{MockInstrumentCatalog.GetDisplayName(kind)} " +
@@ -2612,22 +2959,18 @@ namespace MatsuMotoMeterAR.Placement
                     return;
                 }
 
-                connectSource = placement;
-                connectSourceMarker = CreateConnectMarker(
+                SelectConnectSource(
                     placement,
-                    "[Connect] Source",
-                    ConnectSourceColor,
-                    0.014f);
-                connectStatusHoldUntil = 0f;
-                PulseHaptics();
-                UpdateConnectStatus();
+                    true,
+                    !canConnectAsSignal && canConnectAsAudio);
                 return;
             }
 
             if (connectSource == null)
             {
                 if (kind == MockInstrumentKind.TrendMonitor ||
-                    kind == MockInstrumentKind.WindowPanel)
+                    kind == MockInstrumentKind.WindowPanel ||
+                    ModularAudioPatchPolicy.PrefersTargetWhenUnconnected(kind))
                 {
                     ClearConnectEditSelection();
                     connectTarget = placement;
@@ -2641,7 +2984,14 @@ namespace MatsuMotoMeterAR.Placement
                     UpdateConnectStatus();
                     return;
                 }
-                if (!InstrumentSignalPolicy.CanSource(kind))
+                if (ModularAudioPatchPolicy.GetSelectableOutputCount(kind) >
+                    0 && InstrumentSignalPolicy.CanTarget(kind))
+                {
+                    SelectConnectEditPlacement(placement);
+                    return;
+                }
+                if (!InstrumentSignalPolicy.CanSource(kind) &&
+                    !ModularAudioPatchPolicy.CanSource(kind))
                 {
                     if (InstrumentSignalPolicy.CanTarget(kind))
                     {
@@ -2657,21 +3007,21 @@ namespace MatsuMotoMeterAR.Placement
                     return;
                 }
 
-                ClearConnectEditSelection();
-                connectSource = placement;
-                connectSourceMarker = CreateConnectMarker(
-                    placement,
-                    "[Connect] Source",
-                    ConnectSourceColor,
-                    0.014f);
-                connectStatusHoldUntil = 0f;
-                PulseHaptics();
-                UpdateConnectStatus();
+                SelectConnectSource(placement, false, false);
                 return;
             }
 
             var sourceKind = GetPlacementKind(connectSource);
-            if (!InstrumentSignalPolicy.CanConnect(sourceKind, kind))
+            var canConnect = TryGetPendingModularRoute(
+                                 sourceKind,
+                                 kind,
+                                 out _,
+                                 out _,
+                                 out _) ||
+                             InstrumentSignalPolicy.CanConnect(
+                                 sourceKind,
+                                 kind);
+            if (!canConnect)
             {
                 SetConnectNotice(
                     $"{MockInstrumentCatalog.GetDisplayName(kind)} " +
@@ -2688,6 +3038,7 @@ namespace MatsuMotoMeterAR.Placement
             }
 
             selectedConnectionForRemoval = null;
+            selectedAudioPatchForRemoval = null;
             connectTarget = placement;
             if (connectTargetMarker != null)
                 Destroy(connectTargetMarker);
@@ -2696,6 +3047,40 @@ namespace MatsuMotoMeterAR.Placement
                 "[Connect] Target",
                 ConnectTargetColor,
                 0.012f);
+            connectStatusHoldUntil = 0f;
+            PulseHaptics();
+            UpdateConnectStatus();
+        }
+
+        private void SelectConnectSource(
+            RuntimePlacement placement,
+            bool preserveTarget,
+            bool observableAudioSource)
+        {
+            if (placement == null)
+                return;
+            if (connectSourceMarker != null)
+                Destroy(connectSourceMarker);
+            connectSourceMarker = null;
+            connectSource = null;
+            if (!preserveTarget)
+            {
+                if (connectTargetMarker != null)
+                    Destroy(connectTargetMarker);
+                connectTargetMarker = null;
+                connectTarget = null;
+            }
+            ClearConnectEditSelection();
+            selectedConnectionForRemoval = null;
+            selectedAudioPatchForRemoval = null;
+            pendingObservableAudioSource = observableAudioSource;
+            pendingObservableOutputIndex = 0;
+            connectSource = placement;
+            connectSourceMarker = CreateConnectMarker(
+                placement,
+                "[Connect] Source",
+                ConnectSourceColor,
+                0.014f);
             connectStatusHoldUntil = 0f;
             PulseHaptics();
             UpdateConnectStatus();
@@ -2714,6 +3099,7 @@ namespace MatsuMotoMeterAR.Placement
             connectTargetMarker = null;
             connectSource = null;
             connectTarget = null;
+            selectedAudioPatchForRemoval = null;
             ClearConnectEditSelection();
 
             connectEditPlacement = placement;
@@ -2749,6 +3135,18 @@ namespace MatsuMotoMeterAR.Placement
                         ? "SELECT AN INPUT SOURCE FIRST"
                         : "SELECT A TARGET",
                     Color.yellow);
+                return;
+            }
+            var pendingSourceKind = GetPlacementKind(connectSource);
+            var pendingTargetKind = GetPlacementKind(connectTarget);
+            if (TryGetPendingModularRoute(
+                    pendingSourceKind,
+                    pendingTargetKind,
+                    out _,
+                    out _,
+                    out _))
+            {
+                ConfirmPendingAudioPatchConnection();
                 return;
             }
             if (placementDocument?.connections == null)
@@ -2851,12 +3249,95 @@ namespace MatsuMotoMeterAR.Placement
             PulseHaptics();
         }
 
+        private void ConfirmPendingAudioPatchConnection()
+        {
+            if (placementDocument?.audioPatchConnections == null ||
+                connectSource?.Record == null ||
+                connectTarget?.Record == null)
+                return;
+            var sourceId = connectSource.Record.placementId;
+            var targetId = connectTarget.Record.placementId;
+            if (!TryGetPendingModularRoute(
+                    GetPlacementKind(connectSource),
+                    GetPlacementKind(connectTarget),
+                    out var sourcePortId,
+                    out var targetPortId,
+                    out var domain))
+            {
+                SetConnectNotice("NO COMPATIBLE MODULE PORT", Color.yellow);
+                return;
+            }
+            AudioPatchConnectionRecord existingPatch = null;
+            foreach (var candidatePatch in
+                     placementDocument.audioPatchConnections)
+            {
+                if (candidatePatch?.sourcePlacementId == sourceId)
+                {
+                    existingPatch = candidatePatch;
+                    break;
+                }
+            }
+            if (existingPatch == null &&
+                placementDocument.audioPatchConnections.Count >=
+                PlacementDocument.MaximumAudioPatchConnections)
+            {
+                SetConnectNotice(
+                    $"AUDIO PATCH LIMIT " +
+                    $"{PlacementDocument.MaximumAudioPatchConnections}",
+                    Color.yellow);
+                return;
+            }
+
+            var added = existingPatch == null;
+            var previousTargetId = existingPatch?.targetPlacementId;
+            var previousSourcePortId = existingPatch?.sourcePortId;
+            var previousTargetPortId = existingPatch?.targetPortId;
+            var previousDomain = existingPatch?.portDomain ?? 0;
+            var newConnection = existingPatch ?? new AudioPatchConnectionRecord
+            {
+                connectionId = Guid.NewGuid().ToString("D"),
+                sourcePlacementId = sourceId
+            };
+            newConnection.targetPlacementId = targetId;
+            newConnection.sourcePortId = sourcePortId;
+            newConnection.targetPortId = targetPortId;
+            newConnection.portDomain = (int)domain;
+            if (added)
+                placementDocument.audioPatchConnections.Add(newConnection);
+            if (!SavePlacementDocument())
+            {
+                if (added)
+                    placementDocument.audioPatchConnections.Remove(newConnection);
+                else
+                {
+                    newConnection.targetPlacementId = previousTargetId;
+                    newConnection.sourcePortId = previousSourcePortId;
+                    newConnection.targetPortId = previousTargetPortId;
+                    newConnection.portDomain = previousDomain;
+                }
+                SetConnectNotice("AUDIO PATCH SAVE FAILED", Color.red);
+                return;
+            }
+
+            var sourceName = MockInstrumentCatalog.GetDisplayName(
+                GetPlacementKind(connectSource));
+            var targetName = MockInstrumentCatalog.GetDisplayName(
+                GetPlacementKind(connectTarget));
+            ClearConnectSelection();
+            SetConnectNotice(
+                $"{sourceName} -> {targetName}\n" +
+                $"{domain.ToString().ToUpperInvariant()} | " +
+                $"{placementDocument.audioPatchConnections.Count}/" +
+                $"{PlacementDocument.MaximumAudioPatchConnections} PATCHED",
+                PatchColor(domain));
+            PulseHaptics();
+        }
+
         private void SelectNextConnectionForRemoval()
         {
             var selectedPlacement =
                 connectEditPlacement ?? connectSource ?? connectTarget;
-            if (selectedPlacement?.Record == null ||
-                placementDocument?.connections == null)
+            if (selectedPlacement?.Record == null)
             {
                 SetConnectNotice(
                     "SELECT ONE OBJECT + TRIGGER",
@@ -2865,6 +3346,15 @@ namespace MatsuMotoMeterAR.Placement
             }
 
             var placementId = selectedPlacement.Record.placementId;
+            var selectedKind = GetPlacementKind(selectedPlacement);
+            if (ModularAudioPatchPolicy.CanSource(selectedKind) ||
+                ModularAudioPatchPolicy.CanTarget(selectedKind))
+            {
+                SelectNextAudioPatchForRemoval(placementId);
+                return;
+            }
+            if (placementDocument?.connections == null)
+                return;
             var next = SignalConnectionSelectionPolicy.SelectNext(
                 placementDocument.connections,
                 placementId,
@@ -2888,8 +3378,35 @@ namespace MatsuMotoMeterAR.Placement
             UpdateConnectStatus();
         }
 
+        private void SelectNextAudioPatchForRemoval(string placementId)
+        {
+            var patches = placementDocument?.audioPatchConnections;
+            if (patches == null)
+                return;
+            selectedAudioPatchForRemoval =
+                ModularAudioPatchPolicy.SelectNext(
+                    patches,
+                    placementId,
+                    selectedAudioPatchForRemoval?.connectionId);
+            if (selectedAudioPatchForRemoval == null)
+            {
+                SetConnectNotice(
+                    "SELECTED AUDIO MODULE HAS NO PATCH",
+                    Color.yellow);
+                return;
+            }
+            connectStatusHoldUntil = 0f;
+            PulseHaptics();
+            UpdateConnectStatus();
+        }
+
         private void DeleteSelectedConnection()
         {
+            if (selectedAudioPatchForRemoval != null)
+            {
+                DeleteSelectedAudioPatch();
+                return;
+            }
             if (selectedConnectionForRemoval == null ||
                 placementDocument?.connections == null)
             {
@@ -2935,6 +3452,36 @@ namespace MatsuMotoMeterAR.Placement
                 $"{placementDocument.connections.Count}/" +
                 $"{PlacementDocument.MaximumConnections}\n" +
                 "A: SELECT NEXT CONNECTION",
+                Color.green);
+            PulseHaptics();
+        }
+
+        private void DeleteSelectedAudioPatch()
+        {
+            var patches = placementDocument?.audioPatchConnections;
+            if (patches == null || selectedAudioPatchForRemoval == null)
+                return;
+            var selected = selectedAudioPatchForRemoval;
+            var originalIndex = patches.IndexOf(selected);
+            if (originalIndex < 0)
+            {
+                selectedAudioPatchForRemoval = null;
+                return;
+            }
+            patches.RemoveAt(originalIndex);
+            if (!SavePlacementDocument())
+            {
+                patches.Insert(
+                    Mathf.Clamp(originalIndex, 0, patches.Count),
+                    selected);
+                SetConnectNotice("AUDIO PATCH REMOVE FAILED", Color.red);
+                return;
+            }
+            selectedAudioPatchForRemoval = null;
+            SetConnectNotice(
+                $"AUDIO PATCH REMOVED | {patches.Count}/" +
+                $"{PlacementDocument.MaximumAudioPatchConnections}\n" +
+                "A: SELECT NEXT PATCH",
                 Color.green);
             PulseHaptics();
         }
@@ -3001,6 +3548,28 @@ namespace MatsuMotoMeterAR.Placement
                 pendingSignalTransform.ToString().ToUpperInvariant();
             var editPlacement =
                 connectEditPlacement ?? connectSource ?? connectTarget;
+            if (selectedAudioPatchForRemoval != null &&
+                editPlacement?.Record != null)
+            {
+                var patch = selectedAudioPatchForRemoval;
+                var source = FindPlacementById(patch.sourcePlacementId);
+                var target = FindPlacementById(patch.targetPlacementId);
+                var audioSourceName = source == null
+                    ? "UNKNOWN"
+                    : MockInstrumentCatalog.GetDisplayName(
+                        GetPlacementKind(source));
+                var audioTargetName = target == null
+                    ? "UNKNOWN"
+                    : MockInstrumentCatalog.GetDisplayName(
+                        GetPlacementKind(target));
+                SetStatus(
+                    $"{((ModularAudioPortDomain)patch.portDomain).ToString().ToUpperInvariant()} PATCH | " +
+                    $"{audioSourceName} -> {audioTargetName}\n" +
+                    $"{patch.sourcePortId} -> {patch.targetPortId}\n" +
+                    "A: NEXT PATCH | B: DELETE",
+                    SelectedAudioPatchColor);
+                return;
+            }
             if (connectionParameterDraft != null &&
                 selectedConnectionForRemoval != null)
             {
@@ -3131,12 +3700,18 @@ namespace MatsuMotoMeterAR.Placement
             {
                 var monitorTargetName = MockInstrumentCatalog.GetDisplayName(
                     GetPlacementKind(connectTarget));
-                var inputCount = CountIncomingConnections(
-                    connectTarget.Record?.placementId);
+                var isAudioTarget = ModularAudioPatchPolicy.CanTarget(
+                    GetPlacementKind(connectTarget));
+                var inputCount = isAudioTarget
+                    ? CountAudioPatches(connectTarget.Record?.placementId)
+                    : CountIncomingConnections(
+                        connectTarget.Record?.placementId);
                 var targetInputLimit = GetPlacementKind(connectTarget) ==
                                        MockInstrumentKind.WindowPanel
                     ? InstrumentSignalPolicy.MaximumWindowPanelInputs
-                    : InstrumentSignalPolicy.MaximumTrendMonitorInputs;
+                    : isAudioTarget
+                        ? PlacementDocument.MaximumAudioPatchConnections
+                        : InstrumentSignalPolicy.MaximumTrendMonitorInputs;
                 SetStatus(
                     $"TARGET: {monitorTargetName} | INPUTS {inputCount}/" +
                     $"{targetInputLimit}\n" +
@@ -3149,8 +3724,12 @@ namespace MatsuMotoMeterAR.Placement
                             ? $"COMPOSE: {SignalCompositionEditor.NormalizeKind(connectTarget.Record.signalCompositionKind).ToString().ToUpperInvariant()} | " +
                               "R STICK U/D\n"
                         : string.Empty) +
-                    "SELECT INPUT SOURCE + TRIGGER\n" +
-                    "A: NEXT CONNECTION | B: CANCEL",
+                    (isAudioTarget
+                        ? "SELECT AUDIO SOURCE + TRIGGER\n"
+                        : "SELECT INPUT SOURCE + TRIGGER\n") +
+                    (isAudioTarget
+                        ? "A: NEXT PATCH | B: CANCEL"
+                        : "A: NEXT CONNECTION | B: CANCEL"),
                     ConnectTargetColor);
                 return;
             }
@@ -3158,8 +3737,11 @@ namespace MatsuMotoMeterAR.Placement
             if (connectSource == null)
             {
                 SetStatus(
-                    $"CONNECT | {placementDocument?.connections.Count ?? 0}/" +
-                    $"{PlacementDocument.MaximumConnections}\n" +
+                    $"CONNECT | SIGNAL " +
+                    $"{placementDocument?.connections.Count ?? 0}/" +
+                    $"{PlacementDocument.MaximumConnections} | AUDIO " +
+                    $"{placementDocument?.audioPatchConnections.Count ?? 0}/" +
+                    $"{PlacementDocument.MaximumAudioPatchConnections}\n" +
                     "SELECT OBJECT + TRIGGER\n" +
                     "D:CYN I:MAG R:GRN T:ORG",
                     ConnectBeamColor);
@@ -3170,33 +3752,163 @@ namespace MatsuMotoMeterAR.Placement
                 GetPlacementKind(connectSource));
             if (connectTarget == null)
             {
-                var connectionCount = CountConnections(
-                    connectSource.Record?.placementId);
+                var isAudioSource = ModularAudioPatchPolicy.CanSource(
+                    GetPlacementKind(connectSource)) &&
+                    (ModularAudioPatchPolicy.GetSelectableOutputCount(
+                         GetPlacementKind(connectSource)) == 0 ||
+                     pendingObservableAudioSource);
+                var connectionCount = isAudioSource
+                    ? CountAudioPatches(connectSource.Record?.placementId)
+                    : CountConnections(connectSource.Record?.placementId);
                 SetStatus(
                     $"SOURCE: {sourceName}\n" +
-                    $"TRANSFORM: {transformLabel} | L STICK L/R\n" +
+                    (isAudioSource
+                        ? GetModuleOutputStatus(
+                            connectSource)
+                        : $"TRANSFORM: {transformLabel} | L STICK L/R\n") +
                     $"TARGET + TRIGGER | A: SELECT " +
                     $"({connectionCount})\n" +
                     "B: CANCEL",
-                    ConnectionColor(pendingSignalTransform));
+                    isAudioSource
+                        ? ModuleSourceColor(
+                            GetPlacementKind(connectSource))
+                        : ConnectionColor(pendingSignalTransform));
                 return;
             }
 
             var targetName = MockInstrumentCatalog.GetDisplayName(
                 GetPlacementKind(connectTarget));
+            var isPendingAudioPatch =
+                TryGetPendingModularRoute(
+                GetPlacementKind(connectSource),
+                GetPlacementKind(connectTarget),
+                out var pendingSourcePort,
+                out var pendingTargetPort,
+                out var pendingDomain);
             SetStatus(
                 $"{sourceName} -> {targetName}\n" +
-                $"{transformLabel}" +
-                (GetPlacementKind(connectTarget) ==
-                     MockInstrumentKind.WindowPanel &&
-                 WindowPanelInputSlotPolicy.TryFindLowestAvailable(
-                     placementDocument?.connections,
-                     connectTarget.Record?.placementId,
-                     out var pendingSlot)
-                    ? $" | SLOT {SlotLabel(pendingSlot)}"
-                    : string.Empty) +
+                (isPendingAudioPatch
+                    ? $"{pendingDomain.ToString().ToUpperInvariant()} | " +
+                      $"{pendingSourcePort} -> {pendingTargetPort}"
+                    : $"{transformLabel}" +
+                      (GetPlacementKind(connectTarget) ==
+                           MockInstrumentKind.WindowPanel &&
+                       WindowPanelInputSlotPolicy.TryFindLowestAvailable(
+                           placementDocument?.connections,
+                           connectTarget.Record?.placementId,
+                           out var pendingSlot)
+                          ? $" | SLOT {SlotLabel(pendingSlot)}"
+                          : string.Empty)) +
                 " | A CONFIRM | B CANCEL",
-                ConnectionColor(pendingSignalTransform));
+                isPendingAudioPatch
+                    ? PatchColor(pendingDomain)
+                    : ConnectionColor(pendingSignalTransform));
+        }
+
+        private string GetModuleOutputStatus(
+            RuntimePlacement placement)
+        {
+            var kind = GetPlacementKind(placement);
+            var editHint = ModularAudioParameterPolicy.SupportsEditing(kind)
+                ? "Y: EDIT MODULE\n"
+                : string.Empty;
+            if (kind == MockInstrumentKind.AudioSequencer &&
+                placement?.AudioModule?.Node is
+                    ModularSequencerNode sequencer)
+            {
+                return $"{sequencer.StepCount} STEP | " +
+                       $"{sequencer.TempoBpm:0} BPM | " +
+                       $"CLOCK: {(sequencer.UsesExternalClock ? "EXTERNAL" : "INTERNAL")}\n" +
+                       "PORT: CONTROL.OUT\n" + editHint;
+            }
+            if (kind == MockInstrumentKind.AudioDelay &&
+                placement?.AudioModule?.Node is ModularDelayNode delay)
+            {
+                return $"TIME: {delay.DelaySeconds * 1000f:0} MS | " +
+                       $"FEEDBACK: {delay.Feedback * 100f:0}%\n" +
+                       "PORT: AUDIO.OUT\n";
+            }
+            var outputCount =
+                ModularAudioPatchPolicy.GetSelectableOutputCount(kind);
+            if (outputCount > 0)
+            {
+                var portId =
+                    ModularAudioPatchPolicy.GetSelectableOutputPortId(
+                        kind,
+                        pendingObservableOutputIndex);
+                return $"PORT: {portId?.ToUpperInvariant()} " +
+                       $"({pendingObservableOutputIndex + 1}/{outputCount}) | " +
+                       "L STICK L/R\n";
+            }
+            return kind == MockInstrumentKind.AudioLfo
+                ? $"RATE: {(pendingLfoAudioRate ? "AUDIO" : "CONTROL")} | " +
+                  "L STICK L/R\n" + editHint
+                : "PORT: AUDIO.OUT\n" + editHint;
+        }
+
+        private Color ModuleSourceColor(MockInstrumentKind kind)
+        {
+            var selectedPort =
+                ModularAudioPatchPolicy.GetSelectableOutputPortId(
+                    kind,
+                    pendingObservableOutputIndex);
+            if (selectedPort != null &&
+                ModularAudioPatchPolicy.TryGetOutputDomain(
+                    kind,
+                    selectedPort,
+                    out var selectedDomain))
+            {
+                return PatchColor(selectedDomain);
+            }
+            if (kind == MockInstrumentKind.AudioLfo)
+            {
+                return PatchColor(pendingLfoAudioRate
+                    ? ModularAudioPortDomain.Audio
+                    : ModularAudioPortDomain.Control);
+            }
+            return kind == MockInstrumentKind.AudioSequencer
+                ? ControlPatchColor
+                : AudioPatchColor;
+        }
+
+        private bool TryGetPendingModularRoute(
+            MockInstrumentKind source,
+            MockInstrumentKind target,
+            out string sourcePortId,
+            out string targetPortId,
+            out ModularAudioPortDomain domain)
+        {
+            if (ModularAudioPatchPolicy.GetSelectableOutputCount(source) > 0 &&
+                !pendingObservableAudioSource)
+            {
+                sourcePortId = null;
+                targetPortId = null;
+                domain = default;
+                return false;
+            }
+            var selectedPort =
+                ModularAudioPatchPolicy.GetSelectableOutputPortId(
+                    source,
+                    pendingObservableOutputIndex);
+            if (selectedPort != null)
+            {
+                sourcePortId = selectedPort;
+                return ModularAudioPatchPolicy.TryGetRouteFromPort(
+                    source,
+                    target,
+                    sourcePortId,
+                    out targetPortId,
+                    out domain);
+            }
+            return ModularAudioPatchPolicy.TryGetRoute(
+                source,
+                target,
+                pendingLfoAudioRate
+                    ? ModularAudioPortDomain.Audio
+                    : ModularAudioPortDomain.Control,
+                out sourcePortId,
+                out targetPortId,
+                out domain);
         }
 
         private static string SlotLabel(int slot)
@@ -3210,6 +3922,13 @@ namespace MatsuMotoMeterAR.Placement
         {
             return SignalConnectionSelectionPolicy.CountForPlacement(
                 placementDocument?.connections,
+                placementId);
+        }
+
+        private int CountAudioPatches(string placementId)
+        {
+            return ModularAudioPatchPolicy.CountForPlacement(
+                placementDocument?.audioPatchConnections,
                 placementId);
         }
 
@@ -3272,6 +3991,8 @@ namespace MatsuMotoMeterAR.Placement
 
         private void ClearConnectSelection()
         {
+            if (audioParameterEditPlacement != null)
+                CancelAudioParameterEdit(true);
             if (connectSourceMarker != null)
                 Destroy(connectSourceMarker);
             if (connectTargetMarker != null)
@@ -3289,6 +4010,9 @@ namespace MatsuMotoMeterAR.Placement
             selectedConnectionPendingPriority =
                 SignalConnectionRecord.DefaultCompositionPriority;
             connectionParameterDraft = null;
+            pendingLfoAudioRate = false;
+            pendingObservableAudioSource = false;
+            pendingObservableOutputIndex = 0;
             connectAxisEngaged = false;
             connectParameterFieldAxisEngaged = false;
             connectSlotAxisEngaged = false;
@@ -3302,6 +4026,7 @@ namespace MatsuMotoMeterAR.Placement
             connectEditMarker = null;
             connectEditPlacement = null;
             selectedConnectionForRemoval = null;
+            selectedAudioPatchForRemoval = null;
             selectedConnectionPendingTransform =
                 SignalTransformKind.Direct;
             selectedConnectionPendingSlot =
@@ -3316,6 +4041,26 @@ namespace MatsuMotoMeterAR.Placement
 
         private void UpdateSignalGraph()
         {
+            modularAudioModules.Clear();
+            modularAudioOutputs.Clear();
+            foreach (var placement in placements)
+            {
+                if (placement?.Record == null ||
+                    placement.AudioModule == null)
+                    continue;
+                var placementId = placement.Record.placementId;
+                modularAudioModules[placementId] = placement.AudioModule;
+                if (placement.AudioGraphPlayer != null)
+                {
+                    modularAudioOutputs[placementId] =
+                        placement.AudioGraphPlayer;
+                }
+            }
+            modularAudioPatchRuntime.Refresh(
+                placementDocument?.audioPatchConnections,
+                modularAudioModules,
+                modularAudioOutputs);
+
             signalInteractions.Clear();
             signalCompositionKinds.Clear();
             var connections = placementDocument?.connections;
@@ -3371,6 +4116,9 @@ namespace MatsuMotoMeterAR.Placement
         {
             var monitor = placement.SignalMonitor;
             monitor.BeginRefresh();
+            var minimumValue = float.PositiveInfinity;
+            var maximumValue = float.NegativeInfinity;
+            var finiteInputCount = 0;
             if (connections != null)
             {
                 foreach (var connection in connections)
@@ -3391,6 +4139,12 @@ namespace MatsuMotoMeterAR.Placement
                         source.NormalizedValue,
                         connection);
                     monitor.AddSample(connection.connectionId, value);
+                    if (!float.IsNaN(value) && !float.IsInfinity(value))
+                    {
+                        minimumValue = Mathf.Min(minimumValue, value);
+                        maximumValue = Mathf.Max(maximumValue, value);
+                        finiteInputCount++;
+                    }
                 }
             }
 
@@ -3405,10 +4159,33 @@ namespace MatsuMotoMeterAR.Placement
                     compositionKind,
                     composedValue,
                     validInputCount);
+                placement.Audio?.SetTrendState(
+                    composedValue,
+                    finiteInputCount > 1
+                        ? maximumValue - minimumValue
+                        : 0f,
+                    validInputCount,
+                    true);
+                placement.AudioModule?.SetTrendState(
+                    composedValue,
+                    finiteInputCount > 1
+                        ? maximumValue - minimumValue
+                        : 0f,
+                    validInputCount,
+                    true);
             }
             else if (monitor.TouchedChannelCount > 0)
             {
                 monitor.SetComposedUnavailable(compositionKind);
+                placement.Audio?.SetTrendState(0f, 0f, 0, false);
+                placement.AudioModule?.SetTrendState(
+                    0f, 0f, 0, false);
+            }
+            else
+            {
+                placement.Audio?.SetTrendState(0f, 0f, 0, false);
+                placement.AudioModule?.SetTrendState(
+                    0f, 0f, 0, false);
             }
 
             monitor.EndRefresh();
@@ -3436,8 +4213,15 @@ namespace MatsuMotoMeterAR.Placement
                     placement.WindowPanelGraphic,
                     (WindowPanelGraphicPreset)
                     placement.Record.windowPanelPreset);
+                placement.Audio?.SetWindowPanelState(
+                    placement.WindowPanelSignal.GetGraphicInputs(),
+                    (WindowPanelGraphicPreset)
+                    placement.Record.windowPanelPreset);
+                placement.AudioModule?.SetWindowPanelState(
+                    placement.WindowPanelSignal.GetGraphicInputs());
                 placement.Interaction?.SetNormalizedValue(
-                    placement.WindowPanelSignal.OutputValue);
+                    placement.WindowPanelSignal.OutputValue,
+                    InstrumentValueChangeOrigin.SignalGraph);
             }
             return windowPanelTargetIds;
         }
@@ -3451,12 +4235,15 @@ namespace MatsuMotoMeterAR.Placement
                 if (line != null)
                     line.enabled = visible;
             }
-            if (!visible || placementDocument?.connections == null)
+            if (!visible || placementDocument == null)
                 return;
 
             activeConnectionLineIds.Clear();
-            foreach (var connection in placementDocument.connections)
+            if (placementDocument.connections != null)
+                foreach (var connection in placementDocument.connections)
             {
+                if (connection == null)
+                    continue;
                 var source = FindPlacementById(
                     connection.sourcePlacementId);
                 var target = FindPlacementById(
@@ -3474,23 +4261,7 @@ namespace MatsuMotoMeterAR.Placement
                     connectionLines[connection.connectionId] = line;
                 }
 
-                var sourcePosition = source.Root.transform.position;
-                var targetPosition = target.Root.transform.position;
-                var midpoint = Vector3.Lerp(
-                    sourcePosition,
-                    targetPosition,
-                    0.5f);
-                var outward =
-                    source.Root.transform.forward +
-                    target.Root.transform.forward;
-                if (outward.sqrMagnitude < 0.0001f)
-                    outward = source.Root.transform.forward;
-                midpoint += outward.normalized * Mathf.Min(
-                    0.15f,
-                    Vector3.Distance(sourcePosition, targetPosition) * 0.12f);
-                line.SetPosition(0, sourcePosition);
-                line.SetPosition(1, midpoint);
-                line.SetPosition(2, targetPosition);
+                SetConnectionLinePositions(line, source, target);
                 RuntimeMaterialUtility.SetColor(
                     line,
                     selectedConnectionForRemoval?.connectionId ==
@@ -3509,6 +4280,48 @@ namespace MatsuMotoMeterAR.Placement
                 line.enabled = true;
             }
 
+            if (placementDocument.audioPatchConnections != null)
+                foreach (var connection in
+                         placementDocument.audioPatchConnections)
+                {
+                    if (connection == null)
+                        continue;
+                    var source = FindPlacementById(
+                        connection.sourcePlacementId);
+                    var target = FindPlacementById(
+                        connection.targetPlacementId);
+                    if (source?.Root == null || target?.Root == null)
+                        continue;
+
+                    var domain = (ModularAudioPortDomain)
+                        connection.portDomain;
+                    var lineId = $"patch:{connection.connectionId}";
+                    activeConnectionLineIds.Add(lineId);
+                    if (!connectionLines.TryGetValue(lineId, out var line) ||
+                        line == null)
+                    {
+                        line = CreateConnectionLine(
+                            lineId,
+                            domain.ToString());
+                        connectionLines[lineId] = line;
+                    }
+
+                    SetConnectionLinePositions(line, source, target);
+                    var isSelected =
+                        selectedAudioPatchForRemoval?.connectionId ==
+                        connection.connectionId;
+                    RuntimeMaterialUtility.SetColor(
+                        line,
+                        isSelected
+                            ? SelectedAudioPatchColor
+                            : PatchColor(domain));
+                    line.startWidth = ControllerBeamWidth *
+                        (isSelected ? 3.2f : 1.8f);
+                    line.endWidth = ControllerBeamWidth *
+                        (isSelected ? 2.4f : 1.1f);
+                    line.enabled = true;
+                }
+
             staleConnectionLineIds.Clear();
             foreach (var pair in connectionLines)
             {
@@ -3523,10 +4336,36 @@ namespace MatsuMotoMeterAR.Placement
             }
         }
 
-        private LineRenderer CreateConnectionLine(string connectionId)
+        private static void SetConnectionLinePositions(
+            LineRenderer line,
+            RuntimePlacement source,
+            RuntimePlacement target)
+        {
+            var sourcePosition = source.Root.transform.position;
+            var targetPosition = target.Root.transform.position;
+            var midpoint = Vector3.Lerp(
+                sourcePosition,
+                targetPosition,
+                0.5f);
+            var outward =
+                source.Root.transform.forward +
+                target.Root.transform.forward;
+            if (outward.sqrMagnitude < 0.0001f)
+                outward = source.Root.transform.forward;
+            midpoint += outward.normalized * Mathf.Min(
+                0.15f,
+                Vector3.Distance(sourcePosition, targetPosition) * 0.12f);
+            line.SetPosition(0, sourcePosition);
+            line.SetPosition(1, midpoint);
+            line.SetPosition(2, targetPosition);
+        }
+
+        private LineRenderer CreateConnectionLine(
+            string connectionId,
+            string domainLabel = "Signal")
         {
             var lineObject = new GameObject(
-                $"[Connect] Signal {connectionId}");
+                $"[Connect] {domainLabel} {connectionId}");
             lineObject.transform.SetParent(transform, false);
             var line = lineObject.AddComponent<LineRenderer>();
             line.useWorldSpace = true;
@@ -3556,6 +4395,16 @@ namespace MatsuMotoMeterAR.Placement
                 SignalTransformKind.Threshold =>
                     ThresholdConnectionColor,
                 _ => DirectConnectionColor
+            };
+        }
+
+        private static Color PatchColor(ModularAudioPortDomain domain)
+        {
+            return domain switch
+            {
+                ModularAudioPortDomain.Control => ControlPatchColor,
+                ModularAudioPortDomain.Clock => ClockPatchColor,
+                _ => AudioPatchColor
             };
         }
 
@@ -5943,6 +6792,12 @@ namespace MatsuMotoMeterAR.Placement
                     AnchorRoot = newAnchorRoot,
                     Root = newInstrument,
                     Interaction = interaction,
+                    Audio = newInstrument.GetComponentInChildren<
+                        InstrumentAudioController>(true),
+                    AudioModule = newInstrument.GetComponentInChildren<
+                        ModularAudioModuleRuntime>(true),
+                    AudioGraphPlayer = newInstrument.GetComponentInChildren<
+                        ModularAudioGraphPlayer>(true),
                     SignalMonitor = newInstrument
                         .GetComponentInChildren<SignalMonitorView>(true),
                     WindowPanelSignal = selectedKind ==
@@ -6063,6 +6918,12 @@ namespace MatsuMotoMeterAR.Placement
 
                 placements.Remove(target);
                 placementDocument.connections?.RemoveAll(
+                    connection =>
+                        connection.sourcePlacementId ==
+                            target.Record.placementId ||
+                        connection.targetPlacementId ==
+                            target.Record.placementId);
+                placementDocument.audioPatchConnections?.RemoveAll(
                     connection =>
                         connection.sourcePlacementId ==
                             target.Record.placementId ||
@@ -6243,7 +7104,9 @@ namespace MatsuMotoMeterAR.Placement
                 var interaction = root
                     .GetComponent<InstrumentGreyboxContract>()
                     .InstrumentInteraction;
-                interaction.SetNormalizedValue(record.normalizedValue);
+                interaction.SetNormalizedValue(
+                    record.normalizedValue,
+                    InstrumentValueChangeOrigin.Restore);
                 var runtimePlacement = new RuntimePlacement
                 {
                     Record = record,
@@ -6251,6 +7114,12 @@ namespace MatsuMotoMeterAR.Placement
                     AnchorRoot = anchorRoot,
                     Root = root,
                     Interaction = interaction,
+                    Audio = root.GetComponentInChildren<
+                        InstrumentAudioController>(true),
+                    AudioModule = root.GetComponentInChildren<
+                        ModularAudioModuleRuntime>(true),
+                    AudioGraphPlayer = root.GetComponentInChildren<
+                        ModularAudioGraphPlayer>(true),
                     SignalMonitor = root
                         .GetComponentInChildren<SignalMonitorView>(true),
                     WindowPanelSignal = kind ==
@@ -6261,6 +7130,7 @@ namespace MatsuMotoMeterAR.Placement
                         .GetComponentInChildren<
                             WindowPanelGraphicsPrototypeView>(true)
                 };
+                ApplyAudioParameters(runtimePlacement);
                 SetPlacementLocalPose(
                     runtimePlacement,
                     record.localOffset.ToPose());

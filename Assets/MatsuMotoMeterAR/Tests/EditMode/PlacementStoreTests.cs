@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using MatsuMotoMeterAR.Anchors;
+using MatsuMotoMeterAR.Audio;
 using MatsuMotoMeterAR.Instruments;
 using MatsuMotoMeterAR.PlacementPersistence;
 using MatsuMotoMeterAR.Signals;
@@ -11,6 +12,164 @@ namespace MatsuMotoMeterAR.Tests
 {
     public sealed class PlacementStoreTests
     {
+        [Test]
+        public void Schema9_RoundTripsTypedPatchesAndModuleParameters()
+        {
+            var document = CreateDocument(7);
+            document.placements[0].instrumentTypeId = "audio.oscillator";
+            document.placements[1].instrumentTypeId = "audio.noise";
+            document.placements[2].instrumentTypeId = "audio.output";
+            document.placements[3].instrumentTypeId = "meter.round";
+            document.placements[4].instrumentTypeId = "audio.lfo";
+            document.placements[5].instrumentTypeId = "audio.sequencer";
+            document.placements[6].instrumentTypeId = "audio.delay";
+            document.placements[0].audioWaveform =
+                (int)ModularOscillatorWaveform.Saw;
+            document.placements[1].audioNoiseColor =
+                (int)ModularNoiseColor.Brown;
+            document.placements[5].audioSequencerSteps = new[]
+            {
+                0.26f,
+                -4f
+            };
+            document.audioPatchConnections.Add(AudioPatch(
+                "osc-out",
+                document.placements[0].placementId,
+                document.placements[2].placementId));
+            document.audioPatchConnections.Add(AudioPatch(
+                "noise-out",
+                document.placements[1].placementId,
+                document.placements[2].placementId));
+            document.audioPatchConnections.Add(AudioPatch(
+                "duplicate-source",
+                document.placements[0].placementId,
+                document.placements[2].placementId));
+            document.audioPatchConnections.Add(AudioPatch(
+                "bad-target",
+                document.placements[1].placementId,
+                document.placements[3].placementId));
+            var wrongDomain = AudioPatch(
+                "wrong-domain",
+                document.placements[3].placementId,
+                document.placements[2].placementId);
+            wrongDomain.portDomain = (int)ModularAudioPortDomain.Control;
+            document.audioPatchConnections.Add(wrongDomain);
+            document.audioPatchConnections.Add(new AudioPatchConnectionRecord
+            {
+                connectionId = "meter-value",
+                sourcePlacementId = document.placements[3].placementId,
+                targetPlacementId = document.placements[0].placementId,
+                sourcePortId = ModularAudioPatchPolicy.ValueOutputPortId,
+                targetPortId = ModularAudioPatchPolicy.PitchInputPortId,
+                portDomain = (int)ModularAudioPortDomain.Control
+            });
+            document.audioPatchConnections.Add(new AudioPatchConnectionRecord
+            {
+                connectionId = "lfo-clock",
+                sourcePlacementId = document.placements[4].placementId,
+                targetPlacementId = document.placements[5].placementId,
+                sourcePortId = ModularAudioPatchPolicy.ClockOutputPortId,
+                targetPortId = ModularAudioPatchPolicy.ClockInputPortId,
+                portDomain = (int)ModularAudioPortDomain.Clock
+            });
+            document.audioPatchConnections.Add(new AudioPatchConnectionRecord
+            {
+                connectionId = "sequence-pitch",
+                sourcePlacementId = document.placements[5].placementId,
+                targetPlacementId = document.placements[0].placementId,
+                sourcePortId = ModularAudioPatchPolicy.ControlOutputPortId,
+                targetPortId = ModularAudioPatchPolicy.PitchInputPortId,
+                portDomain = (int)ModularAudioPortDomain.Control
+            });
+            document.audioPatchConnections[0].targetPlacementId =
+                document.placements[6].placementId;
+            document.audioPatchConnections.Add(AudioPatch(
+                "delay-output",
+                document.placements[6].placementId,
+                document.placements[2].placementId));
+
+            var json = PlacementJsonCodec.Serialize(document);
+            var result = PlacementJsonCodec.Deserialize(json);
+
+            Assert.That(result.Status, Is.EqualTo(PlacementLoadStatus.Loaded));
+            Assert.That(result.Document.schemaVersion,
+                Is.EqualTo(PlacementDocument.CurrentSchemaVersion));
+            Assert.That(result.Document.audioPatchConnections,
+                Has.Count.EqualTo(6));
+            Assert.That(result.Document.audioPatchConnections[0].connectionId,
+                Is.EqualTo("osc-out"));
+            Assert.That(result.Document.audioPatchConnections[1].connectionId,
+                Is.EqualTo("noise-out"));
+            Assert.That(result.Document.audioPatchConnections[0].sourcePortId,
+                Is.EqualTo(ModularAudioPatchPolicy.AudioOutputPortId));
+            Assert.That(result.Document.audioPatchConnections[0].targetPortId,
+                Is.EqualTo(ModularAudioPatchPolicy.AudioInputPortId));
+            Assert.That(result.Document.audioPatchConnections[2].connectionId,
+                Is.EqualTo("meter-value"));
+            Assert.That(result.Document.audioPatchConnections[2].sourcePortId,
+                Is.EqualTo(ModularAudioPatchPolicy.ValueOutputPortId));
+            Assert.That(result.Document.audioPatchConnections[3].connectionId,
+                Is.EqualTo("lfo-clock"));
+            Assert.That(result.Document.audioPatchConnections[3].portDomain,
+                Is.EqualTo((int)ModularAudioPortDomain.Clock));
+            Assert.That(result.Document.audioPatchConnections[4].connectionId,
+                Is.EqualTo("sequence-pitch"));
+            Assert.That(result.Document.audioPatchConnections[5].connectionId,
+                Is.EqualTo("delay-output"));
+            Assert.That(result.Document.placements[0].audioWaveform,
+                Is.EqualTo((int)ModularOscillatorWaveform.Saw));
+            Assert.That(result.Document.placements[1].audioNoiseColor,
+                Is.EqualTo((int)ModularNoiseColor.Brown));
+            Assert.That(result.Document.placements[5].audioSequencerSteps,
+                Has.Length.EqualTo(
+                    ModularAudioParameterPolicy.SequencerStepCapacity));
+            Assert.That(
+                result.Document.placements[5].audioSequencerSteps[0],
+                Is.EqualTo(0.25f).Within(0.0001f));
+            Assert.That(
+                result.Document.placements[5].audioSequencerSteps[1],
+                Is.EqualTo(-1f));
+        }
+
+        [Test]
+        public void Schema7Migration_InitializesEmptyAudioPatchList()
+        {
+            var result = PlacementJsonCodec.Deserialize(
+                "{\"schemaVersion\":7,\"revision\":1," +
+                "\"placements\":[],\"connections\":[]}");
+            Assert.That(result.Status, Is.EqualTo(PlacementLoadStatus.Loaded));
+            Assert.That(result.RequiresSave, Is.True);
+            Assert.That(result.Document.schemaVersion,
+                Is.EqualTo(PlacementDocument.CurrentSchemaVersion));
+            Assert.That(result.Document.audioPatchConnections, Is.Empty);
+        }
+
+        [Test]
+        public void Schema8Migration_InitializesModuleParameterDefaults()
+        {
+            var source = CreateDocument(1);
+            source.schemaVersion = 8;
+            source.placements[0].audioWaveform =
+                (int)ModularOscillatorWaveform.Square;
+            source.placements[0].audioNoiseColor =
+                (int)ModularNoiseColor.Brown;
+            source.placements[0].audioSequencerSteps = new[] { 1f };
+
+            var result = PlacementJsonCodec.Deserialize(
+                JsonUtility.ToJson(source));
+
+            Assert.That(result.Status, Is.EqualTo(PlacementLoadStatus.Loaded));
+            Assert.That(result.RequiresSave, Is.True);
+            var record = result.Document.placements[0];
+            Assert.That(record.audioWaveform,
+                Is.EqualTo((int)ModularOscillatorWaveform.Sine));
+            Assert.That(record.audioNoiseColor,
+                Is.EqualTo((int)ModularNoiseColor.White));
+            CollectionAssert.AreEqual(
+                ModularAudioParameterPolicy.CreateDefaultSequencerSteps(),
+                record.audioSequencerSteps);
+        }
+
         [TestCase(0)]
         [TestCase(1)]
         [TestCase(24)]
@@ -52,7 +211,7 @@ namespace MatsuMotoMeterAR.Tests
                 Is.EqualTo(PlacementLoadStatus.Corrupt));
 
             var future = PlacementJsonCodec.Deserialize(
-                "{\"schemaVersion\":8,\"revision\":9,\"placements\":[]}");
+                "{\"schemaVersion\":10,\"revision\":9,\"placements\":[]}");
             Assert.That(future.Status, Is.EqualTo(PlacementLoadStatus.UnsupportedVersion));
             Assert.That(future.CanWrite, Is.False);
             Assert.That(future.Document.revision, Is.EqualTo(9));
@@ -662,7 +821,7 @@ namespace MatsuMotoMeterAR.Tests
             {
                 Result = new PlacementLoadResult(
                     PlacementLoadStatus.UnsupportedVersion,
-                    new PlacementDocument { schemaVersion = 8 })
+                    new PlacementDocument { schemaVersion = 10 })
             };
 
             var result = LegacyPlacementMigration.LoadOrMigrate(
@@ -750,6 +909,19 @@ namespace MatsuMotoMeterAR.Tests
             string targetId)
         {
             return new SignalConnectionRecord
+            {
+                connectionId = id,
+                sourcePlacementId = sourceId,
+                targetPlacementId = targetId
+            };
+        }
+
+        private static AudioPatchConnectionRecord AudioPatch(
+            string id,
+            string sourceId,
+            string targetId)
+        {
+            return new AudioPatchConnectionRecord
             {
                 connectionId = id,
                 sourcePlacementId = sourceId,
