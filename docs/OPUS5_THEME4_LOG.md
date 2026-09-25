@@ -439,3 +439,50 @@ MeterRound centreは両方`[0, +0.000583, 0.032]`。Blend / FBXはSHA照合で�
 
 T95. **Theme 4 Phase 1 geometry、Phase 2材質設計、source report整合がcloseされた。**
 次はCodex側の隔離candidate material / prefab builder。Opus 5は待機。
+
+---
+
+## Joystick P1（2軸操縦桿、新規機種）(2026-09-25)
+
+T96. 依頼: 「3Dモデリング開発知見」（Claude Docs）の方針と注意点に従い、操縦桿を1つ作成。
+TriとRendererは既存に倣う。テーマはMachined Ergonomics（グリップ断面・形状コーディング・
+軸受・end stopの語彙が操縦桿と最も合う）。
+Script: `Tools/Blender/opus5_theme4_joystick_p1.py`。出力は
+`ArtSource/Blender/BrushUp/Opus5/MachinedErgonomics/Joystick/`（`.gitignore`対象、未force-add）。
+
+T97. 既存の実測（本番FBXを読み込んで測定）。Lever / Throttle は4テーマとも
+**renderer 2**（root直下`<Asset>_body` + pivot Empty配下の可動部）、合計
+**2,452〜6,792 tris**（最大はMachined Ergonomics Lever）。これを予算とした。
+
+T98. 構成（製造工程の語彙から形を決める）: 取付板（アルマイト、四隅キャップボルトで壁へ荷重）、
+ガスケット見切り（1 mm）、抜き勾配2°の成形カバー、ベゼル（下は球面座でボールを保持、
+上はpivotを頂点とする円錐の皿もみ）、エラストマーのボールブーツ、切削の角ゲート
+（工具R 6 mm、end stop兼ガード）、テーパ付きクランプカラー＋面一の止めねじ、
+樹脂コアにエラストマーを被せたグリップ（幅34 × 奥行33.4 mm、長さ103 mm、非対称断面）、
+親指置き1箇所（天面10°傾斜＋0.8 mm皿）。
+
+T99. 階層: `PF_Visual_Joystick_MachinedErgonomics_V6` → `Joystick_body` /
+`stick_pivot`（X軸）→ `stick_gimbal`（Z軸、Unity Y）→ `stick`。
+pivot local Unity `[0, 0, 0.030]`。可動域 ±20° × ±20°、設計ストップ22°。
+
+T100. 結果: **5,750 tris**（body 3,556 / stick 2,194）、renderer 2、material 1、
+non-manifold 0、zero-area 0、mount面 max Y = 0、mesh-local最小extent 41.8 mm、
+±20°格子289姿勢で干渉0、最小クリアランス0.68 mm（角20/20）、ストップ角
+軸方向21.75°・対角21.0〜21.25°、全部品が前方半球から可視（不可視三角形率0.365）、
+FBX round trip不一致0。判定 PASS 15 / N/A 1（envelope契約なし）/ REVIEW 1（可動契約は提案）。
+
+T101. 検査が捕まえた欠陥（初回→修正）:
+(1) カラーの止めねじが出っ張り、ゲートに先に当たった → 面一化。
+(2) ボール外に出るブーツ首が球面沿いのベゼル座に食い込んだ → ベゼル上部をpivot頂点の円錐に。
+(3) ゲート幅を面取りの無い角で計算し、ストップが21°に → 実際の面取り外角から導出。
+(4) ガスケットがカバー縁の下で不可視 → 0.4 mm張り出し。
+(5) (2)の修正でベゼル座を球面の途中から垂直に下ろし、中立姿勢で干渉 → 座を下面まで球面に沿わせた。
+(6) 対角傾斜で直円筒カラーの上部が先にゲートへ当たる → カラーにテーパ。
+
+T102. 未確定・注意: (a) `control.joystick` はGREYBOX仕様に無く、envelope（実測
+0.124 × 0.124 × 0.178 m）と可動域は**提案**。Codex判断。
+(b) 回転符号はLeverと同様FBX変換で反転しうる。Unity実機で2軸とも確認が要る。
+(c) **このbuildはクラウド環境のPyPI `bpy` 5.0.1で実行**（5.2はネットワーク制限で取得不可、
+scratchのwrapperで版チェックのみ緩和）。Blend/FBXは正式には5.2で再生成すること。
+(d) material roleはauthoring用の頂点色（body / metal / gasket）で持ち、FBXへは出さない。
+atlas UVはbox投影の仮置き。delivery正規化（Phase 4）は未実施。
