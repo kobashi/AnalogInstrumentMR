@@ -114,6 +114,10 @@ For environment setup, USB debugging, MRUK, and Quest procedures, start with:
 6. [`docs/RELEASE_ASSET_SCOPE.md`](docs/RELEASE_ASSET_SCOPE.md)
 7. [`ArtSource/Blender/README.md`](ArtSource/Blender/README.md)
 
+For the modular audio modules — trigger and gate signals, envelopes, and
+how modules are patched together — see
+[`docs/AUDIO_MODULE_USER_GUIDE.md`](docs/AUDIO_MODULE_USER_GUIDE.md).
+
 ## Asset provenance
 
 The included meshes and textures are procedurally authored by the generator
