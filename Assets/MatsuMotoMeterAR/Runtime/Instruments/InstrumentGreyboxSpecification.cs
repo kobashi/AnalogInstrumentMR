@@ -27,6 +27,7 @@ namespace MatsuMotoMeterAR.Instruments
         public const int TriangleBudgetPerInstrument = 5000;
         public const int LargeInstrumentTriangleBudget = 25000;
         public const int SharedMaterialBudgetPerInstrument = 2;
+        public const int AudioModuleMaterialBudget = 3;
         public const int SignalMonitorRendererBudget = 9;
         public const int SignalMonitorMaterialBudget = 2;
         public const int GuaranteedInstrumentsPerRoom = 24;
@@ -116,11 +117,15 @@ namespace MatsuMotoMeterAR.Instruments
                 MockInstrumentKind.AudioLfo or
                 MockInstrumentKind.AudioSequencer or
                 MockInstrumentKind.AudioDelay or
+                MockInstrumentKind.AudioVca or
+                MockInstrumentKind.AudioMixer or
+                MockInstrumentKind.AudioFilter or
+                MockInstrumentKind.AudioEnvelope or
                 MockInstrumentKind.AudioOutput => new InstrumentGreyboxSpec(
                     new Vector3(0.24f, 0.20f, 0.10f),
                     new Vector3(0f, 0f, 0.05f),
                     new Vector3(0.24f, 0.20f, 0.10f),
-                    9),
+                    10),
                 _ => new InstrumentGreyboxSpec(
                     new Vector3(0.17f, 0.17f, 0.082f),
                     new Vector3(0f, 0f, 0.032f),

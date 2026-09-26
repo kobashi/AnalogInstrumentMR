@@ -11,8 +11,8 @@ namespace MatsuMotoMeterAR.PlacementPersistence
     public sealed class PlacementDocument
     {
         public const int LegacySchemaVersion = 1;
-        public const int PreviousSchemaVersion = 8;
-        public const int CurrentSchemaVersion = 9;
+        public const int PreviousSchemaVersion = 9;
+        public const int CurrentSchemaVersion = 10;
         public const int MaximumActivePlacements = 48;
         public const int MaximumStoredPlacements = 192;
         public const int MaximumConnections = 192;
@@ -115,6 +115,7 @@ namespace MatsuMotoMeterAR.PlacementPersistence
             (int)ModularNoiseColor.White;
         public float[] audioSequencerSteps =
             ModularAudioParameterPolicy.CreateDefaultSequencerSteps();
+        public List<AdjustableParameterSetting> parameterSettings = new();
 
         public PlacementRecord Clone()
         {
@@ -134,8 +135,23 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                 audioNoiseColor = audioNoiseColor,
                 audioSequencerSteps = audioSequencerSteps != null
                     ? (float[])audioSequencerSteps.Clone()
-                    : null
+                    : null,
+                parameterSettings = CloneParameterSettings(parameterSettings)
             };
+        }
+
+        private static List<AdjustableParameterSetting> CloneParameterSettings(
+            IReadOnlyList<AdjustableParameterSetting> source)
+        {
+            var result = new List<AdjustableParameterSetting>();
+            if (source == null)
+                return result;
+            for (var index = 0; index < source.Count; index++)
+            {
+                if (source[index] != null)
+                    result.Add(source[index].Clone());
+            }
+            return result;
         }
     }
 

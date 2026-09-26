@@ -19,7 +19,8 @@ namespace MatsuMotoMeterAR.Audio
 
         public static bool SupportsEditing(MockInstrumentKind kind)
         {
-            return kind == MockInstrumentKind.AudioOscillator ||
+            return AdjustableParameterPolicy.SupportsEditing(kind) ||
+                   kind == MockInstrumentKind.AudioOscillator ||
                    kind == MockInstrumentKind.AudioNoise ||
                    kind == MockInstrumentKind.AudioLfo ||
                    kind == MockInstrumentKind.AudioSequencer;
@@ -105,6 +106,29 @@ namespace MatsuMotoMeterAR.Audio
             var count = Mathf.Min(source.Count, SequencerStepCapacity);
             for (var index = 0; index < count; index++)
                 normalized[index] = NormalizeStepValue(source[index]);
+            return normalized;
+        }
+
+        public static float[] NormalizeSequencerSteps(
+            IReadOnlyList<float> source,
+            AdjustableParameterSetting range)
+        {
+            if (range == null)
+                return NormalizeSequencerSteps(source);
+            var normalized = CreateDefaultSequencerSteps();
+            var count = source == null
+                ? 0
+                : Mathf.Min(source.Count, SequencerStepCapacity);
+            for (var index = 0; index < SequencerStepCapacity; index++)
+            {
+                var value = index < count
+                    ? source[index]
+                    : DefaultSequencerStepValue(index);
+                normalized[index] = float.IsNaN(value) ||
+                                    float.IsInfinity(value)
+                    ? 0f
+                    : AdjustableParameterPolicy.Quantize(value, range);
+            }
             return normalized;
         }
     }

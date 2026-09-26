@@ -8,6 +8,26 @@ namespace MatsuMotoMeterAR.Tests
     public sealed class InstrumentAudioTests
     {
         [Test]
+        public void GlobalEffectsVolume_FiftyPercentMatchesLegacyGain()
+        {
+            var previous = GlobalAudioSettings.EffectsVolume;
+            try
+            {
+                Assert.That(
+                    GlobalAudioSettings.DefaultEffectsVolume,
+                    Is.EqualTo(0.5f));
+                GlobalAudioSettings.EffectsVolume = 0.5f;
+                Assert.That(GlobalAudioSettings.EffectsGain, Is.EqualTo(1f));
+                GlobalAudioSettings.EffectsVolume = 1f;
+                Assert.That(GlobalAudioSettings.EffectsGain, Is.EqualTo(2f));
+            }
+            finally
+            {
+                GlobalAudioSettings.EffectsVolume = previous;
+            }
+        }
+
+        [Test]
         public void RuntimeInstruments_HaveConfiguredSpatialAudioAtAudioSocket()
         {
             for (var index = 0; index < MockInstrumentCatalog.Count; index++)

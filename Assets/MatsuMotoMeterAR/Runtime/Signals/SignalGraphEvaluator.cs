@@ -34,7 +34,7 @@ namespace MatsuMotoMeterAR.Signals
                 }
 
                 var transformed = InstrumentSignalPolicy.Transform(
-                    source.NormalizedValue,
+                    source.OutputValue,
                     connection);
                 if (!outputs.TryGetValue(
                         connection.targetPlacementId,

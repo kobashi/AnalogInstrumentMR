@@ -175,6 +175,8 @@ namespace MatsuMotoMeterAR.Audio
 
         private void Update()
         {
+            if (oneShotSource != null)
+                oneShotSource.mute = !GlobalAudioSettings.EffectsEnabled;
             if (continuousSource == null)
                 return;
 
@@ -196,6 +198,12 @@ namespace MatsuMotoMeterAR.Audio
 
         private void OnContinuousAudioRead(float[] data)
         {
+            if (!GlobalAudioSettings.EffectsEnabled)
+            {
+                if (data != null)
+                    System.Array.Clear(data, 0, data.Length);
+                return;
+            }
             continuousSynth?.Fill(
                 data,
                 1,
@@ -229,7 +237,10 @@ namespace MatsuMotoMeterAR.Audio
                     theme,
                     instrumentKind,
                     cue,
-                    lampStage));
+                    lampStage),
+                GlobalAudioSettings.EffectsEnabled
+                    ? GlobalAudioSettings.EffectsGain
+                    : 0f);
         }
 
         private void OnDestroy()

@@ -5,6 +5,7 @@ namespace MatsuMotoMeterAR.Instruments
         ForgeBrass = 0,
         OrbitalAnalog = 1,
         KineticSafety = 2,
-        MachinedErgonomics = 3
+        MachinedErgonomics = 3,
+        Superfine = 4
     }
 }

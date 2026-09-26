@@ -15,7 +15,7 @@ namespace MatsuMotoMeterAR.Editor
             new[]
             {
                 "OrbitalAnalog", "ForgeBrass", "KineticSafety",
-                "MachinedErgonomics"
+                "MachinedErgonomics", "Superfine"
             },
             StringComparer.Ordinal);
         private static readonly HashSet<string> SupportedModels = new(
@@ -24,7 +24,9 @@ namespace MatsuMotoMeterAR.Editor
                 "MeterRound", "Lever", "Toggle", "Rotary", "Button",
                 "Lamp", "Throttle", "PowerSlider", "StatusIndicator",
                 "MeterMedium", "MeterLarge", "WindowMeter", "WindowPanel",
-                "TrendMonitor"
+                "TrendMonitor", "AudioOscillator", "AudioNoise", "AudioLFO",
+                "AudioSequencer", "AudioDelay", "AudioOutput", "AudioVca",
+                "AudioMixer", "AudioFilter", "AudioEnvelope"
             },
             StringComparer.Ordinal);
 
@@ -151,6 +153,25 @@ namespace MatsuMotoMeterAR.Editor
 
                 if (schemaVersion == 2)
                     ValidateLineage(entry, label, problems);
+
+                var hasReplacementCandidate =
+                    !string.IsNullOrWhiteSpace(entry.replacesCandidateId);
+                var hasReplacementRevision =
+                    !string.IsNullOrWhiteSpace(entry.replacesRevision);
+                if (hasReplacementCandidate != hasReplacementRevision)
+                {
+                    problems.Add(
+                        $"{label} replacement lineage must provide both " +
+                        "replacesCandidateId and replacesRevision.");
+                }
+                else if (hasReplacementCandidate &&
+                         (!IsSafeIdentifier(entry.replacesCandidateId) ||
+                          !IsSafeIdentifier(entry.replacesRevision)))
+                {
+                    problems.Add(
+                        $"{label} replacement lineage contains an unsafe " +
+                        "identifier.");
+                }
             }
             return problems;
         }
@@ -297,6 +318,8 @@ namespace MatsuMotoMeterAR.Editor
         public string revision;
         public string[] includedRevisions;
         public string[] requiredRevisions;
+        public string replacesCandidateId;
+        public string replacesRevision;
     }
 
     internal static class CandidateIntegrationStages

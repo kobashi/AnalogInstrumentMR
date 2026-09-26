@@ -47,7 +47,7 @@ namespace MatsuMotoMeterAR.Signals
                     if (connected[slot])
                         continue;
                     var value = InstrumentSignalPolicy.Transform(
-                        source.NormalizedValue,
+                        source.OutputValue,
                         connection);
                     values[slot] = value;
                     connected[slot] = true;

@@ -1,4 +1,5 @@
 using System;
+using MatsuMotoMeterAR.Audio;
 using MatsuMotoMeterAR.Rendering;
 using UnityEngine;
 
@@ -34,6 +35,10 @@ namespace MatsuMotoMeterAR.Instruments
         [SerializeField, Range(0f, 1f)] private float normalizedValue;
         [SerializeField] private Renderer indicatorRenderer;
         [SerializeField] private Renderer[] statusRenderers;
+        [SerializeField] private float outputMinimum;
+        [SerializeField] private float outputMaximum = 1f;
+        [SerializeField] private int configuredStepCount;
+        [SerializeField] private AdjustableParameterScale outputScale;
 
         private Quaternion initialRotation;
         private Vector3 initialPosition;
@@ -44,21 +49,45 @@ namespace MatsuMotoMeterAR.Instruments
         private float meterPhase;
         private bool ambientAnimationEnabled;
         private bool configured;
+        private bool parameterRangeConfigured;
         private int leverDirection = 1;
         private int throttleDirection = 1;
         private int powerSliderDirection = 1;
+        private float stickVisualValue;
+        private float stickVisualTarget;
+        private float stickVisualVelocity;
+        private bool stickVisualActive;
+
+        private const float StickVisualSmoothTime = 0.08f;
 
         public event Action<InstrumentValueChange> ValueChanged;
 
         public MotionKind Kind => motionKind;
         public Transform MovingPart => movingPart;
         public float NormalizedValue => normalizedValue;
+        public float StickVisualTarget => stickVisualActive
+            ? stickVisualTarget
+            : normalizedValue;
+        public float OutputValue => MapOutputValue(normalizedValue);
+        public float DefaultNormalizedValue => DefaultValue(motionKind);
         public int DetentCount => motionKind switch
         {
-            MotionKind.Lever => LeverDetentCount,
+            MotionKind.Lever => parameterRangeConfigured
+                ? configuredStepCount
+                : LeverDetentCount,
+            MotionKind.Toggle or MotionKind.Press => parameterRangeConfigured
+                ? configuredStepCount
+                : 0,
             MotionKind.Status => StatusIndicatorStateCount,
-            MotionKind.Throttle => ThrottleDetentCount,
-            MotionKind.PowerSlider => PowerSliderDetentCount,
+            MotionKind.Throttle => parameterRangeConfigured
+                ? configuredStepCount
+                : ThrottleDetentCount,
+            MotionKind.PowerSlider => parameterRangeConfigured
+                ? configuredStepCount
+                : PowerSliderDetentCount,
+            MotionKind.Rotate => parameterRangeConfigured
+                ? configuredStepCount
+                : 0,
             _ => 0
         };
         public int DetentIndex =>
@@ -74,20 +103,27 @@ namespace MatsuMotoMeterAR.Instruments
                 3 => "DANGER",
                 _ => "OFF"
             },
-            MotionKind.Throttle => DetentIndex switch
-            {
-                1 => "IDLE",
-                2 => "LOW",
-                3 => "CRUISE",
-                4 => "HIGH",
-                5 => "FULL",
-                _ => "CUTOFF"
-            },
+            MotionKind.Throttle => DetentCount == ThrottleDetentCount
+                ? DetentIndex switch
+                {
+                    1 => "IDLE",
+                    2 => "LOW",
+                    3 => "CRUISE",
+                    4 => "HIGH",
+                    5 => "FULL",
+                    _ => "CUTOFF"
+                }
+                : DetentIndex switch
+                {
+                    <= 0 => "CUTOFF",
+                    var index when index == DetentCount - 1 => "FULL",
+                    _ => $"{Mathf.RoundToInt(DetentIndex * 100f / Mathf.Max(1, DetentCount - 1))}%"
+                },
             MotionKind.PowerSlider => DetentIndex switch
             {
                 0 => "OFF",
-                PowerSliderDetentCount - 1 => "MAX",
-                _ => $"{DetentIndex * 10}%"
+                var index when index == DetentCount - 1 => "MAX",
+                _ => $"{Mathf.RoundToInt(DetentIndex * 100f / Mathf.Max(1, DetentCount - 1))}%"
             },
             _ => string.Empty
         };
@@ -121,14 +157,71 @@ namespace MatsuMotoMeterAR.Instruments
             if (!configured)
                 normalizedValue = DefaultValue(kind);
             else
-                normalizedValue = NormalizeValue(kind, preservedValue);
+                normalizedValue = NormalizeValue(preservedValue);
             configured = true;
+            stickVisualValue = normalizedValue;
+            stickVisualTarget = normalizedValue;
+            stickVisualVelocity = 0f;
+            stickVisualActive = false;
             meterPhase = Mathf.Repeat(
                 movingPart != null
                     ? movingPart.GetInstanceID() * 0.173f
                     : 0f,
                 Mathf.PI * 2f);
             ApplyState();
+        }
+
+        public void ConfigureParameterRange(
+            float minimum,
+            float maximum,
+            int stepCount,
+            AdjustableParameterScale scale)
+        {
+            if (float.IsNaN(minimum) || float.IsInfinity(minimum) ||
+                float.IsNaN(maximum) || float.IsInfinity(maximum))
+            {
+                minimum = 0f;
+                maximum = 1f;
+            }
+            if (minimum > maximum)
+                (minimum, maximum) = (maximum, minimum);
+            if (Mathf.Approximately(minimum, maximum))
+                maximum = minimum + 0.0001f;
+
+            outputMinimum = minimum;
+            outputMaximum = maximum;
+            configuredStepCount = stepCount >= 2
+                ? Mathf.Clamp(
+                    stepCount,
+                    2,
+                    AdjustableParameterPolicy.MaximumStepCount)
+                : 0;
+            outputScale = scale == AdjustableParameterScale.Logarithmic &&
+                          minimum > 0f
+                ? AdjustableParameterScale.Logarithmic
+                : AdjustableParameterScale.Linear;
+            parameterRangeConfigured = true;
+            SetNormalizedValue(normalizedValue);
+        }
+
+        public void SetOutputValue(
+            float value,
+            InstrumentValueChangeOrigin origin =
+                InstrumentValueChangeOrigin.Programmatic)
+        {
+            if (!parameterRangeConfigured)
+            {
+                SetNormalizedValue(value, origin);
+                return;
+            }
+            value = Mathf.Clamp(value, outputMinimum, outputMaximum);
+            var normalized = outputScale ==
+                                 AdjustableParameterScale.Logarithmic &&
+                             outputMinimum > 0f && value > 0f
+                ? Mathf.Log(value / outputMinimum) /
+                  Mathf.Log(outputMaximum / outputMinimum)
+                : Mathf.InverseLerp(outputMinimum, outputMaximum, value);
+            SetNormalizedValue(normalized, origin);
         }
 
         public void SetAmbientAnimationEnabled(bool enabled)
@@ -195,15 +288,27 @@ namespace MatsuMotoMeterAR.Instruments
                         origin);
                     break;
                 case MotionKind.Rotate:
-                    SetNormalizedValue(
-                        Mathf.Repeat(normalizedValue + 0.125f, 1f),
-                        origin);
+                    if (DetentCount >= 2)
+                    {
+                        SetNormalizedValue(
+                            DetentIndex >= DetentCount - 1
+                                ? 0f
+                                : (DetentIndex + 1) /
+                                  (float)(DetentCount - 1),
+                            origin);
+                    }
+                    else
+                    {
+                        SetNormalizedValue(
+                            Mathf.Repeat(normalizedValue + 0.125f, 1f),
+                            origin);
+                    }
                     break;
                 case MotionKind.Status:
                     SetNormalizedValue(
                         (DetentIndex + 1) %
-                        StatusIndicatorStateCount /
-                        (float)(StatusIndicatorStateCount - 1),
+                        DetentCount /
+                        (float)(DetentCount - 1),
                         origin);
                     break;
                 case MotionKind.Throttle:
@@ -215,46 +320,122 @@ namespace MatsuMotoMeterAR.Instruments
             }
         }
 
+        public void Step(
+            int direction,
+            InstrumentValueChangeOrigin origin =
+                InstrumentValueChangeOrigin.UserInteraction)
+        {
+            if (!configured || direction == 0)
+                return;
+
+            direction = direction > 0 ? 1 : -1;
+            switch (motionKind)
+            {
+                case MotionKind.Lever:
+                case MotionKind.Throttle:
+                case MotionKind.PowerSlider:
+                case MotionKind.Status:
+                case MotionKind.Rotate when DetentCount >= 2:
+                    SetNormalizedValue(
+                        (Mathf.Clamp(DetentIndex + direction, 0, DetentCount - 1)) /
+                        (float)(DetentCount - 1),
+                        origin);
+                    break;
+                case MotionKind.Rotate:
+                    SetNormalizedValue(normalizedValue + direction * 0.125f, origin);
+                    break;
+                case MotionKind.Toggle:
+                case MotionKind.Pulse:
+                    SetNormalizedValue(direction > 0 ? 1f : 0f, origin);
+                    break;
+            }
+        }
+
         public void SetNormalizedValue(
             float value,
             InstrumentValueChangeOrigin origin =
                 InstrumentValueChangeOrigin.Programmatic)
         {
-            var previousValue = normalizedValue;
-            var previousDetent = DetentIndexFor(motionKind, previousValue);
-            var nextValue = NormalizeValue(motionKind, value);
-            if (Mathf.Abs(previousValue - nextValue) <= 0.000001f)
+            SetNormalizedValueInternal(value, origin, true);
+        }
+
+        public void SetStickControlledValue(
+            float value,
+            InstrumentValueChangeOrigin origin =
+                InstrumentValueChangeOrigin.UserInteraction)
+        {
+            if (!configured)
                 return;
+
+            if (!stickVisualActive)
+            {
+                stickVisualValue = normalizedValue;
+                stickVisualVelocity = 0f;
+            }
+            stickVisualActive = true;
+            stickVisualTarget = Mathf.Clamp01(value);
+            SetNormalizedValueInternal(value, origin, false);
+        }
+
+        public void EndStickControl()
+        {
+            if (!stickVisualActive)
+                return;
+            stickVisualTarget = normalizedValue;
+        }
+
+        private void SetNormalizedValueInternal(
+            float value,
+            InstrumentValueChangeOrigin origin,
+            bool applyVisualImmediately)
+        {
+            var previousValue = normalizedValue;
+            var previousDetent = DetentIndexFor(previousValue);
+            var nextValue = NormalizeValue(value);
+            if (applyVisualImmediately)
+            {
+                stickVisualActive = false;
+                stickVisualValue = nextValue;
+                stickVisualTarget = nextValue;
+                stickVisualVelocity = 0f;
+            }
+            if (Mathf.Abs(previousValue - nextValue) <= 0.000001f)
+            {
+                if (applyVisualImmediately)
+                    ApplyState();
+                return;
+            }
 
             normalizedValue = nextValue;
             if (motionKind == MotionKind.Lever)
             {
                 if (DetentIndex <= 0)
                     leverDirection = 1;
-                else if (DetentIndex >= LeverDetentCount - 1)
+                else if (DetentIndex >= DetentCount - 1)
                     leverDirection = -1;
             }
             else if (motionKind == MotionKind.Throttle)
             {
                 if (DetentIndex <= 0)
                     throttleDirection = 1;
-                else if (DetentIndex >= ThrottleDetentCount - 1)
+                else if (DetentIndex >= DetentCount - 1)
                     throttleDirection = -1;
             }
             else if (motionKind == MotionKind.PowerSlider)
             {
                 if (DetentIndex <= 0)
                     powerSliderDirection = 1;
-                else if (DetentIndex >= PowerSliderDetentCount - 1)
+                else if (DetentIndex >= DetentCount - 1)
                     powerSliderDirection = -1;
             }
-            ApplyState();
+            if (applyVisualImmediately)
+                ApplyState();
             ValueChanged?.Invoke(new InstrumentValueChange(
                 motionKind,
                 previousValue,
                 normalizedValue,
                 previousDetent,
-                DetentIndexFor(motionKind, normalizedValue),
+                DetentIndexFor(normalizedValue),
                 origin));
         }
 
@@ -265,13 +446,15 @@ namespace MatsuMotoMeterAR.Instruments
         {
             if (motionKind != MotionKind.Lever)
                 return;
+            if (DetentCount < 2)
+                return;
 
             var clampedIndex = Mathf.Clamp(
                 detentIndex,
                 0,
-                LeverDetentCount - 1);
+                DetentCount - 1);
             SetNormalizedValue(
-                clampedIndex / (float)(LeverDetentCount - 1),
+                clampedIndex / (float)(DetentCount - 1),
                 origin);
         }
 
@@ -282,13 +465,15 @@ namespace MatsuMotoMeterAR.Instruments
         {
             if (motionKind != MotionKind.Throttle)
                 return;
+            if (DetentCount < 2)
+                return;
 
             var clampedIndex = Mathf.Clamp(
                 detentIndex,
                 0,
-                ThrottleDetentCount - 1);
+                DetentCount - 1);
             SetNormalizedValue(
-                clampedIndex / (float)(ThrottleDetentCount - 1),
+                clampedIndex / (float)(DetentCount - 1),
                 origin);
         }
 
@@ -299,20 +484,27 @@ namespace MatsuMotoMeterAR.Instruments
         {
             if (motionKind != MotionKind.PowerSlider)
                 return;
+            if (DetentCount < 2)
+                return;
 
             var clampedIndex = Mathf.Clamp(
                 detentIndex,
                 0,
-                PowerSliderDetentCount - 1);
+                DetentCount - 1);
             SetNormalizedValue(
-                clampedIndex / (float)(PowerSliderDetentCount - 1),
+                clampedIndex / (float)(DetentCount - 1),
                 origin);
         }
 
         private void AdvanceLeverDetent(InstrumentValueChangeOrigin origin)
         {
+            if (DetentCount < 2)
+            {
+                AdvanceContinuous(origin, ref leverDirection);
+                return;
+            }
             var currentIndex = DetentIndex;
-            if (currentIndex >= LeverDetentCount - 1)
+            if (currentIndex >= DetentCount - 1)
                 leverDirection = -1;
             else if (currentIndex <= 0)
                 leverDirection = 1;
@@ -322,8 +514,13 @@ namespace MatsuMotoMeterAR.Instruments
 
         private void AdvanceThrottleDetent(InstrumentValueChangeOrigin origin)
         {
+            if (DetentCount < 2)
+            {
+                AdvanceContinuous(origin, ref throttleDirection);
+                return;
+            }
             var currentIndex = DetentIndex;
-            if (currentIndex >= ThrottleDetentCount - 1)
+            if (currentIndex >= DetentCount - 1)
                 throttleDirection = -1;
             else if (currentIndex <= 0)
                 throttleDirection = 1;
@@ -333,8 +530,13 @@ namespace MatsuMotoMeterAR.Instruments
 
         private void AdvancePowerSliderDetent(InstrumentValueChangeOrigin origin)
         {
+            if (DetentCount < 2)
+            {
+                AdvanceContinuous(origin, ref powerSliderDirection);
+                return;
+            }
             var currentIndex = DetentIndex;
-            if (currentIndex >= PowerSliderDetentCount - 1)
+            if (currentIndex >= DetentCount - 1)
                 powerSliderDirection = -1;
             else if (currentIndex <= 0)
                 powerSliderDirection = 1;
@@ -344,7 +546,25 @@ namespace MatsuMotoMeterAR.Instruments
                 origin);
         }
 
+        private void AdvanceContinuous(
+            InstrumentValueChangeOrigin origin,
+            ref int direction)
+        {
+            if (normalizedValue >= 1f)
+                direction = -1;
+            else if (normalizedValue <= 0f)
+                direction = 1;
+            SetNormalizedValue(
+                normalizedValue + direction * 0.125f,
+                origin);
+        }
+
         private void ApplyState()
+        {
+            ApplyState(normalizedValue);
+        }
+
+        private void ApplyState(float visualValue)
         {
             if (movingPart == null)
                 return;
@@ -356,7 +576,7 @@ namespace MatsuMotoMeterAR.Instruments
                 case MotionKind.Toggle:
                 case MotionKind.Throttle:
                     var angle =
-                        Mathf.Lerp(-amplitude, amplitude, normalizedValue) +
+                        Mathf.Lerp(-amplitude, amplitude, visualValue) +
                         rotationOffsetDegrees;
                     movingPart.localRotation =
                         initialRotation * Quaternion.AngleAxis(angle, localAxis);
@@ -364,14 +584,14 @@ namespace MatsuMotoMeterAR.Instruments
                 case MotionKind.Rotate:
                     movingPart.localRotation =
                         initialRotation *
-                        Quaternion.AngleAxis(normalizedValue * 360f, localAxis);
+                        Quaternion.AngleAxis(visualValue * 360f, localAxis);
                     break;
                 case MotionKind.Press:
                     movingPart.localPosition =
-                        initialPosition + localAxis * (normalizedValue * amplitude);
+                        initialPosition + localAxis * (visualValue * amplitude);
                     break;
                 case MotionKind.Pulse:
-                    var intensity = Mathf.Lerp(0.12f, 1f, normalizedValue);
+                    var intensity = Mathf.Lerp(0.12f, 1f, visualValue);
                     var color = Color.Lerp(Color.black, indicatorColor, intensity);
                     RuntimeMaterialUtility.SetColor(indicatorRenderer, color);
                     RuntimeMaterialUtility.SetEmissionColor(
@@ -401,7 +621,7 @@ namespace MatsuMotoMeterAR.Instruments
                         Mathf.Lerp(
                             -amplitude * 0.5f,
                             amplitude * 0.5f,
-                            normalizedValue);
+                            visualValue);
                     break;
             }
         }
@@ -444,6 +664,25 @@ namespace MatsuMotoMeterAR.Instruments
 
         private void Update()
         {
+            if (configured && stickVisualActive && movingPart != null)
+            {
+                stickVisualValue = Mathf.SmoothDamp(
+                    stickVisualValue,
+                    stickVisualTarget,
+                    ref stickVisualVelocity,
+                    StickVisualSmoothTime,
+                    Mathf.Infinity,
+                    Time.unscaledDeltaTime);
+                ApplyState(stickVisualValue);
+                if (Mathf.Abs(stickVisualValue - stickVisualTarget) < 0.0001f &&
+                    Mathf.Approximately(stickVisualTarget, normalizedValue))
+                {
+                    stickVisualValue = normalizedValue;
+                    stickVisualActive = false;
+                    ApplyState();
+                }
+            }
+
             if (!configured ||
                 !ambientAnimationEnabled ||
                 motionKind != MotionKind.Meter ||
@@ -483,17 +722,10 @@ namespace MatsuMotoMeterAR.Instruments
             };
         }
 
-        private static float NormalizeValue(MotionKind kind, float value)
+        private float NormalizeValue(float value)
         {
             var clamped = Mathf.Clamp01(value);
-            var stepCount = kind switch
-            {
-                MotionKind.Lever => LeverDetentCount,
-                MotionKind.Status => StatusIndicatorStateCount,
-                MotionKind.Throttle => ThrottleDetentCount,
-                MotionKind.PowerSlider => PowerSliderDetentCount,
-                _ => 0
-            };
+            var stepCount = DetentCount;
             if (stepCount == 0)
                 return clamped;
 
@@ -502,19 +734,25 @@ namespace MatsuMotoMeterAR.Instruments
             return detentIndex / (float)(stepCount - 1);
         }
 
-        private static int DetentIndexFor(MotionKind kind, float value)
+        private int DetentIndexFor(float value)
         {
-            var count = kind switch
-            {
-                MotionKind.Lever => LeverDetentCount,
-                MotionKind.Status => StatusIndicatorStateCount,
-                MotionKind.Throttle => ThrottleDetentCount,
-                MotionKind.PowerSlider => PowerSliderDetentCount,
-                _ => 0
-            };
+            var count = DetentCount;
             return count > 0
                 ? Mathf.RoundToInt(Mathf.Clamp01(value) * (count - 1))
                 : -1;
+        }
+
+        private float MapOutputValue(float value)
+        {
+            var t = Mathf.Clamp01(value);
+            if (!parameterRangeConfigured)
+                return t;
+            return outputScale == AdjustableParameterScale.Logarithmic &&
+                   outputMinimum > 0f
+                ? outputMinimum * Mathf.Pow(
+                    outputMaximum / outputMinimum,
+                    t)
+                : Mathf.Lerp(outputMinimum, outputMaximum, t);
         }
     }
 }

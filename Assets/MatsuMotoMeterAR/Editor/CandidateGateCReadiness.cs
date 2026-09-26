@@ -32,7 +32,9 @@ namespace MatsuMotoMeterAR.Editor
             {
                 "MeterRound", "MeterMedium", "MeterLarge", "Lever", "Toggle",
                 "Rotary", "Button", "Throttle", "PowerSlider", "WindowMeter",
-                "WindowPanel"
+                "WindowPanel", "AudioOscillator", "AudioNoise", "AudioLFO",
+                "AudioSequencer", "AudioDelay", "AudioOutput", "AudioVca",
+                "AudioMixer", "AudioFilter", "AudioEnvelope"
             },
             StringComparer.Ordinal);
 
@@ -52,7 +54,7 @@ namespace MatsuMotoMeterAR.Editor
             Report(WindowPanelWp3R2ManifestPath);
         }
 
-        private static void Report(string manifestPath)
+        internal static void Report(string manifestPath)
         {
             var manifest = CandidateStagingManifest.Load(manifestPath);
             var checks = Evaluate(manifest, File.Exists);

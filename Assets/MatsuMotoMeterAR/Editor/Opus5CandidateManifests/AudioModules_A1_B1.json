@@ -1,0 +1,330 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "AudioModules_A1_B1",
+  "integrationStage": "GateC",
+  "entries": [
+    {
+      "theme": "OrbitalAnalog",
+      "model": "AudioOscillator",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_A1/fbx/SM_AudioOscillator_OrbitalAnalog_A1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_A1/report/SM_AudioOscillator_OrbitalAnalog_A1_inspection.json",
+      "revision": "A1",
+      "includedRevisions": [
+        "A1"
+      ],
+      "requiredRevisions": [
+        "A1"
+      ]
+    },
+    {
+      "theme": "OrbitalAnalog",
+      "model": "AudioNoise",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_A1/fbx/SM_AudioNoise_OrbitalAnalog_A1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_A1/report/SM_AudioNoise_OrbitalAnalog_A1_inspection.json",
+      "revision": "A1",
+      "includedRevisions": [
+        "A1"
+      ],
+      "requiredRevisions": [
+        "A1"
+      ]
+    },
+    {
+      "theme": "OrbitalAnalog",
+      "model": "AudioLFO",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_A1/fbx/SM_AudioLfo_OrbitalAnalog_A1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_A1/report/SM_AudioLfo_OrbitalAnalog_A1_inspection.json",
+      "revision": "A1",
+      "includedRevisions": [
+        "A1"
+      ],
+      "requiredRevisions": [
+        "A1"
+      ]
+    },
+    {
+      "theme": "OrbitalAnalog",
+      "model": "AudioSequencer",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_A1/fbx/SM_AudioSequencer_OrbitalAnalog_A1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_A1/report/SM_AudioSequencer_OrbitalAnalog_A1_inspection.json",
+      "revision": "A1",
+      "includedRevisions": [
+        "A1"
+      ],
+      "requiredRevisions": [
+        "A1"
+      ]
+    },
+    {
+      "theme": "OrbitalAnalog",
+      "model": "AudioDelay",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_A1/fbx/SM_AudioDelay_OrbitalAnalog_A1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_A1/report/SM_AudioDelay_OrbitalAnalog_A1_inspection.json",
+      "revision": "A1",
+      "includedRevisions": [
+        "A1"
+      ],
+      "requiredRevisions": [
+        "A1"
+      ]
+    },
+    {
+      "theme": "OrbitalAnalog",
+      "model": "AudioOutput",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_A1/fbx/SM_AudioOutput_OrbitalAnalog_A1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_A1/report/SM_AudioOutput_OrbitalAnalog_A1_inspection.json",
+      "revision": "A1",
+      "includedRevisions": [
+        "A1"
+      ],
+      "requiredRevisions": [
+        "A1"
+      ]
+    },
+    {
+      "theme": "ForgeBrass",
+      "model": "AudioOscillator",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/fbx/SM_AudioOscillator_ForgeBrass_B1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/report/SM_AudioOscillator_ForgeBrass_B1_inspection.json",
+      "revision": "B1",
+      "includedRevisions": [
+        "B1"
+      ],
+      "requiredRevisions": [
+        "B1"
+      ]
+    },
+    {
+      "theme": "ForgeBrass",
+      "model": "AudioNoise",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/fbx/SM_AudioNoise_ForgeBrass_B1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/report/SM_AudioNoise_ForgeBrass_B1_inspection.json",
+      "revision": "B1",
+      "includedRevisions": [
+        "B1"
+      ],
+      "requiredRevisions": [
+        "B1"
+      ]
+    },
+    {
+      "theme": "ForgeBrass",
+      "model": "AudioLFO",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/fbx/SM_AudioLFO_ForgeBrass_B1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/report/SM_AudioLFO_ForgeBrass_B1_inspection.json",
+      "revision": "B1",
+      "includedRevisions": [
+        "B1"
+      ],
+      "requiredRevisions": [
+        "B1"
+      ]
+    },
+    {
+      "theme": "ForgeBrass",
+      "model": "AudioSequencer",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/fbx/SM_AudioSequencer_ForgeBrass_B1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/report/SM_AudioSequencer_ForgeBrass_B1_inspection.json",
+      "revision": "B1",
+      "includedRevisions": [
+        "B1"
+      ],
+      "requiredRevisions": [
+        "B1"
+      ]
+    },
+    {
+      "theme": "ForgeBrass",
+      "model": "AudioDelay",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/fbx/SM_AudioDelay_ForgeBrass_B1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/report/SM_AudioDelay_ForgeBrass_B1_inspection.json",
+      "revision": "B1",
+      "includedRevisions": [
+        "B1"
+      ],
+      "requiredRevisions": [
+        "B1"
+      ]
+    },
+    {
+      "theme": "ForgeBrass",
+      "model": "AudioOutput",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/fbx/SM_AudioOutput_ForgeBrass_B1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/report/SM_AudioOutput_ForgeBrass_B1_inspection.json",
+      "revision": "B1",
+      "includedRevisions": [
+        "B1"
+      ],
+      "requiredRevisions": [
+        "B1"
+      ]
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "AudioOscillator",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/fbx/SM_AudioOscillator_KineticSafety_B1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/report/SM_AudioOscillator_KineticSafety_B1_inspection.json",
+      "revision": "B1",
+      "includedRevisions": [
+        "B1"
+      ],
+      "requiredRevisions": [
+        "B1"
+      ]
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "AudioNoise",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/fbx/SM_AudioNoise_KineticSafety_B1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/report/SM_AudioNoise_KineticSafety_B1_inspection.json",
+      "revision": "B1",
+      "includedRevisions": [
+        "B1"
+      ],
+      "requiredRevisions": [
+        "B1"
+      ]
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "AudioLFO",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/fbx/SM_AudioLFO_KineticSafety_B1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/report/SM_AudioLFO_KineticSafety_B1_inspection.json",
+      "revision": "B1",
+      "includedRevisions": [
+        "B1"
+      ],
+      "requiredRevisions": [
+        "B1"
+      ]
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "AudioSequencer",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/fbx/SM_AudioSequencer_KineticSafety_B1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/report/SM_AudioSequencer_KineticSafety_B1_inspection.json",
+      "revision": "B1",
+      "includedRevisions": [
+        "B1"
+      ],
+      "requiredRevisions": [
+        "B1"
+      ]
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "AudioDelay",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/fbx/SM_AudioDelay_KineticSafety_B1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/report/SM_AudioDelay_KineticSafety_B1_inspection.json",
+      "revision": "B1",
+      "includedRevisions": [
+        "B1"
+      ],
+      "requiredRevisions": [
+        "B1"
+      ]
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "AudioOutput",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/fbx/SM_AudioOutput_KineticSafety_B1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/report/SM_AudioOutput_KineticSafety_B1_inspection.json",
+      "revision": "B1",
+      "includedRevisions": [
+        "B1"
+      ],
+      "requiredRevisions": [
+        "B1"
+      ]
+    },
+    {
+      "theme": "MachinedErgonomics",
+      "model": "AudioOscillator",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/fbx/SM_AudioOscillator_MachinedErgonomics_B1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/report/SM_AudioOscillator_MachinedErgonomics_B1_inspection.json",
+      "revision": "B1",
+      "includedRevisions": [
+        "B1"
+      ],
+      "requiredRevisions": [
+        "B1"
+      ]
+    },
+    {
+      "theme": "MachinedErgonomics",
+      "model": "AudioNoise",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/fbx/SM_AudioNoise_MachinedErgonomics_B1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/report/SM_AudioNoise_MachinedErgonomics_B1_inspection.json",
+      "revision": "B1",
+      "includedRevisions": [
+        "B1"
+      ],
+      "requiredRevisions": [
+        "B1"
+      ]
+    },
+    {
+      "theme": "MachinedErgonomics",
+      "model": "AudioLFO",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/fbx/SM_AudioLFO_MachinedErgonomics_B1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/report/SM_AudioLFO_MachinedErgonomics_B1_inspection.json",
+      "revision": "B1",
+      "includedRevisions": [
+        "B1"
+      ],
+      "requiredRevisions": [
+        "B1"
+      ]
+    },
+    {
+      "theme": "MachinedErgonomics",
+      "model": "AudioSequencer",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/fbx/SM_AudioSequencer_MachinedErgonomics_B1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/report/SM_AudioSequencer_MachinedErgonomics_B1_inspection.json",
+      "revision": "B1",
+      "includedRevisions": [
+        "B1"
+      ],
+      "requiredRevisions": [
+        "B1"
+      ]
+    },
+    {
+      "theme": "MachinedErgonomics",
+      "model": "AudioDelay",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/fbx/SM_AudioDelay_MachinedErgonomics_B1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/report/SM_AudioDelay_MachinedErgonomics_B1_inspection.json",
+      "revision": "B1",
+      "includedRevisions": [
+        "B1"
+      ],
+      "requiredRevisions": [
+        "B1"
+      ]
+    },
+    {
+      "theme": "MachinedErgonomics",
+      "model": "AudioOutput",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/fbx/SM_AudioOutput_MachinedErgonomics_B1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_B1/report/SM_AudioOutput_MachinedErgonomics_B1_inspection.json",
+      "revision": "B1",
+      "includedRevisions": [
+        "B1"
+      ],
+      "requiredRevisions": [
+        "B1"
+      ]
+    }
+  ],
+  "gateCEvidence": {
+    "semanticUvAudit": "docs/OPUS5_AUDIO_MODULE_PHASE_C.md",
+    "fixedCameraVisualReview": "Builds/Reports/candidate-AudioModules_A1_B1-production-audio-display-contact-sheet.png",
+    "motionAudit": "Builds/Reports/candidate-AudioModules_A1_B1-motion-audit.md",
+    "unityStagingValidation": "Builds/Reports/candidate-AudioModules_A1_B1-staging-validation.md",
+    "editModeTests": "Builds/Reports/candidate-AudioModules_A1_B1-device-fix-editmode-results.xml",
+    "quest48Gate": "",
+    "quest64Stress": "",
+    "questValidationDeferral": "docs/AUDIO_MODULE_VISUAL_QUEST_DEFERRAL.md",
+    "rollbackPlan": "docs/AUDIO_MODULE_VISUAL_ROLLBACK.md"
+  }
+}

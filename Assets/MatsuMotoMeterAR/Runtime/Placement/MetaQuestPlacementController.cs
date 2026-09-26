@@ -36,20 +36,25 @@ namespace MatsuMotoMeterAR.Placement
         private const int AutoPlacementMaximumRing = 4;
         private const float CoplanarDistanceTolerance = 0.15f;
         private const float CoplanarNormalDotThreshold = 0.95f;
-        private const float GroupMoveGripThreshold = 0.65f;
+        private const float PlacementGridSpacing = 0.10f;
+        private const float AutoAlignSearchRadius = 1.0f;
         private const float OperationGripPressThreshold = 0.65f;
         private const float OperationGripReleaseThreshold = 0.35f;
+        private const float OperationChordWindowSeconds = 0.12f;
         private const float LeverGripTravelMeters = 0.24f;
+        private const float RotaryGripTravelDegrees = 180f;
         private const float SharedAnchorCoverageRadius = 2.75f;
         private const int MaximumEditHistory = 32;
         private const float ControllerBeamStartOffset = 0.035f;
         private const float ControllerBeamWidth = 0.004f;
         private const float ExitHoldSeconds = 2f;
         private const float ModeLockHoldSeconds = 2f;
+        private const float OperationFaceButtonHoldSeconds = 1f;
+        private const float OperationStickDeadZone = 0.18f;
+        private const float OperationStickSnapThreshold = 0.72f;
+        private const float OperationStickSpeed = 0.55f;
         private const float MoveTargetWidth = 0.008f;
         private const float SurfaceWireframeWidth = 0.006f;
-        private const float PlacementGridSpacing = 0.10f;
-        private const float AutoAlignSearchRadius = 1.0f;
         private const float SurfaceSwitchImmediateAdvantage = 0.12f;
         private const int SurfaceSwitchConfirmationFrames = 4;
         private const int SurfaceMissToleranceFrames = 3;
@@ -84,6 +89,10 @@ namespace MatsuMotoMeterAR.Placement
             new(1f, 0.76f, 0.12f, 0.95f);
         private static readonly Color ClockPatchColor =
             new(0.67f, 0.38f, 1f, 0.95f);
+        private static readonly Color GatePatchColor =
+            new(0.24f, 1f, 0.42f, 0.95f);
+        private static readonly Color TriggerPatchColor =
+            new(1f, 0.42f, 0.10f, 0.95f);
         private static readonly Color SelectedAudioPatchColor =
             new(1f, 0.30f, 0.85f, 1f);
 
@@ -98,6 +107,8 @@ namespace MatsuMotoMeterAR.Placement
         private Transform leftAimAnchor;
         private Transform trackingSpace;
         private TextMesh statusLabel;
+        private GameObject globalAudioPanel;
+        private TextMesh globalAudioPanelLabel;
         private LineRenderer controllerBeam;
         private LineRenderer leftControllerBeam;
         private MRUKRoom currentRoom;
@@ -165,7 +176,9 @@ namespace MatsuMotoMeterAR.Placement
         private SignalConnectionParameterField connectionParameterField;
         private RuntimePlacement audioParameterEditPlacement;
         private PlacementRecord audioParameterOriginal;
+        private int audioParameterEntryIndex;
         private int audioParameterStepIndex;
+        private AdjustableParameterField audioParameterSettingField;
         private RuntimePlacement groupMovePivot;
         private RuntimePlacement lastAlignmentReference;
         private AlignmentAnchorMode nextAlignmentAnchorMode =
@@ -174,8 +187,10 @@ namespace MatsuMotoMeterAR.Placement
         private int lastAlignmentOriginalReferenceIndex;
         private float hapticStopTime;
         private float leftHapticStopTime;
+        private float operationStepNoticeUntil;
         private float exitHoldTime;
         private float modeLockHoldTime;
+        private float operationYHoldTime;
         private float connectStatusHoldUntil;
         private float nextCurrentRoomPollTime;
         private float pendingCurrentRoomSince;
@@ -194,6 +209,27 @@ namespace MatsuMotoMeterAR.Placement
         private bool previousThumbstickButton;
         private bool previousLeftThumbstickButton;
         private bool previousEditTrigger;
+        private bool previousLeftEditTrigger;
+        private bool previousLeftEditGrip;
+        private bool previousRightEditGrip;
+        private bool operationYHoldLatched;
+        private bool leftStickShortClickPending;
+        private bool globalAudioPanelVisible;
+        private bool audioMenuTriggerEngaged;
+        private bool audioMenuGripEngaged;
+        private bool pendingLeftSelection;
+        private bool pendingMoveUndo;
+        private bool pendingRightCancel;
+        private float pendingLeftSelectionUntil;
+        private float pendingMoveUndoUntil;
+        private float pendingRightCancelUntil;
+        private bool editMoveChordActive;
+        private bool editMoveCancelledUntilChordRelease;
+        private bool editPlacementModifierChordActive;
+        private MovePlacementModifier editMoveModifier;
+        private bool moveModifierAxisEngaged;
+        private bool moveModifierApplied;
+        private bool connectionEditing;
         private bool connectRightTriggerEngaged;
         private bool connectLeftTriggerEngaged;
         private bool connectAxisEngaged;
@@ -212,12 +248,11 @@ namespace MatsuMotoMeterAR.Placement
         private bool rotationAxisEngaged;
         private bool hasStablePlacementSurfaceHit;
         private bool hasPendingPlacementSurfaceHit;
-        private bool placementPoseAutoAligned;
-        private bool placementPoseGridSnapped;
         private PendingLayout pendingLayout;
         private bool operationInProgress;
         private bool isExiting;
         private bool modeSwitchLocked;
+        private bool operationConnectionVisualsVisible;
         private bool modeLockHoldLatched;
         private bool roomSwitchInProgress;
         private int controllerPoseResyncFrames;
@@ -256,6 +291,7 @@ namespace MatsuMotoMeterAR.Placement
             public AnchorRecord Anchor;
             public GameObject AnchorRoot;
             public GameObject Root;
+            public InstrumentGreyboxContract Contract;
             public MockInstrumentInteraction Interaction;
             public InstrumentAudioController Audio;
             public ModularAudioModuleRuntime AudioModule;
@@ -269,16 +305,24 @@ namespace MatsuMotoMeterAR.Placement
         {
             public readonly OVRInput.Controller Controller;
             public readonly string Label;
-            public MockInstrumentInteraction TriggerInteraction;
             public MockInstrumentInteraction GripInteraction;
             public MockInstrumentInteraction ContactButton;
+            public MockInstrumentInteraction BeamButton;
             public RuntimePlacement GripPlacement;
             public Vector3 GripStartPosition;
             public Vector3 GripStartDirection;
             public float GripStartValue;
             public int GripLastDetent;
+            public int PendingStepDirection;
+            public float PendingStepDeadline;
+            public bool ResetChordEngaged;
             public bool TriggerEngaged;
+            public bool BeamTriggerEngaged;
             public bool GripEngaged;
+            public bool StickXEngaged;
+            public MockInstrumentInteraction StickInteraction;
+            public float StickTargetValue;
+            public bool StickTargetInitialized;
 
             public HandOperationState(
                 OVRInput.Controller controller,
@@ -306,12 +350,21 @@ namespace MatsuMotoMeterAR.Placement
             VerticalDistribute
         }
 
+        private enum MovePlacementModifier
+        {
+            None,
+            AutoAlign,
+            GridSnap
+        }
+
         private enum OperationResolveMode
         {
             Any,
-            Trigger,
+            DirectionalStep,
+            StickControl,
             GripMotion,
-            ContactButton
+            ContactButton,
+            BeamButton
         }
 
         private sealed class PlacementEditState
@@ -325,6 +378,7 @@ namespace MatsuMotoMeterAR.Placement
         {
             public List<PlacementEditState> Before;
             public List<PlacementEditState> After;
+            public bool IsMove;
         }
 
         private sealed class PlacementRuntimeState
@@ -847,6 +901,81 @@ namespace MatsuMotoMeterAR.Placement
             statusLabel.color = Color.white;
         }
 
+        private void EnsureGlobalAudioPanel()
+        {
+            if (globalAudioPanel != null)
+                return;
+            var camera = Camera.main;
+            if (camera == null)
+                return;
+
+            globalAudioPanel = new GameObject("Global Audio Settings Panel");
+            globalAudioPanel.transform.SetParent(camera.transform, false);
+            globalAudioPanel.transform.localPosition =
+                new Vector3(0f, -0.02f, 0.68f);
+
+            var background = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            background.name = "Audio Settings Background";
+            background.transform.SetParent(globalAudioPanel.transform, false);
+            background.transform.localScale = new Vector3(0.62f, 0.32f, 1f);
+            var collider = background.GetComponent<Collider>();
+            if (collider != null)
+                Destroy(collider);
+            RuntimeMaterialUtility.ApplySharedUnlit(
+                background.GetComponent<Renderer>(),
+                new Color(0.012f, 0.025f, 0.035f, 0.96f));
+
+            var labelObject = new GameObject("Audio Settings Text");
+            labelObject.transform.SetParent(globalAudioPanel.transform, false);
+            labelObject.transform.localPosition = new Vector3(0f, 0f, -0.004f);
+            globalAudioPanelLabel = labelObject.AddComponent<TextMesh>();
+            globalAudioPanelLabel.anchor = TextAnchor.MiddleCenter;
+            globalAudioPanelLabel.alignment = TextAlignment.Center;
+            globalAudioPanelLabel.characterSize = 0.0045f;
+            globalAudioPanelLabel.fontSize = 64;
+            globalAudioPanelLabel.color = new Color(0.25f, 0.95f, 1f);
+            globalAudioPanel.SetActive(false);
+        }
+
+        private void SetGlobalAudioPanelVisible(bool visible)
+        {
+            EnsureGlobalAudioPanel();
+            globalAudioPanelVisible = visible && globalAudioPanel != null;
+            if (globalAudioPanel != null)
+                globalAudioPanel.SetActive(globalAudioPanelVisible);
+            if (!globalAudioPanelVisible)
+            {
+                GlobalAudioSettings.Persist();
+                audioMenuTriggerEngaged = false;
+                audioMenuGripEngaged = false;
+                SetModeStatus();
+                return;
+            }
+            ReleaseOperationInteractions();
+            RefreshGlobalAudioPanel();
+        }
+
+        private void RefreshGlobalAudioPanel()
+        {
+            if (globalAudioPanelLabel == null)
+                return;
+            globalAudioPanelLabel.text =
+                "GLOBAL AUDIO\n\n" +
+                $"INSTRUMENT SE  {(GlobalAudioSettings.EffectsEnabled ? "ON" : "OFF")}\n" +
+                $"SE VOLUME       {GlobalAudioSettings.EffectsVolume:P0}\n" +
+                $"AUDIO MODULES   {(GlobalAudioSettings.ModularAudioEnabled ? "ON" : "OFF")}\n\n" +
+                "TRIGGER +5%  |  GRIP -5%\n" +
+                "STICK Y: FINE  |  CLICK: DEFAULT 50%\n" +
+                "X: SE ON/OFF  |  Y: MODULE ON/OFF\n" +
+                "A: CLOSE";
+        }
+
+        private void AdjustGlobalEffectsVolume(float delta)
+        {
+            GlobalAudioSettings.EffectsVolume += delta;
+            RefreshGlobalAudioPanel();
+        }
+
         private void EnsureControllerAnchor()
         {
             if (rightControllerAnchor != null &&
@@ -1025,16 +1154,10 @@ namespace MatsuMotoMeterAR.Placement
         private void UpdateControllerBeam(
             LineRenderer beam,
             Transform controllerAnchor,
-            bool allowInEditMode)
+            bool rightController)
         {
             if (beam == null || controllerAnchor == null)
                 return;
-            if (!allowInEditMode &&
-                AppInteractionModePolicy.AllowsEditing(interactionMode))
-            {
-                beam.enabled = false;
-                return;
-            }
             if (controllerPoseResyncFrames > 0)
             {
                 beam.enabled = false;
@@ -1056,7 +1179,8 @@ namespace MatsuMotoMeterAR.Placement
             var ray = new Ray(controllerAnchor.position, direction);
             var beamDistance = maximumDistance;
 
-            if (AppInteractionModePolicy.AllowsEditing(interactionMode))
+            if (AppInteractionModePolicy.AllowsEditing(interactionMode) &&
+                !rightController)
             {
                 if (TryRaycastPlacementSurface(
                         ray,
@@ -1091,11 +1215,8 @@ namespace MatsuMotoMeterAR.Placement
             RuntimeMaterialUtility.SetColor(
                 beam,
                 AppInteractionModePolicy.AllowsEditing(interactionMode)
-                    ? EditBeamColor
-                    : AppInteractionModePolicy.AllowsConnecting(
-                        interactionMode)
-                        ? ConnectBeamColor
-                        : OperationBeamColor);
+                    ? rightController ? ConnectBeamColor : EditBeamColor
+                    : OperationBeamColor);
         }
 
         private bool TryGetNearestInstrumentHitDistance(
@@ -1128,13 +1249,13 @@ namespace MatsuMotoMeterAR.Placement
         {
             hasPlacementPose = false;
             placementPoseWasAdjusted = false;
-            placementPoseAutoAligned = false;
-            placementPoseGridSnapped = false;
+            moveModifierApplied = false;
             isAimingAtPlacedObject = false;
             SetMoveTargetMarkersVisible(false);
             if (!AppInteractionModePolicy.AllowsEditing(interactionMode) ||
+                connectionEditing ||
                 currentRoom == null ||
-                rightAimAnchor == null ||
+                leftAimAnchor == null ||
                 operationInProgress)
             {
                 hasStablePlacementSurfaceHit = false;
@@ -1143,15 +1264,17 @@ namespace MatsuMotoMeterAR.Placement
                 return;
             }
 
-            if (!groupMoveArmed && groupMoveSelection.Count > 0)
+            if (!editMoveChordActive &&
+                pendingLayout == PendingLayout.None &&
+                groupMoveSelection.Count > 0)
             {
                 SetPreviewVisible(false);
                 SetStatus(
                     $"{groupMoveSelection.Count} SELECTED | " +
                     "CYAN = FIRST ANCHOR\n" +
-                    "TRIGGER TO CHANGE | A MOVE\n" +
-                    "L-STICK: L/UP ALIGN | R/D DISTRIBUTE\n" +
-                    "R-STICK: ROTATE | B CLEAR SELECTION",
+                    "L-TRIGGER TO CHANGE | L-TRIGGER+GRIP MOVE\n" +
+                    "MOVE+L-STICK: UP AUTO | DOWN GRID\n" +
+                    "R-STICK: ROTATE | L-GRIP CANCEL",
                     new Color(1f, 0.75f, 0.15f));
                 return;
             }
@@ -1180,15 +1303,15 @@ namespace MatsuMotoMeterAR.Placement
                 SetPreviewVisible(false);
                 SetStatus(
                     "EXISTING OBJECT AIMED\n" +
-                    "TRIGGER SELECT | B DELETE\n" +
+                    "L-TRIGGER SELECT | B DELETE\n" +
                     "R-CLICK RE-PLACE",
                     Color.white);
                 return;
             }
 
             var ray = new Ray(
-                rightAimAnchor.position,
-                rightAimAnchor.forward);
+                leftAimAnchor.position,
+                leftAimAnchor.forward);
             if (!TryRaycastStablePlacementSurface(
                     ray,
                     MaxPlacementDistance,
@@ -1205,7 +1328,11 @@ namespace MatsuMotoMeterAR.Placement
                 hit.Point + hit.Normal.normalized * SurfaceOffset,
                 hit.Normal,
                 cameraForward);
-            ApplyPlacementModifiers(ref currentPlacementPose);
+            if (editMoveChordActive ||
+                editPlacementModifierChordActive ||
+                (!groupMoveArmed &&
+                 editMoveModifier != MovePlacementModifier.None))
+                ApplyMovePlacementModifier(ref currentPlacementPose);
             hasPlacementPose = true;
 
             if (groupMoveArmed)
@@ -1216,11 +1343,12 @@ namespace MatsuMotoMeterAR.Placement
                 SetStatus(
                     targetIsValid
                         ? $"GROUP MOVE: {groupMoveSelection.Count} INSTRUMENT(S)\n" +
-                          $"TARGET: {currentSurface.ToString().ToUpperInvariant()} | A CONFIRM\n" +
-                          PlacementModifierStatus() +
-                          "R-STICK ROTATE | B CANCEL"
+                          $"TARGET: {currentSurface.ToString().ToUpperInvariant()} | RELEASE TO CONFIRM\n" +
+                          MoveModifierStatus() +
+                          "L-STICK UP AUTO | DOWN GRID"
                         : $"MOVE BLOCKED: {invalidReason}\n" +
-                          $"TARGET: {currentSurface.ToString().ToUpperInvariant()} | B CANCEL",
+                          MoveModifierStatus() +
+                          $"TARGET: {currentSurface.ToString().ToUpperInvariant()}",
                     targetIsValid
                         ? new Color(0.1f, 1f, 0.65f)
                         : Color.red);
@@ -1289,41 +1417,31 @@ namespace MatsuMotoMeterAR.Placement
                 $"{CurrentRoomPlacementCount():00}/" +
                 $"{PlacementDocument.MaximumActivePlacements:00}\n" +
                 (placementPoseWasAdjusted ? "AUTO OFFSET: OVERLAP AVOIDED\n" : string.Empty) +
-                PlacementModifierStatus() +
+                MoveModifierStatus() +
                 "R \u2190/\u2192 OBJECT | R \u2191/\u2193 CATEGORY\n" +
                 "L \u2190/\u2192 THEME\n" +
-                "TRIGGER SELECT | A PLACE | B DELETE\n" +
-                "L-GRIP AUTO ALIGN | +L-TRIGGER GRID\n" +
-                "R-CLICK REPLACE | X CONNECT");
+                "L-TRIGGER SELECT | A PLACE | B DELETE\n" +
+                "L-TRIGGER+GRIP + L-STICK UP AUTO/DOWN GRID\n" +
+                "R-TRIGGER CONNECT | X OPERATE");
         }
 
-        private void ApplyPlacementModifiers(ref Pose pose)
+        private void ApplyMovePlacementModifier(ref Pose pose)
         {
-            var leftGrip = Mathf.Max(
-                OVRInput.Get(
-                    OVRInput.RawAxis1D.LHandTrigger,
-                    OVRInput.Controller.LTouch),
-                ReadFloat(leftGripAction));
-            if (leftGrip < GroupMoveGripThreshold)
-                return;
-
-            var leftTrigger = Mathf.Max(
-                OVRInput.Get(
-                    OVRInput.RawAxis1D.LIndexTrigger,
-                    OVRInput.Controller.LTouch),
-                ReadFloat(leftTriggerAction));
-            if (leftTrigger >= TriggerPressThreshold)
+            switch (editMoveModifier)
             {
-                SnapPoseToGrid(ref pose);
-                placementPoseGridSnapped = true;
-                return;
+                case MovePlacementModifier.AutoAlign:
+                    moveModifierApplied = TryAutoAlignMovePose(ref pose);
+                    break;
+                case MovePlacementModifier.GridSnap:
+                    pose = PlacementPoseUtility.SnapToGrid(
+                        pose,
+                        PlacementGridSpacing);
+                    moveModifierApplied = true;
+                    break;
             }
-
-            if (TryAutoAlignPose(ref pose))
-                placementPoseAutoAligned = true;
         }
 
-        private bool TryAutoAlignPose(ref Pose pose)
+        private bool TryAutoAlignMovePose(ref Pose pose)
         {
             RuntimePlacement nearest = null;
             var nearestDistanceSquared =
@@ -1336,58 +1454,43 @@ namespace MatsuMotoMeterAR.Placement
                     continue;
                 }
 
-                var transform = placement.Root.transform;
-                if (Vector3.Dot(transform.forward, pose.rotation *
-                        Vector3.forward) < CoplanarNormalDotThreshold)
+                var target = placement.Root.transform;
+                if (Vector3.Dot(
+                        target.forward,
+                        pose.rotation * Vector3.forward) <
+                    CoplanarNormalDotThreshold)
                 {
                     continue;
                 }
 
                 var distanceSquared =
-                    (transform.position - pose.position).sqrMagnitude;
+                    (target.position - pose.position).sqrMagnitude;
                 if (distanceSquared >= nearestDistanceSquared)
                     continue;
                 nearestDistanceSquared = distanceSquared;
                 nearest = placement;
             }
-            if (nearest == null)
+            if (nearest?.Root == null)
                 return false;
 
-            var target = nearest.Root.transform;
-            var delta = pose.position - target.position;
-            var x = Vector3.Dot(delta, target.right);
-            var y = Vector3.Dot(delta, target.up);
-            if (Mathf.Abs(x) <= Mathf.Abs(y))
-                delta -= target.right * x;
-            else
-                delta -= target.up * y;
-            pose = new Pose(
-                target.position + delta,
-                target.rotation);
+            var reference = nearest.Root.transform;
+            pose = PlacementPoseUtility.AlignNearestAxis(
+                pose,
+                new Pose(reference.position, reference.rotation));
             return true;
         }
 
-        private static void SnapPoseToGrid(ref Pose pose)
+        private string MoveModifierStatus()
         {
-            var right = pose.rotation * Vector3.right;
-            var up = pose.rotation * Vector3.up;
-            var x = Vector3.Dot(pose.position, right);
-            var y = Vector3.Dot(pose.position, up);
-            pose.position += right *
-                             (Mathf.Round(x / PlacementGridSpacing) *
-                              PlacementGridSpacing - x);
-            pose.position += up *
-                             (Mathf.Round(y / PlacementGridSpacing) *
-                              PlacementGridSpacing - y);
-        }
-
-        private string PlacementModifierStatus()
-        {
-            if (placementPoseGridSnapped)
-                return "GRID SNAP 10 CM\n";
-            if (placementPoseAutoAligned)
-                return "AUTO ALIGNED TO NEARBY OBJECT\n";
-            return string.Empty;
+            return editMoveModifier switch
+            {
+                MovePlacementModifier.AutoAlign =>
+                    moveModifierApplied
+                        ? "AUTO ALIGNED TO NEARBY OBJECT\n"
+                        : "AUTO ALIGN: NO NEARBY MATCH\n",
+                MovePlacementModifier.GridSnap => "GRID SNAP 10 CM\n",
+                _ => string.Empty
+            };
         }
 
         private void UpdateInput()
@@ -1456,17 +1559,16 @@ namespace MatsuMotoMeterAR.Placement
             var modeToggled = false;
             var editing =
                 AppInteractionModePolicy.AllowsEditing(interactionMode);
-            var connecting =
-                AppInteractionModePolicy.AllowsConnecting(interactionMode);
             var exitInputConsumed =
                 UpdateLeftStickHold(
                     leftThumbstickButton,
-                    editing,
+                    editing && !connectionEditing,
                     AppInteractionModePolicy.AllowsInstrumentOperation(
-                        interactionMode));
+                        interactionMode) && !globalAudioPanelVisible);
 
             if (!exitInputConsumed &&
                 !operationInProgress &&
+                editing &&
                 xButton &&
                 !previousXButton)
             {
@@ -1485,114 +1587,157 @@ namespace MatsuMotoMeterAR.Placement
                 modeToggled = true;
             }
 
-            if (!exitInputConsumed && !modeToggled && editing)
+            if (!editing && !exitInputConsumed && !operationInProgress)
             {
-                if (groupMoveSelection.Count == 0 &&
-                    !thumbstickButton)
-                {
-                    UpdateSelection(
-                        thumbstick,
-                        leftThumbstick);
-                }
-
-                var editActionConsumed = false;
-                if (!operationInProgress &&
-                    editTrigger &&
-                    !previousEditTrigger)
-                {
-                    ToggleAimedSelection();
-                    editActionConsumed = true;
-                }
-                // Y is intentionally reserved for a future Edit-mode action.
-                if (!editActionConsumed &&
-                    !operationInProgress &&
-                    groupMoveSelection.Count >= 2)
-                {
-                    editActionConsumed =
-                        HandleSelectionRotationStick(thumbstick);
-                }
-                if (!editActionConsumed &&
-                    !operationInProgress &&
-                    groupMoveSelection.Count >= 2)
-                {
-                    editActionConsumed =
-                        HandleAlignmentStick(leftThumbstick);
-                }
-                if (!editActionConsumed &&
-                    !operationInProgress &&
-                    groupMoveArmed &&
-                    (hasPlacementPose ||
-                     pendingLayout != PendingLayout.None) &&
-                    aButton &&
-                    !previousAButton)
-                {
-                    if (pendingLayout != PendingLayout.None)
-                        ConfirmPendingLayout();
-                    else
-                        HandleGroupMoveAction();
-                    editActionConsumed = true;
-                }
-                if (!editActionConsumed &&
-                    !operationInProgress &&
-                    bButton &&
-                    !previousBButton)
-                {
-                    ClearPendingLayout(clearSource: true);
-                    if (groupMoveSelection.Count > 0)
-                    {
-                        ClearGroupMoveSelection();
-                        SetStatus("SELECTION CLEARED", Color.white);
-                        PulseHaptics();
-                    }
-                    else
-                        DeleteAimedInstrument();
-                    editActionConsumed = true;
-                }
-                if (!editActionConsumed &&
-                    !operationInProgress &&
-                    !groupMoveArmed &&
-                    groupMoveSelection.Count == 0 &&
-                    !isAimingAtPlacedObject &&
-                    hasPlacementPose &&
-                    aButton &&
-                    !previousAButton)
-                {
-                    PlaceInstrument();
-                    editActionConsumed = true;
-                }
-                if (!editActionConsumed &&
-                    !operationInProgress &&
-                    thumbstickButton &&
-                    !previousThumbstickButton)
-                {
-                    ReplaceAimedInstrument();
-                }
-            }
-            else if (!exitInputConsumed &&
-                     !modeToggled &&
-                     connecting)
-            {
-                UpdateSelection(
-                    Vector2.zero,
-                    Vector2.zero);
-                UpdateConnectInput(
+                modeToggled = UpdateOperationGlobalInput(
+                    aButton,
+                    bButton,
+                    xButton,
+                    yButton,
+                    thumbstickButton,
+                    leftThumbstickButton,
+                    thumbstick,
+                    leftThumbstick,
                     trigger,
                     leftTrigger,
-                    leftThumbstick,
-                    thumbstick,
-                    yButton && !previousYButton,
-                    leftThumbstickButton &&
-                    !previousLeftThumbstickButton,
-                    aButton && !previousAButton,
-                    bButton && !previousBButton);
+                    rightGrip,
+                    leftGrip) || modeToggled;
+            }
+
+            if (!exitInputConsumed && !modeToggled && editing)
+            {
+                if (!operationInProgress)
+                    UpdateEditHandInput(
+                        leftTrigger,
+                        leftGrip,
+                        trigger,
+                        rightGrip,
+                        leftThumbstick);
+
+                if (connectionEditing)
+                {
+                    UpdateSelection(Vector2.zero, Vector2.zero);
+                    UpdateConnectInput(
+                        trigger,
+                        0f,
+                        leftThumbstick,
+                        thumbstick,
+                        yButton && !previousYButton,
+                        leftThumbstickButton &&
+                        !previousLeftThumbstickButton,
+                        aButton && !previousAButton,
+                        bButton && !previousBButton);
+                }
+                else
+                {
+                    if (groupMoveSelection.Count == 0 &&
+                        !thumbstickButton)
+                    {
+                        UpdateSelection(
+                            thumbstick,
+                            leftThumbstick);
+                    }
+
+                    var editActionConsumed = false;
+                    // Y is reserved for a future placement action.
+                    if (!editActionConsumed &&
+                        !operationInProgress &&
+                        !editMoveChordActive &&
+                        groupMoveSelection.Count >= 2)
+                    {
+                        editActionConsumed =
+                            HandleSelectionRotationStick(thumbstick);
+                    }
+                    if (!editActionConsumed &&
+                        !operationInProgress &&
+                        !editMoveChordActive &&
+                        groupMoveSelection.Count >= 2)
+                    {
+                        editActionConsumed =
+                            HandleAlignmentStick(leftThumbstick);
+                    }
+                    if (!editActionConsumed &&
+                        !operationInProgress &&
+                        !editMoveChordActive &&
+                        pendingLayout != PendingLayout.None &&
+                        aButton &&
+                        !previousAButton)
+                    {
+                        ConfirmPendingLayout();
+                        editActionConsumed = true;
+                    }
+                    if (!editActionConsumed &&
+                        !operationInProgress &&
+                        !editMoveChordActive &&
+                        bButton &&
+                        !previousBButton)
+                    {
+                        ClearPendingLayout(clearSource: true);
+                        if (groupMoveSelection.Count > 0)
+                        {
+                            ClearGroupMoveSelection();
+                            SetStatus("SELECTION CLEARED", Color.white);
+                            PulseHaptics();
+                        }
+                        else
+                            DeleteAimedInstrument();
+                        editActionConsumed = true;
+                    }
+                    if (!editActionConsumed &&
+                        !operationInProgress &&
+                        !groupMoveArmed &&
+                        groupMoveSelection.Count == 0 &&
+                        !isAimingAtPlacedObject &&
+                        hasPlacementPose &&
+                        aButton &&
+                        !previousAButton)
+                    {
+                        PlaceInstrument();
+                        editPlacementModifierChordActive = false;
+                        editMoveModifier = MovePlacementModifier.None;
+                        moveModifierAxisEngaged = false;
+                        editActionConsumed = true;
+                    }
+                    if (!editActionConsumed &&
+                        !operationInProgress &&
+                        thumbstickButton &&
+                        !previousThumbstickButton)
+                    {
+                        ReplaceAimedInstrument();
+                    }
+                }
             }
             else
             {
                 UpdateSelection(
                     Vector2.zero,
                     Vector2.zero);
+                if (!globalAudioPanelVisible &&
+                    !exitInputConsumed && !modeToggled &&
+                    !operationInProgress &&
+                    AppInteractionModePolicy.CanToggleConnectionVisuals(
+                        interactionMode,
+                        modeSwitchLocked) &&
+                    aButton && !previousAButton)
+                {
+                    operationConnectionVisualsVisible =
+                        !operationConnectionVisualsVisible;
+                    operationStepNoticeUntil = Time.unscaledTime + 1f;
+                    SetStatus(
+                        operationConnectionVisualsVisible
+                            ? "CONNECTIONS VISIBLE | A: HIDE"
+                            : "CONNECTIONS HIDDEN | A: SHOW",
+                        operationConnectionVisualsVisible
+                            ? ConnectBeamColor
+                            : Color.white);
+                    PulseHaptics(OVRInput.Controller.RTouch);
+                }
             }
 
+            var rightStickClick =
+                thumbstickButton && !previousThumbstickButton;
+            var leftStickClick = leftStickShortClickPending;
+            leftStickShortClickPending = false;
             previousAButton = aButton;
             previousBButton = bButton;
             previousXButton = xButton;
@@ -1601,12 +1746,350 @@ namespace MatsuMotoMeterAR.Placement
             previousThumbstickButton = thumbstickButton;
             previousLeftThumbstickButton = leftThumbstickButton;
             previousEditTrigger = editTrigger;
+            previousLeftEditTrigger =
+                leftTrigger >= TriggerPressThreshold;
+            previousLeftEditGrip =
+                leftGrip >= TriggerPressThreshold;
+            previousRightEditGrip =
+                rightGrip >= TriggerPressThreshold;
             UpdateInstrumentInteractions(
                 trigger,
                 leftTrigger,
                 rightGrip,
-                leftGrip);
+                leftGrip,
+                thumbstick,
+                leftThumbstick,
+                rightStickClick,
+                leftStickClick);
             UpdateHaptics();
+        }
+
+        private bool UpdateOperationGlobalInput(
+            bool aButton,
+            bool bButton,
+            bool xButton,
+            bool yButton,
+            bool rightStickButton,
+            bool leftStickButton,
+            Vector2 rightStick,
+            Vector2 leftStick,
+            float rightTrigger,
+            float leftTrigger,
+            float rightGrip,
+            float leftGrip)
+        {
+            if (!globalAudioPanelVisible &&
+                bButton && !previousBButton)
+            {
+                SetSelectedTheme(
+                    MockInstrumentThemeCatalog.Cycle(selectedTheme, 1));
+                PulseHaptics(OVRInput.Controller.RTouch);
+            }
+
+            if (!modeSwitchLocked)
+            {
+                operationYHoldTime = 0f;
+                operationYHoldLatched = false;
+                if (xButton && !previousXButton)
+                {
+                    ToggleInteractionMode(rightTrigger, leftTrigger);
+                    return true;
+                }
+                return false;
+            }
+
+            if (xButton && !previousXButton)
+            {
+                GlobalAudioSettings.EffectsEnabled =
+                    !GlobalAudioSettings.EffectsEnabled;
+                GlobalAudioSettings.Persist();
+                SetStatus(
+                    GlobalAudioSettings.EffectsEnabled
+                        ? "INSTRUMENT SE: ON"
+                        : "INSTRUMENT SE: OFF",
+                    GlobalAudioSettings.EffectsEnabled
+                        ? Color.green
+                        : Color.yellow);
+                RefreshGlobalAudioPanel();
+                PulseHaptics(OVRInput.Controller.LTouch);
+            }
+
+            if (yButton)
+            {
+                operationYHoldTime += Time.unscaledDeltaTime;
+                if (!operationYHoldLatched &&
+                    operationYHoldTime >= OperationFaceButtonHoldSeconds)
+                {
+                    operationYHoldLatched = true;
+                    SetGlobalAudioPanelVisible(!globalAudioPanelVisible);
+                    PulseHaptics(OVRInput.Controller.LTouch);
+                }
+            }
+            else
+            {
+                if (previousYButton && !operationYHoldLatched)
+                {
+                    GlobalAudioSettings.ModularAudioEnabled =
+                        !GlobalAudioSettings.ModularAudioEnabled;
+                    GlobalAudioSettings.Persist();
+                    SetStatus(
+                        GlobalAudioSettings.ModularAudioEnabled
+                            ? "AUDIO MODULES: ON"
+                            : "AUDIO MODULES: OFF | PROCESSING STOPPED",
+                        GlobalAudioSettings.ModularAudioEnabled
+                            ? Color.green
+                            : Color.yellow);
+                    RefreshGlobalAudioPanel();
+                    PulseHaptics(OVRInput.Controller.LTouch);
+                }
+                operationYHoldTime = 0f;
+                operationYHoldLatched = false;
+            }
+
+            if (!globalAudioPanelVisible)
+                return false;
+
+            if (aButton && !previousAButton)
+            {
+                SetGlobalAudioPanelVisible(false);
+                PulseHaptics(OVRInput.Controller.RTouch);
+                return false;
+            }
+
+            var triggerDown = Mathf.Max(rightTrigger, leftTrigger) >=
+                              TriggerPressThreshold;
+            var gripDown = Mathf.Max(rightGrip, leftGrip) >=
+                           OperationGripPressThreshold;
+            if (triggerDown && !audioMenuTriggerEngaged)
+            {
+                AdjustGlobalEffectsVolume(0.05f);
+                PulseHaptics();
+            }
+            if (gripDown && !audioMenuGripEngaged)
+            {
+                AdjustGlobalEffectsVolume(-0.05f);
+                PulseHaptics();
+            }
+            audioMenuTriggerEngaged = triggerDown;
+            audioMenuGripEngaged = gripDown;
+
+            var stickY = Mathf.Abs(rightStick.y) >= Mathf.Abs(leftStick.y)
+                ? rightStick.y
+                : leftStick.y;
+            if (Mathf.Abs(stickY) >= OperationStickDeadZone)
+            {
+                AdjustGlobalEffectsVolume(
+                    stickY * 0.35f * Time.unscaledDeltaTime);
+            }
+            if ((rightStickButton && !previousThumbstickButton) ||
+                (leftStickButton && !previousLeftThumbstickButton))
+            {
+                GlobalAudioSettings.ResetEffectsVolume();
+                RefreshGlobalAudioPanel();
+                PulseHaptics();
+            }
+            return false;
+        }
+
+        private void UpdateEditHandInput(
+            float leftTrigger,
+            float leftGrip,
+            float rightTrigger,
+            float rightGrip,
+            Vector2 leftThumbstick)
+        {
+            var leftTriggerDown = leftTrigger >= TriggerPressThreshold;
+            var leftGripDown = leftGrip >= TriggerPressThreshold;
+            var rightTriggerDown = rightTrigger >= TriggerPressThreshold;
+            var rightGripDown = rightGrip >= TriggerPressThreshold;
+
+            if (rightGripDown && !previousRightEditGrip)
+            {
+                pendingRightCancel = true;
+                pendingRightCancelUntil =
+                    Time.unscaledTime + OperationChordWindowSeconds;
+            }
+            if (rightTriggerDown && rightGripDown)
+                pendingRightCancel = false;
+            else if (pendingRightCancel &&
+                     (!rightGripDown ||
+                      Time.unscaledTime >= pendingRightCancelUntil))
+            {
+                pendingRightCancel = false;
+                CancelEditSelection();
+            }
+
+            if (rightTriggerDown && !previousEditTrigger &&
+                !connectionEditing)
+            {
+                ClearGroupMoveSelection();
+                SetPreviewVisible(false);
+                pendingLeftSelection = false;
+                pendingMoveUndo = false;
+                editMoveChordActive = false;
+                connectionEditing = true;
+                connectRightTriggerEngaged = false;
+                SetModeStatus();
+            }
+
+            if (leftTriggerDown && !previousLeftEditTrigger)
+            {
+                if (connectionEditing)
+                {
+                    ClearConnectSelection();
+                    connectionEditing = false;
+                    SetModeStatus();
+                }
+                pendingLeftSelection = true;
+                pendingLeftSelectionUntil =
+                    Time.unscaledTime + OperationChordWindowSeconds;
+            }
+            if (leftGripDown && !previousLeftEditGrip &&
+                !connectionEditing)
+            {
+                pendingMoveUndo = true;
+                pendingMoveUndoUntil =
+                    Time.unscaledTime + OperationChordWindowSeconds;
+            }
+
+            if (leftTriggerDown && leftGripDown && !connectionEditing)
+            {
+                pendingLeftSelection = false;
+                pendingMoveUndo = false;
+                if (editMoveCancelledUntilChordRelease)
+                    return;
+                if (!editMoveChordActive)
+                {
+                    if (groupMoveSelection.Count == 0)
+                    {
+                        if (!editPlacementModifierChordActive)
+                        {
+                            editPlacementModifierChordActive = true;
+                            editMoveModifier = MovePlacementModifier.None;
+                            moveModifierAxisEngaged = false;
+                        }
+                    }
+                    else
+                    {
+                        ClearPendingLayout(clearSource: false);
+                        editMoveChordActive = true;
+                        editMoveModifier = MovePlacementModifier.None;
+                        moveModifierAxisEngaged = false;
+                        PulseHaptics(OVRInput.Controller.LTouch);
+                    }
+                }
+                if (editMoveChordActive ||
+                    editPlacementModifierChordActive)
+                    UpdateMoveModifierStick(leftThumbstick);
+                return;
+            }
+
+            if (editMoveCancelledUntilChordRelease)
+                editMoveCancelledUntilChordRelease = false;
+
+            if (editPlacementModifierChordActive)
+            {
+                editPlacementModifierChordActive = false;
+                pendingLeftSelection = false;
+                pendingMoveUndo = false;
+                moveModifierAxisEngaged = false;
+                return;
+            }
+
+            if (editMoveChordActive)
+            {
+                editMoveChordActive = false;
+                pendingLeftSelection = false;
+                pendingMoveUndo = false;
+                HandleGroupMoveAction();
+                editMoveModifier = MovePlacementModifier.None;
+                moveModifierAxisEngaged = false;
+                return;
+            }
+
+            if (pendingLeftSelection &&
+                (!leftTriggerDown ||
+                 Time.unscaledTime >= pendingLeftSelectionUntil))
+            {
+                pendingLeftSelection = false;
+                ToggleAimedSelection();
+            }
+            if (pendingMoveUndo &&
+                (!leftGripDown ||
+                 Time.unscaledTime >= pendingMoveUndoUntil))
+            {
+                pendingMoveUndo = false;
+                CancelOrUndoMove();
+            }
+        }
+
+        private void CancelEditSelection()
+        {
+            pendingLeftSelection = false;
+            pendingMoveUndo = false;
+            if (connectionEditing)
+            {
+                ClearConnectSelection();
+                SetStatus("CONNECTION SELECTION CANCELLED", Color.white);
+                PulseHaptics(OVRInput.Controller.RTouch);
+                return;
+            }
+
+            var hadSelection = groupMoveSelection.Count > 0 ||
+                               pendingLayout != PendingLayout.None ||
+                               editMoveChordActive ||
+                               editPlacementModifierChordActive;
+            if (editMoveChordActive)
+                editMoveCancelledUntilChordRelease = true;
+            editMoveChordActive = false;
+            editPlacementModifierChordActive = false;
+            editMoveModifier = MovePlacementModifier.None;
+            moveModifierAxisEngaged = false;
+            ClearGroupMoveSelection();
+            SetStatus(
+                hadSelection
+                    ? "EDIT SELECTION CANCELLED"
+                    : "NOTHING TO CANCEL",
+                hadSelection ? Color.white : Color.yellow);
+            PulseHaptics(OVRInput.Controller.RTouch);
+        }
+
+        private void UpdateMoveModifierStick(Vector2 axis)
+        {
+            if (Mathf.Abs(axis.y) <= SelectionReleaseThreshold)
+            {
+                moveModifierAxisEngaged = false;
+                return;
+            }
+            if (moveModifierAxisEngaged ||
+                Mathf.Abs(axis.y) < SelectionThreshold ||
+                Mathf.Abs(axis.y) <= Mathf.Abs(axis.x))
+            {
+                return;
+            }
+
+            moveModifierAxisEngaged = true;
+            editMoveModifier = axis.y > 0f
+                ? MovePlacementModifier.AutoAlign
+                : MovePlacementModifier.GridSnap;
+            PulseHaptics(OVRInput.Controller.LTouch);
+        }
+
+        private void CancelOrUndoMove()
+        {
+            if (groupMoveSelection.Count > 0)
+            {
+                ClearGroupMoveSelection();
+                SetStatus("MOVE CANCELLED | SELECTION CLEARED", Color.white);
+                PulseHaptics(OVRInput.Controller.LTouch);
+                return;
+            }
+            if (undoHistory.Count == 0 || !undoHistory.Peek().IsMove)
+            {
+                SetStatus("NO MOVE TO UNDO", Color.yellow);
+                return;
+            }
+            UndoLastEdit();
         }
 
         private bool UpdateLeftStickHold(
@@ -1634,7 +2117,7 @@ namespace MatsuMotoMeterAR.Placement
                 if (modeLockHoldTime > 0f &&
                     !modeLockHoldLatched)
                 {
-                    SetModeStatus();
+                    leftStickShortClickPending = true;
                 }
                 modeLockHoldTime = 0f;
                 modeLockHoldLatched = false;
@@ -1760,11 +2243,16 @@ namespace MatsuMotoMeterAR.Placement
             float rightTrigger,
             float leftTrigger,
             float rightGrip,
-            float leftGrip)
+            float leftGrip,
+            Vector2 rightStick,
+            Vector2 leftStick,
+            bool rightStickClick,
+            bool leftStickClick)
         {
             var operationAllowed =
                 AppInteractionModePolicy.AllowsInstrumentOperation(
                     interactionMode) &&
+                !globalAudioPanelVisible &&
                 !DevelopmentExitController.IsTriggerReserved &&
                 !operationInProgress;
             if (!operationAllowed)
@@ -1782,58 +2270,162 @@ namespace MatsuMotoMeterAR.Placement
             }
 
             UpdateContactButtons();
+            UpdateBeamButton(
+                rightOperationHand,
+                leftOperationHand,
+                rightAimAnchor,
+                rightTrigger);
+            UpdateBeamButton(
+                leftOperationHand,
+                rightOperationHand,
+                leftAimAnchor,
+                leftTrigger);
             UpdateGripInteraction(
                 rightOperationHand,
                 leftOperationHand,
                 rightControllerAnchor,
+                rightTrigger,
                 rightGrip);
             UpdateGripInteraction(
                 leftOperationHand,
                 rightOperationHand,
                 leftControllerAnchor,
+                leftTrigger,
                 leftGrip);
-            UpdateTriggerInteraction(
+            UpdateDirectionalStep(
                 rightOperationHand,
                 leftOperationHand,
                 rightAimAnchor,
-                rightTrigger);
-            UpdateTriggerInteraction(
+                rightTrigger,
+                rightGrip);
+            UpdateDirectionalStep(
                 leftOperationHand,
                 rightOperationHand,
                 leftAimAnchor,
-                leftTrigger);
+                leftTrigger,
+                leftGrip);
+            UpdateStickInteraction(
+                rightOperationHand,
+                leftOperationHand,
+                rightAimAnchor,
+                leftAimAnchor,
+                rightStick,
+                rightStickClick);
+            UpdateStickInteraction(
+                leftOperationHand,
+                rightOperationHand,
+                leftAimAnchor,
+                rightAimAnchor,
+                leftStick,
+                leftStickClick);
 
-            if (!HasActiveOperationInteraction())
+            if (!HasActiveOperationInteraction() &&
+                Time.unscaledTime >= operationStepNoticeUntil)
                 UpdateOperationHoverStatus();
         }
 
-        private void UpdateTriggerInteraction(
+        private void UpdateStickInteraction(
             HandOperationState hand,
             HandOperationState otherHand,
-            Transform controllerAnchor,
-            float triggerValue)
+            Transform aimAnchor,
+            Transform fallbackAimAnchor,
+            Vector2 stick,
+            bool resetPressed)
         {
-            if (hand.TriggerEngaged)
+            if (Mathf.Abs(stick.x) <= SelectionReleaseThreshold)
+                hand.StickXEngaged = false;
+
+            if (Mathf.Abs(stick.y) < OperationStickDeadZone &&
+                hand.StickInteraction != null)
             {
-                if (triggerValue <= TriggerReleaseThreshold)
+                hand.StickInteraction.EndStickControl();
+                SaveInteractionState(hand.StickInteraction);
+                hand.StickInteraction = null;
+                hand.StickTargetInitialized = false;
+            }
+
+            if (hand.GripInteraction != null ||
+                hand.ContactButton != null ||
+                hand.BeamButton != null)
+                return;
+
+            if (resetPressed &&
+                TryResolveStickInteraction(
+                    aimAnchor,
+                    fallbackAimAnchor,
+                    out var resetInteraction,
+                    out var resetPlacement,
+                    out var resetReach) &&
+                !IsInteractionHeldByOtherHand(resetInteraction, otherHand))
+            {
+                var kind = GetPlacementKind(resetPlacement);
+                if (hand.StickInteraction != null &&
+                    !ReferenceEquals(
+                        hand.StickInteraction,
+                        resetInteraction))
                 {
-                    ReleaseTriggerInteraction(hand);
-                    hand.TriggerEngaged = false;
+                    hand.StickInteraction.EndStickControl();
+                    SaveInteractionState(hand.StickInteraction);
                 }
+                resetInteraction.SetNormalizedValue(
+                    DefaultNormalizedValue(kind, resetPlacement),
+                    InstrumentValueChangeOrigin.UserInteraction);
+                hand.StickInteraction = resetInteraction;
+                hand.StickTargetValue = resetInteraction.NormalizedValue;
+                hand.StickTargetInitialized = true;
+                SaveInteractionState(resetInteraction);
+                PulseHaptics(hand.Controller);
+                operationStepNoticeUntil = Time.unscaledTime + 0.6f;
+                SetStatus(
+                    $"{hand.Label} {resetReach.ToString().ToUpperInvariant()} " +
+                    $"STICK CLICK: DEFAULT | " +
+                    $"{MockInstrumentCatalog.GetDisplayName(kind)}\n" +
+                    FormatOperationState(resetInteraction),
+                    Color.green);
                 return;
             }
 
-            if (triggerValue < TriggerPressThreshold ||
-                controllerAnchor == null ||
-                hand.GripInteraction != null)
+            if (Mathf.Abs(stick.x) >= OperationStickSnapThreshold &&
+                !hand.StickXEngaged &&
+                TryResolveStickInteraction(
+                    aimAnchor,
+                    fallbackAimAnchor,
+                    out var snapInteraction,
+                    out var snapPlacement,
+                    out var snapReach) &&
+                !IsInteractionHeldByOtherHand(snapInteraction, otherHand))
             {
+                hand.StickXEngaged = true;
+                if (hand.StickInteraction != null &&
+                    !ReferenceEquals(
+                        hand.StickInteraction,
+                        snapInteraction))
+                {
+                    hand.StickInteraction.EndStickControl();
+                    SaveInteractionState(hand.StickInteraction);
+                }
+                snapInteraction.SetNormalizedValue(
+                    stick.x < 0f ? 0f : 1f,
+                    InstrumentValueChangeOrigin.UserInteraction);
+                hand.StickInteraction = snapInteraction;
+                hand.StickTargetValue = snapInteraction.NormalizedValue;
+                hand.StickTargetInitialized = true;
+                SaveInteractionState(snapInteraction);
+                PulseHaptics(hand.Controller);
+                operationStepNoticeUntil = Time.unscaledTime + 0.6f;
+                SetStatus(
+                    $"{hand.Label} {snapReach.ToString().ToUpperInvariant()} " +
+                    $"STICK X: {(stick.x < 0f ? "MIN" : "MAX")} | " +
+                    $"{MockInstrumentCatalog.GetDisplayName(GetPlacementKind(snapPlacement))}\n" +
+                    FormatOperationState(snapInteraction),
+                    Color.green);
                 return;
             }
 
-            hand.TriggerEngaged = true;
-            if (!TryResolveOperationInteraction(
-                    controllerAnchor,
-                    OperationResolveMode.Trigger,
+            if (Mathf.Abs(stick.y) < OperationStickDeadZone ||
+                !TryResolveStickInteraction(
+                    aimAnchor,
+                    fallbackAimAnchor,
                     out var interaction,
                     out var placement,
                     out var reach) ||
@@ -1842,13 +2434,239 @@ namespace MatsuMotoMeterAR.Placement
                 return;
             }
 
-            hand.TriggerInteraction = interaction;
-            interaction.SetPressed(true);
+            if (!ReferenceEquals(hand.StickInteraction, interaction) ||
+                !hand.StickTargetInitialized)
+            {
+                if (hand.StickInteraction != null &&
+                    !ReferenceEquals(hand.StickInteraction, interaction))
+                {
+                    hand.StickInteraction.EndStickControl();
+                    SaveInteractionState(hand.StickInteraction);
+                }
+                hand.StickInteraction = interaction;
+                hand.StickTargetValue = interaction.NormalizedValue;
+                hand.StickTargetInitialized = true;
+            }
+            var interactionKind = GetPlacementKind(placement);
+            hand.StickTargetValue =
+                OperationStickInputPolicy.ApplyVerticalDelta(
+                    interactionKind,
+                    hand.StickTargetValue,
+                    stick.y,
+                    OperationStickSpeed,
+                    Time.unscaledDeltaTime);
+            if (OperationStickInputPolicy.UsesInvertedVerticalDirection(
+                    interactionKind))
+            {
+                interaction.SetStickControlledValue(hand.StickTargetValue);
+            }
+            else
+            {
+                interaction.SetNormalizedValue(
+                    hand.StickTargetValue,
+                    InstrumentValueChangeOrigin.UserInteraction);
+            }
+            operationStepNoticeUntil = Time.unscaledTime + 0.25f;
+            SetStatus(
+                $"{hand.Label} {reach.ToString().ToUpperInvariant()} " +
+                $"STICK Y: ANALOG | " +
+                $"{MockInstrumentCatalog.GetDisplayName(interactionKind)}\n" +
+                FormatOperationState(interaction),
+                Color.green);
+        }
+
+        private bool TryResolveStickInteraction(
+            Transform primaryAimAnchor,
+            Transform fallbackAimAnchor,
+            out MockInstrumentInteraction interaction,
+            out RuntimePlacement placement,
+            out InstrumentInteractionHitTest.Reach reach)
+        {
+            if (TryResolveOperationInteraction(
+                    primaryAimAnchor,
+                    OperationResolveMode.StickControl,
+                    out interaction,
+                    out placement,
+                    out reach))
+            {
+                return true;
+            }
+            return TryResolveOperationInteraction(
+                fallbackAimAnchor,
+                OperationResolveMode.StickControl,
+                out interaction,
+                out placement,
+                out reach);
+        }
+
+        private static float DefaultNormalizedValue(
+            MockInstrumentKind kind,
+            RuntimePlacement placement)
+        {
+            var descriptors = AdjustableParameterPolicy.Descriptors(kind);
+            if (descriptors.Count == 0)
+            {
+                return placement?.Interaction?.Motion != null
+                    ? placement.Interaction.Motion.DefaultNormalizedValue
+                    : 0.5f;
+            }
+            var settings = AdjustableParameterPolicy.NormalizeSettings(
+                kind,
+                placement?.Record?.parameterSettings,
+                placement?.Interaction?.NormalizedValue ?? 0.5f);
+            if (settings.Count == 0)
+                return 0.5f;
+            var parameterPosition = AdjustableParameterPolicy.InverseMap(
+                descriptors[0].DefaultValue,
+                settings[0]);
+            if (kind == MockInstrumentKind.AudioSequencer)
+                return parameterPosition * 0.5f;
+            if (kind == MockInstrumentKind.AudioEnvelope)
+            {
+                return descriptors[0].DefaultValue >
+                       (settings[0].minimum + settings[0].maximum) * 0.5f
+                    ? 1f
+                    : 0f;
+            }
+            return parameterPosition;
+        }
+
+        private void UpdateDirectionalStep(
+            HandOperationState hand,
+            HandOperationState otherHand,
+            Transform controllerAnchor,
+            float triggerValue,
+            float gripValue)
+        {
+            if (triggerValue <= TriggerReleaseThreshold &&
+                gripValue <= OperationGripReleaseThreshold)
+            {
+                hand.ResetChordEngaged = false;
+            }
+
+            if (hand.ContactButton != null || hand.BeamButton != null)
+            {
+                hand.PendingStepDirection = 0;
+                hand.TriggerEngaged = triggerValue > TriggerReleaseThreshold;
+                hand.GripEngaged = gripValue > OperationGripReleaseThreshold;
+                return;
+            }
+
+            var triggerDown = triggerValue >= TriggerPressThreshold;
+            var gripDown = gripValue >= OperationGripPressThreshold;
+            if (triggerDown && gripDown &&
+                hand.GripInteraction == null &&
+                !hand.ResetChordEngaged &&
+                TryResetSoundModuleValue(hand, otherHand, controllerAnchor))
+            {
+                hand.ResetChordEngaged = true;
+            }
+            if ((triggerValue > TriggerReleaseThreshold && gripDown) ||
+                (gripValue > OperationGripReleaseThreshold && triggerDown) ||
+                hand.GripInteraction != null)
+            {
+                hand.PendingStepDirection = 0;
+                hand.TriggerEngaged = true;
+                hand.GripEngaged = true;
+                return;
+            }
+
+            if (hand.PendingStepDirection != 0)
+            {
+                var released = hand.PendingStepDirection > 0
+                    ? triggerValue <= TriggerReleaseThreshold
+                    : gripValue <= OperationGripReleaseThreshold;
+                if (released || Time.unscaledTime >= hand.PendingStepDeadline)
+                {
+                    TryApplyDirectionalStep(
+                        hand,
+                        otherHand,
+                        controllerAnchor,
+                        hand.PendingStepDirection);
+                    hand.PendingStepDirection = 0;
+                }
+            }
+
+            if (triggerValue <= TriggerReleaseThreshold)
+                hand.TriggerEngaged = false;
+            if (gripValue <= OperationGripReleaseThreshold)
+                hand.GripEngaged = false;
+
+            if (triggerDown && !hand.TriggerEngaged && !gripDown)
+            {
+                hand.TriggerEngaged = true;
+                hand.PendingStepDirection = 1;
+                hand.PendingStepDeadline =
+                    Time.unscaledTime + OperationChordWindowSeconds;
+            }
+            else if (gripDown && !hand.GripEngaged && !triggerDown)
+            {
+                hand.GripEngaged = true;
+                hand.PendingStepDirection = -1;
+                hand.PendingStepDeadline =
+                    Time.unscaledTime + OperationChordWindowSeconds;
+            }
+        }
+
+        private bool TryResetSoundModuleValue(
+            HandOperationState hand,
+            HandOperationState otherHand,
+            Transform controllerAnchor)
+        {
+            if (!TryResolveOperationInteraction(
+                    controllerAnchor,
+                    OperationResolveMode.Any,
+                    out var interaction,
+                    out var placement,
+                    out var reach) ||
+                !MockInstrumentCatalog.IsSoundModule(
+                    GetPlacementKind(placement)) ||
+                IsInteractionHeldByOtherHand(interaction, otherHand))
+            {
+                return false;
+            }
+
+            var kind = GetPlacementKind(placement);
+            interaction.SetNormalizedValue(
+                DefaultNormalizedValue(kind, placement),
+                InstrumentValueChangeOrigin.UserInteraction);
             SaveInteractionState(interaction);
             PulseHaptics(hand.Controller);
+            operationStepNoticeUntil = Time.unscaledTime + 0.5f;
+            SetStatus(
+                $"{hand.Label} {reach.ToString().ToUpperInvariant()} " +
+                $"TRIGGER + GRIP RESET | " +
+                $"{MockInstrumentCatalog.GetDisplayName(kind)}\n" +
+                FormatOperationState(interaction),
+                Color.green);
+            return true;
+        }
+
+        private void TryApplyDirectionalStep(
+            HandOperationState hand,
+            HandOperationState otherHand,
+            Transform controllerAnchor,
+            int direction)
+        {
+            if (!TryResolveOperationInteraction(
+                    controllerAnchor,
+                    OperationResolveMode.DirectionalStep,
+                    out var interaction,
+                    out var placement,
+                    out var reach) ||
+                IsInteractionHeldByOtherHand(interaction, otherHand))
+            {
+                return;
+            }
+
+            interaction.Step(direction);
+            SaveInteractionState(interaction);
+            PulseHaptics(hand.Controller);
+            operationStepNoticeUntil = Time.unscaledTime + 0.5f;
             var kind = GetPlacementKind(placement);
             SetStatus(
-                $"{hand.Label} {reach.ToString().ToUpperInvariant()} TRIGGER | " +
+                $"{hand.Label} {reach.ToString().ToUpperInvariant()} " +
+                (direction > 0 ? "TRIGGER + | " : "GRIP - | ") +
                 $"{MockInstrumentCatalog.GetDisplayName(kind)}\n" +
                 FormatOperationState(interaction),
                 Color.green);
@@ -1858,28 +2676,36 @@ namespace MatsuMotoMeterAR.Placement
             HandOperationState hand,
             HandOperationState otherHand,
             Transform controllerAnchor,
+            float triggerValue,
             float gripValue)
         {
             if (hand.GripInteraction != null)
             {
-                if (gripValue <= OperationGripReleaseThreshold ||
+                if (triggerValue <= TriggerReleaseThreshold ||
+                    gripValue <= OperationGripReleaseThreshold ||
                     controllerAnchor == null ||
                     hand.GripPlacement?.Root == null)
                 {
                     ReleaseGripInteraction(hand);
-                    hand.GripEngaged = false;
                     return;
                 }
 
                 var kind = GetPlacementKind(hand.GripPlacement);
                 float normalizedValue;
-                if (kind == MockInstrumentKind.ThrottleLever ||
+                if (hand.GripInteraction.Motion.Kind ==
+                        MockInstrumentMotion.MotionKind.Rotate ||
+                    kind == MockInstrumentKind.ThrottleLever ||
                     kind == MockInstrumentKind.Lever)
                 {
                     var rotationAxis =
-                        hand.GripPlacement.Root.transform.right;
+                        hand.GripInteraction.Motion.Kind ==
+                            MockInstrumentMotion.MotionKind.Rotate
+                            ? hand.GripPlacement.Root.transform.forward
+                            : hand.GripPlacement.Root.transform.right;
                     var pivot =
-                        hand.GripInteraction.Motion.MovingPart.position;
+                        hand.GripInteraction.Motion.MovingPart != null
+                            ? hand.GripInteraction.Motion.MovingPart.position
+                            : hand.GripPlacement.Root.transform.position;
                     var currentDirection = Vector3.ProjectOnPlane(
                         controllerAnchor.position - pivot,
                         rotationAxis);
@@ -1890,7 +2716,10 @@ namespace MatsuMotoMeterAR.Placement
                             rotationAxis)
                         : 0f;
                     var maximumAngle =
-                        kind == MockInstrumentKind.ThrottleLever
+                        hand.GripInteraction.Motion.Kind ==
+                            MockInstrumentMotion.MotionKind.Rotate
+                            ? RotaryGripTravelDegrees * 0.5f
+                        : kind == MockInstrumentKind.ThrottleLever
                             ? InstrumentGreyboxSpecification
                                 .ThrottleMaximumAngleDegrees
                             : InstrumentGreyboxSpecification
@@ -1920,23 +2749,20 @@ namespace MatsuMotoMeterAR.Placement
                     PulseHaptics(hand.Controller);
                 }
                 SetStatus(
-                    $"{hand.Label} GRIP + MOTION | " +
+                    $"{hand.Label} TRIGGER + GRIP + CONTACT | " +
                     $"{MockInstrumentCatalog.GetDisplayName(kind)}\n" +
                     FormatOperationState(hand.GripInteraction),
                     Color.green);
                 return;
             }
 
-            if (gripValue < OperationGripPressThreshold ||
-                hand.GripEngaged ||
+            if (triggerValue < TriggerPressThreshold ||
+                gripValue < OperationGripPressThreshold ||
                 controllerAnchor == null)
             {
-                if (gripValue <= OperationGripReleaseThreshold)
-                    hand.GripEngaged = false;
                 return;
             }
 
-            hand.GripEngaged = true;
             if (!TryResolveOperationInteraction(
                     controllerAnchor,
                     OperationResolveMode.GripMotion,
@@ -1950,10 +2776,16 @@ namespace MatsuMotoMeterAR.Placement
             }
 
             hand.GripInteraction = interaction;
+            hand.PendingStepDirection = 0;
             hand.GripPlacement = placement;
             hand.GripStartPosition = controllerAnchor.position;
-            var captureAxis = placement.Root.transform.right;
-            var capturePivot = interaction.Motion.MovingPart.position;
+            var captureAxis = interaction.Motion.Kind ==
+                              MockInstrumentMotion.MotionKind.Rotate
+                ? placement.Root.transform.forward
+                : placement.Root.transform.right;
+            var capturePivot = interaction.Motion.MovingPart != null
+                ? interaction.Motion.MovingPart.position
+                : placement.Root.transform.position;
             var startDirection = Vector3.ProjectOnPlane(
                 controllerAnchor.position - capturePivot,
                 captureAxis);
@@ -1965,17 +2797,21 @@ namespace MatsuMotoMeterAR.Placement
             PulseHaptics(hand.Controller);
             var displayName = MockInstrumentCatalog.GetDisplayName(
                 GetPlacementKind(placement));
-            SetStatus(
-                $"{hand.Label} GRIP CAPTURED | " +
-                $"{displayName}\n" +
-                (GetPlacementKind(placement) switch
+            var moveInstruction = interaction.Motion.Kind ==
+                                  MockInstrumentMotion.MotionKind.Rotate
+                ? "ROTATE AROUND KNOB"
+                : GetPlacementKind(placement) switch
                 {
                     MockInstrumentKind.ThrottleLever =>
                         "MOVE THROUGH THROTTLE ARC",
                     MockInstrumentKind.Lever =>
                         "MOVE THROUGH LEVER ARC",
                     _ => "MOVE UP / DOWN"
-                }),
+                };
+            SetStatus(
+                $"{hand.Label} TRIGGER + GRIP CONTACT | " +
+                $"{displayName}\n" +
+                moveInstruction,
                 Color.green);
         }
 
@@ -1993,22 +2829,22 @@ namespace MatsuMotoMeterAR.Placement
             MockInstrumentInteraction interaction,
             HandOperationState otherHand)
         {
-            return ReferenceEquals(
-                       interaction,
-                       otherHand.TriggerInteraction) ||
-                   ReferenceEquals(
-                       interaction,
-                       otherHand.GripInteraction);
+            return ReferenceEquals(interaction, otherHand.GripInteraction) ||
+                   ReferenceEquals(interaction, otherHand.StickInteraction) ||
+                   ReferenceEquals(interaction, otherHand.ContactButton) ||
+                   ReferenceEquals(interaction, otherHand.BeamButton);
         }
 
         private bool HasActiveOperationInteraction()
         {
-            return rightOperationHand.TriggerInteraction != null ||
-                   leftOperationHand.TriggerInteraction != null ||
-                   rightOperationHand.GripInteraction != null ||
+            return rightOperationHand.GripInteraction != null ||
                    leftOperationHand.GripInteraction != null ||
+                   rightOperationHand.StickInteraction != null ||
+                   leftOperationHand.StickInteraction != null ||
                    rightOperationHand.ContactButton != null ||
-                   leftOperationHand.ContactButton != null;
+                   leftOperationHand.ContactButton != null ||
+                   rightOperationHand.BeamButton != null ||
+                   leftOperationHand.BeamButton != null;
         }
 
         private void UpdateOperationHoverStatus()
@@ -2040,7 +2876,8 @@ namespace MatsuMotoMeterAR.Placement
 
             var kind = GetPlacementKind(placement);
             string instruction;
-            if (MockInstrumentCatalog.IsReadOnlyMeter(kind))
+            if (MockInstrumentCatalog.IsReadOnlyMeter(kind) ||
+                kind == MockInstrumentKind.TrendMonitor)
             {
                 instruction = "READ ONLY | AMBIENT MOTION";
             }
@@ -2048,19 +2885,21 @@ namespace MatsuMotoMeterAR.Placement
             {
                 instruction = reach == InstrumentInteractionHitTest.Reach.Direct
                     ? "CONTACT PRESS"
-                    : "TOUCH TO PRESS";
+                    : "TRIGGER: BEAM PRESS | CONTACT: PRESS";
             }
-            else if (MockInstrumentCatalog.SupportsGripMotion(kind))
+            else if (MockInstrumentCatalog.IsSoundModule(kind))
+            {
+                instruction = "TRIGGER + | GRIP - | BOTH: RESET";
+            }
+            else if (MockInstrumentCatalog.SupportsDirectionalStep(kind))
             {
                 instruction = reach == InstrumentInteractionHitTest.Reach.Direct
-                    ? "GRIP + MOVE OR TRIGGER"
-                    : "TRIGGER | TOUCH + GRIP TO MOVE";
+                    ? "TRIGGER + | GRIP - | BOTH + MOVE"
+                    : "TRIGGER + | GRIP - | TOUCH + BOTH TO MOVE";
             }
             else
             {
-                instruction = interaction.DetentCount > 0
-                    ? "TRIGGER: NEXT STATE"
-                    : "TRIGGER";
+                instruction = "READ ONLY";
             }
 
             SetStatus(
@@ -2102,6 +2941,13 @@ namespace MatsuMotoMeterAR.Placement
             ReleaseActiveInteraction();
             ClearGroupMoveSelection();
             ClearConnectSelection();
+            connectionEditing = false;
+            editMoveChordActive = false;
+            editPlacementModifierChordActive = false;
+            pendingLeftSelection = false;
+            pendingMoveUndo = false;
+            pendingRightCancel = false;
+            editMoveCancelledUntilChordRelease = false;
             interactionMode = AppInteractionModePolicy.Toggle(interactionMode);
             rightOperationHand.TriggerEngaged =
                 rightTriggerValue > TriggerReleaseThreshold;
@@ -2133,24 +2979,22 @@ namespace MatsuMotoMeterAR.Placement
             if (AppInteractionModePolicy.AllowsEditing(interactionMode))
             {
                 SetStatus(
-                    roomPrefix + "EDIT MODE | X: CONNECT\n" +
-                    "TRIGGER SELECT | A PLACE/MOVE | B DELETE/CLEAR\n" +
-                    "L-STICK: ALIGN/DISTRIBUTE | R-STICK: ROTATE\n" +
-                    "L-GRIP: AUTO | +TRIGGER: GRID\n" +
-                    "HOLD L-STICK 2s TO EXIT",
-                    new Color(1f, 0.75f, 0.15f));
-                return;
-            }
-
-            if (AppInteractionModePolicy.AllowsConnecting(interactionMode))
-            {
-                SetStatus(
-                    roomPrefix + "CONNECT MODE | X: OPERATE\n" +
-                    "INPUT TRIGGER -> OUTPUT TRIGGER\n" +
-                    "L STICK L/R: TRANSFORM | A CONFIRM | Y PARAM\n" +
-                    "ONE OBJECT: A NEXT CONNECTION\n" +
-                    "L STICK PRESS: APPLY | B DELETE/CANCEL",
-                    ConnectBeamColor);
+                    connectionEditing
+                        ? roomPrefix + "EDIT: CONNECTIONS | X: OPERATE\n" +
+                          "R-TRIGGER: SELECT ENDPOINTS | A: CONFIRM\n" +
+                          "L-TRIGGER: PLACEMENT | Y: PARAMETERS\n" +
+                          "R-GRIP: CANCEL | B: DELETE/CANCEL\n" +
+                          "L-STICK PRESS: APPLY"
+                        : roomPrefix + "EDIT: PLACEMENT | X: OPERATE\n" +
+                          "L-TRIGGER: SELECT | A: PLACE\n" +
+                          "L-TRIGGER+GRIP: MOVE; RELEASE: SAVE\n" +
+                          "CHORD+L-STICK: UP AUTO | DOWN GRID\n" +
+                          "L-GRIP: CANCEL/UNDO | R-GRIP: CANCEL\n" +
+                          "R-TRIGGER: CONNECT\n" +
+                          "HOLD L-STICK 2s TO EXIT",
+                    connectionEditing
+                        ? ConnectBeamColor
+                        : new Color(1f, 0.75f, 0.15f));
                 return;
             }
 
@@ -2158,14 +3002,15 @@ namespace MatsuMotoMeterAR.Placement
                 modeSwitchLocked
                     ? roomPrefix +
                       "OPERATION MODE | MODE SWITCH LOCKED\n" +
-                      "X DISABLED | HOLD L-STICK 2s TO UNLOCK\n" +
-                      "BOTH HANDS: AIM + TRIGGER\n" +
-                      "LEVER/SLIDER: TOUCH + GRIP + MOVE"
+                      $"A: CONNECTIONS {(operationConnectionVisualsVisible ? "ON" : "OFF")} | B: THEME\n" +
+                      "X: SE | Y: AUDIO | HOLD Y: AUDIO MENU\n" +
+                      "STICK Y: ADJUST | X: MIN/MAX | CLICK: RESET\n" +
+                      "HOLD L-STICK 2s: UNLOCK"
                     : roomPrefix + "OPERATION MODE | X: EDIT\n" +
-                      "HOLD L-STICK 2s TO LOCK MODE SWITCH\n" +
-                      "BOTH HANDS: AIM + TRIGGER\n" +
-                      "LEVER/SLIDER: TOUCH + GRIP + MOVE\n" +
-                      "BUTTON: TOUCH | METERS: READ ONLY",
+                      "B: NEXT THEME | HOLD L-STICK 2s: LOCK\n" +
+                      "STICK Y: ADJUST | X: MIN/MAX | CLICK: RESET\n" +
+                      "TRIGGER + | GRIP - | BOTH + CONTACT: MOVE\n" +
+                      "BUTTON/TOGGLE: TOUCH | METERS: READ ONLY",
                 modeSwitchLocked
                     ? new Color(1f, 0.65f, 0.1f)
                     : new Color(0.2f, 0.9f, 1f));
@@ -2262,16 +3107,11 @@ namespace MatsuMotoMeterAR.Placement
                     PulseHaptics();
                     UpdateConnectStatus();
                 }
-                else if (GetPlacementKind(connectSource) ==
-                         MockInstrumentKind.AudioLfo)
-                {
-                    pendingLfoAudioRate = !pendingLfoAudioRate;
-                    PulseHaptics();
-                    UpdateConnectStatus();
-                }
                 else if (ModularAudioPatchPolicy.GetSelectableOutputCount(
                              GetPlacementKind(connectSource)) > 1 &&
-                         pendingObservableAudioSource)
+                         (!ModularAudioPatchPolicy.SupportsSignalRole(
+                              GetPlacementKind(connectSource)) ||
+                          pendingObservableAudioSource))
                 {
                     pendingObservableOutputIndex =
                         ModularAudioPatchPolicy.CycleSelectableOutput(
@@ -2645,6 +3485,8 @@ namespace MatsuMotoMeterAR.Placement
 
             audioParameterEditPlacement = connectSource;
             audioParameterOriginal = connectSource.Record.Clone();
+            ApplyAudioParameters(connectSource);
+            audioParameterEntryIndex = 0;
             audioParameterStepIndex =
                 connectSource.AudioModule?.Node is
                     ModularSequencerNode sequencer
@@ -2653,6 +3495,7 @@ namespace MatsuMotoMeterAR.Placement
                         0,
                         sequencer.StepCount - 1)
                     : 0;
+            audioParameterSettingField = AdjustableParameterField.Value;
             audioParameterFieldAxisEngaged = false;
             audioParameterValueAxisEngaged = false;
             connectStatusHoldUntil = 0f;
@@ -2667,7 +3510,7 @@ namespace MatsuMotoMeterAR.Placement
             bool cancelPressed)
         {
             var placement = audioParameterEditPlacement;
-            if (placement?.Record == null || placement.AudioModule == null)
+            if (placement?.Record == null)
             {
                 CancelAudioParameterEdit(true);
                 SetConnectNotice("MODULE NO LONGER EXISTS", Color.red);
@@ -2675,7 +3518,9 @@ namespace MatsuMotoMeterAR.Placement
             }
 
             var kind = GetPlacementKind(placement);
-            var fieldMagnitude = Mathf.Abs(fieldAxis.x);
+            var fieldMagnitude = Mathf.Max(
+                Mathf.Abs(fieldAxis.x),
+                Mathf.Abs(fieldAxis.y));
             if (fieldMagnitude <= SelectionReleaseThreshold)
             {
                 audioParameterFieldAxisEngaged = false;
@@ -2684,34 +3529,44 @@ namespace MatsuMotoMeterAR.Placement
                      fieldMagnitude >= SelectionThreshold)
             {
                 audioParameterFieldAxisEngaged = true;
-                var direction = fieldAxis.x < 0f ? -1 : 1;
-                switch (kind)
+                var horizontal = Mathf.Abs(fieldAxis.x) >=
+                                 Mathf.Abs(fieldAxis.y);
+                var direction = horizontal
+                    ? fieldAxis.x < 0f ? -1 : 1
+                    : fieldAxis.y < 0f ? -1 : 1;
+                var descriptors = AdjustableParameterPolicy.Descriptors(kind);
+                if (horizontal)
                 {
-                    case MockInstrumentKind.AudioOscillator:
-                    case MockInstrumentKind.AudioLfo:
-                        placement.Record.audioWaveform =
-                            ModularAudioParameterPolicy.CycleWaveform(
-                                placement.Record.audioWaveform,
-                                direction);
-                        break;
-                    case MockInstrumentKind.AudioNoise:
-                        placement.Record.audioNoiseColor =
-                            ModularAudioParameterPolicy.CycleNoiseColor(
-                                placement.Record.audioNoiseColor,
-                                direction);
-                        break;
-                    case MockInstrumentKind.AudioSequencer:
-                        var stepCount =
-                            (placement.AudioModule.Node as
-                                ModularSequencerNode)?.StepCount ?? 8;
-                        audioParameterStepIndex =
-                            ModularAudioParameterPolicy.CycleStepIndex(
-                                audioParameterStepIndex,
-                                stepCount,
-                                direction);
-                        break;
+                    var entryCount = descriptors.Count +
+                                     SpecialParameterEntryCount(kind);
+                    audioParameterEntryIndex = entryCount > 0
+                        ? (audioParameterEntryIndex +
+                           (direction < 0 ? entryCount - 1 : 1)) %
+                          entryCount
+                        : 0;
                 }
-                ApplyAudioParameters(placement);
+                else if (audioParameterEntryIndex < descriptors.Count)
+                {
+                    var descriptor =
+                        descriptors[audioParameterEntryIndex];
+                    audioParameterSettingField = descriptor.Id ==
+                        AdjustableParameterPolicy.SequencerPlaybackModeId
+                            ? AdjustableParameterField.Value
+                            : AdjustableParameterPolicy.CycleField(
+                                audioParameterSettingField,
+                                direction);
+                }
+                else if (kind == MockInstrumentKind.AudioSequencer)
+                {
+                    var stepCount =
+                        (placement.AudioModule?.Node as
+                            ModularSequencerNode)?.StepCount ?? 8;
+                    audioParameterStepIndex =
+                        ModularAudioParameterPolicy.CycleStepIndex(
+                            audioParameterStepIndex,
+                            stepCount,
+                            direction);
+                }
                 PulseHaptics();
             }
 
@@ -2721,18 +3576,62 @@ namespace MatsuMotoMeterAR.Placement
                 audioParameterValueAxisEngaged = false;
             }
             else if (!audioParameterValueAxisEngaged &&
-                     valueMagnitude >= SelectionThreshold &&
-                     kind == MockInstrumentKind.AudioSequencer)
+                     valueMagnitude >= SelectionThreshold)
             {
                 audioParameterValueAxisEngaged = true;
-                EnsureSequencerParameterArray(placement.Record);
-                var previous = placement.Record.audioSequencerSteps[
-                    audioParameterStepIndex];
-                placement.Record.audioSequencerSteps[
-                    audioParameterStepIndex] =
-                    ModularAudioParameterPolicy.AdjustStepValue(
-                        previous,
-                        valueAxis.y < 0f ? -1 : 1);
+                var direction = valueAxis.y < 0f ? -1 : 1;
+                var descriptors = AdjustableParameterPolicy.Descriptors(kind);
+                if (audioParameterEntryIndex < descriptors.Count)
+                {
+                    placement.Record.parameterSettings =
+                        AdjustableParameterPolicy.NormalizeSettings(
+                            kind,
+                            placement.Record.parameterSettings,
+                            placement.Record.normalizedValue);
+                    var setting = placement.Record.parameterSettings[
+                        audioParameterEntryIndex];
+                    var descriptor = descriptors[audioParameterEntryIndex];
+                    var editsSequenceValue = descriptor.Id ==
+                                             AdjustableParameterPolicy
+                                                 .SequencerStepValueId;
+                    if (editsSequenceValue &&
+                        audioParameterSettingField ==
+                        AdjustableParameterField.Value)
+                    {
+                        EnsureSequencerParameterArray(placement.Record);
+                        setting.value = placement.Record.audioSequencerSteps[
+                            audioParameterStepIndex];
+                    }
+                    AdjustableParameterPolicy.Adjust(
+                        setting,
+                        descriptor,
+                        audioParameterSettingField,
+                        direction);
+                    if (editsSequenceValue)
+                    {
+                        if (audioParameterSettingField ==
+                            AdjustableParameterField.Value)
+                        {
+                            placement.Record.audioSequencerSteps[
+                                audioParameterStepIndex] = setting.value;
+                        }
+                        else
+                        {
+                            placement.Record.audioSequencerSteps =
+                                ModularAudioParameterPolicy
+                                    .NormalizeSequencerSteps(
+                                        placement.Record.audioSequencerSteps,
+                                        setting);
+                        }
+                    }
+                }
+                else
+                {
+                    AdjustSpecialAudioParameter(
+                        placement,
+                        kind,
+                        direction);
+                }
                 ApplyAudioParameters(placement);
                 PulseHaptics();
             }
@@ -2797,7 +3696,9 @@ namespace MatsuMotoMeterAR.Placement
         {
             audioParameterEditPlacement = null;
             audioParameterOriginal = null;
+            audioParameterEntryIndex = 0;
             audioParameterStepIndex = 0;
+            audioParameterSettingField = AdjustableParameterField.Value;
             audioParameterFieldAxisEngaged = false;
             audioParameterValueAxisEngaged = false;
             connectStatusHoldUntil = 0f;
@@ -2809,44 +3710,189 @@ namespace MatsuMotoMeterAR.Placement
             if (placement?.Record == null)
                 return;
             var kind = GetPlacementKind(placement);
+            placement.Record.parameterSettings =
+                AdjustableParameterPolicy.NormalizeSettings(
+                    kind,
+                    placement.Record.parameterSettings,
+                    placement.Record.normalizedValue);
+            var descriptors = AdjustableParameterPolicy.Descriptors(kind);
+            var entryCount = descriptors.Count +
+                             SpecialParameterEntryCount(kind);
+            audioParameterEntryIndex = Mathf.Clamp(
+                audioParameterEntryIndex,
+                0,
+                Mathf.Max(0, entryCount - 1));
             string parameter;
+            if (audioParameterEntryIndex < descriptors.Count)
+            {
+                var descriptor = descriptors[audioParameterEntryIndex];
+                var setting = placement.Record.parameterSettings[
+                    audioParameterEntryIndex];
+                if (descriptor.Id ==
+                    AdjustableParameterPolicy.SequencerPlaybackModeId)
+                {
+                    audioParameterSettingField =
+                        AdjustableParameterField.Value;
+                }
+                if (descriptor.Id ==
+                    AdjustableParameterPolicy.SequencerStepValueId)
+                {
+                    EnsureSequencerParameterArray(placement.Record);
+                    setting.value = placement.Record.audioSequencerSteps[
+                        audioParameterStepIndex];
+                }
+                var selectedValue = audioParameterSettingField switch
+                {
+                    AdjustableParameterField.Minimum => setting.minimum,
+                    AdjustableParameterField.Maximum => setting.maximum,
+                    AdjustableParameterField.StepCount => setting.stepCount,
+                    _ => setting.value
+                };
+                var formatted = descriptor.Id ==
+                                AdjustableParameterPolicy
+                                    .SequencerPlaybackModeId
+                    ? setting.value >= 0.5f
+                        ? "STEP TRIGGER"
+                        : "CLOCK"
+                    : audioParameterSettingField ==
+                      AdjustableParameterField.StepCount
+                    ? !descriptor.StepCountEditable
+                        ? $"FIXED {setting.stepCount}"
+                        : setting.stepCount == 0
+                            ? "CONTINUOUS"
+                            : setting.stepCount.ToString()
+                    : FormatParameterValue(selectedValue, descriptor.Unit);
+                parameter = descriptor.Id ==
+                            AdjustableParameterPolicy.SequencerPlaybackModeId
+                    ? $"{descriptor.Label} " +
+                      $"[{audioParameterEntryIndex + 1}/{entryCount}]\n" +
+                      $"> VALUE: {formatted}\n" +
+                      "CLOCK: INTERNAL/EXTERNAL CLOCK | " +
+                      "STEP TRIGGER: 0->1 ADVANCES"
+                    : $"{descriptor.Label} " +
+                      $"[{audioParameterEntryIndex + 1}/{entryCount}]\n" +
+                      $"> {audioParameterSettingField.ToString().ToUpperInvariant()}: {formatted}\n" +
+                      $"RANGE {FormatParameterValue(setting.minimum, descriptor.Unit)} .. " +
+                      $"{FormatParameterValue(setting.maximum, descriptor.Unit)} | " +
+                      $"STEPS {(!descriptor.StepCountEditable ? $"FIXED {setting.stepCount}" : setting.stepCount == 0 ? "CONT" : setting.stepCount.ToString())}";
+            }
+            else
+            {
+                switch (kind)
+                {
+                    case MockInstrumentKind.AudioOscillator:
+                    case MockInstrumentKind.AudioLfo:
+                        parameter =
+                            $"WAVEFORM [{entryCount}/{entryCount}]: " +
+                            $"{((ModularOscillatorWaveform)ModularAudioParameterPolicy.NormalizeWaveform(placement.Record.audioWaveform)).ToString().ToUpperInvariant()}";
+                        break;
+                    case MockInstrumentKind.AudioNoise:
+                        parameter =
+                            $"COLOR [{entryCount}/{entryCount}]: " +
+                            $"{((ModularNoiseColor)ModularAudioParameterPolicy.NormalizeNoiseColor(placement.Record.audioNoiseColor)).ToString().ToUpperInvariant()}";
+                        break;
+                    case MockInstrumentKind.AudioSequencer:
+                        EnsureSequencerParameterArray(placement.Record);
+                        var sequencer = placement.AudioModule?.Node as
+                            ModularSequencerNode;
+                        var stepCount = sequencer?.StepCount ?? 8;
+                        audioParameterStepIndex = Mathf.Clamp(
+                            audioParameterStepIndex,
+                            0,
+                            stepCount - 1);
+                        var stepValue = placement.Record.audioSequencerSteps[
+                            audioParameterStepIndex];
+                        parameter =
+                            $"SEQUENCE [{entryCount}/{entryCount}] | " +
+                            $"STEP {audioParameterStepIndex + 1}/{stepCount}: " +
+                            $"{stepValue:+0.00;-0.00;0.00}";
+                        break;
+                    default:
+                        parameter = "NO EDITABLE PARAMETER";
+                        break;
+                }
+            }
+            SetStatus(
+                $"PARAMETER EDIT: {MockInstrumentCatalog.GetDisplayName(kind)}\n" +
+                parameter +
+                "\nL STICK L/R: PARAM | U/D: FIELD/STEP" +
+                "\nR STICK U/D: ADJUST | A: APPLY | B: CANCEL",
+                ModuleSourceColor(kind));
+        }
+
+        private static int SpecialParameterEntryCount(
+            MockInstrumentKind kind)
+        {
+            return kind == MockInstrumentKind.AudioOscillator ||
+                   kind == MockInstrumentKind.AudioNoise ||
+                   kind == MockInstrumentKind.AudioLfo ||
+                   kind == MockInstrumentKind.AudioSequencer
+                ? 1
+                : 0;
+        }
+
+        private void AdjustSpecialAudioParameter(
+            RuntimePlacement placement,
+            MockInstrumentKind kind,
+            int direction)
+        {
             switch (kind)
             {
                 case MockInstrumentKind.AudioOscillator:
                 case MockInstrumentKind.AudioLfo:
-                    parameter =
-                        $"WAVEFORM: {((ModularOscillatorWaveform)ModularAudioParameterPolicy.NormalizeWaveform(placement.Record.audioWaveform)).ToString().ToUpperInvariant()}\n" +
-                        "L STICK L/R: WAVEFORM";
+                    placement.Record.audioWaveform =
+                        ModularAudioParameterPolicy.CycleWaveform(
+                            placement.Record.audioWaveform,
+                            direction);
                     break;
                 case MockInstrumentKind.AudioNoise:
-                    parameter =
-                        $"COLOR: {((ModularNoiseColor)ModularAudioParameterPolicy.NormalizeNoiseColor(placement.Record.audioNoiseColor)).ToString().ToUpperInvariant()}\n" +
-                        "L STICK L/R: COLOR";
+                    placement.Record.audioNoiseColor =
+                        ModularAudioParameterPolicy.CycleNoiseColor(
+                            placement.Record.audioNoiseColor,
+                            direction);
                     break;
                 case MockInstrumentKind.AudioSequencer:
                     EnsureSequencerParameterArray(placement.Record);
-                    var sequencer = placement.AudioModule?.Node as
-                        ModularSequencerNode;
-                    var stepCount = sequencer?.StepCount ?? 8;
-                    audioParameterStepIndex = Mathf.Clamp(
-                        audioParameterStepIndex,
-                        0,
-                        stepCount - 1);
-                    var stepValue = placement.Record.audioSequencerSteps[
+                    var stepRange = AdjustableParameterPolicy.Find(
+                        placement.Record.parameterSettings,
+                        AdjustableParameterPolicy.SequencerStepValueId);
+                    if (stepRange == null)
+                    {
+                        placement.Record.audioSequencerSteps[
+                            audioParameterStepIndex] =
+                            ModularAudioParameterPolicy.AdjustStepValue(
+                                placement.Record.audioSequencerSteps[
+                                    audioParameterStepIndex],
+                                direction);
+                        break;
+                    }
+                    stepRange.value = placement.Record.audioSequencerSteps[
                         audioParameterStepIndex];
-                    parameter =
-                        $"STEP {audioParameterStepIndex + 1}/{stepCount}: " +
-                        $"{stepValue:+0.00;-0.00;0.00}\n" +
-                        "L STICK L/R: STEP | R STICK U/D: VALUE";
-                    break;
-                default:
-                    parameter = "NO EDITABLE PARAMETER";
+                    var stepDescriptor = AdjustableParameterPolicy.Descriptors(
+                        kind)[2];
+                    AdjustableParameterPolicy.Adjust(
+                        stepRange,
+                        stepDescriptor,
+                        AdjustableParameterField.Value,
+                        direction);
+                    placement.Record.audioSequencerSteps[
+                        audioParameterStepIndex] = stepRange.value;
                     break;
             }
-            SetStatus(
-                $"MODULE EDIT: {MockInstrumentCatalog.GetDisplayName(kind)}\n" +
-                parameter + "\nA / L STICK PRESS: APPLY | B: CANCEL",
-                ModuleSourceColor(kind));
+        }
+
+        private static string FormatParameterValue(
+            float value,
+            string unit)
+        {
+            var format = Mathf.Abs(value) >= 100f
+                ? "0"
+                : Mathf.Abs(value) >= 10f
+                    ? "0.0"
+                    : "0.000";
+            return string.IsNullOrEmpty(unit)
+                ? value.ToString(format)
+                : $"{value.ToString(format)} {unit}";
         }
 
         private static void EnsureSequencerParameterArray(
@@ -2860,7 +3906,10 @@ namespace MatsuMotoMeterAR.Placement
             }
             record.audioSequencerSteps =
                 ModularAudioParameterPolicy.NormalizeSequencerSteps(
-                    record.audioSequencerSteps);
+                    record.audioSequencerSteps,
+                    AdjustableParameterPolicy.Find(
+                        record.parameterSettings,
+                        AdjustableParameterPolicy.SequencerStepValueId));
         }
 
         private static void CopyAudioParameterState(
@@ -2870,18 +3919,48 @@ namespace MatsuMotoMeterAR.Placement
             destination.audioWaveform = source.audioWaveform;
             destination.audioNoiseColor = source.audioNoiseColor;
             destination.audioSequencerSteps =
-                ModularAudioParameterPolicy.NormalizeSequencerSteps(
-                    source.audioSequencerSteps);
+                source.audioSequencerSteps != null
+                    ? (float[])source.audioSequencerSteps.Clone()
+                    : ModularAudioParameterPolicy
+                        .CreateDefaultSequencerSteps();
+            destination.parameterSettings = source.parameterSettings != null
+                ? source.parameterSettings.ConvertAll(
+                    setting => setting?.Clone())
+                : new List<AdjustableParameterSetting>();
         }
 
         private static void ApplyAudioParameters(RuntimePlacement placement)
         {
-            if (placement?.Record == null || placement.AudioModule == null)
+            if (placement?.Record == null)
+                return;
+            var kind = GetPlacementKind(placement);
+            placement.Record.parameterSettings =
+                AdjustableParameterPolicy.NormalizeSettings(
+                    kind,
+                    placement.Record.parameterSettings,
+                    placement.Record.normalizedValue);
+            var descriptors = AdjustableParameterPolicy.Descriptors(kind);
+            if (descriptors.Count > 0 && placement.Interaction != null)
+            {
+                var primary = placement.Record.parameterSettings[0];
+                placement.Interaction.ConfigureParameterRange(primary);
+                if (MockInstrumentCatalog.GetCategory(kind) !=
+                    MockInstrumentCategory.AudioModules)
+                {
+                    placement.Interaction.SetOutputValue(
+                        primary.value,
+                        InstrumentValueChangeOrigin.Restore);
+                    placement.Record.normalizedValue =
+                        placement.Interaction.NormalizedValue;
+                }
+            }
+            if (placement.AudioModule == null)
                 return;
             placement.AudioModule.ApplyPersistentParameters(
                 placement.Record.audioWaveform,
                 placement.Record.audioNoiseColor,
-                placement.Record.audioSequencerSteps);
+                placement.Record.audioSequencerSteps,
+                placement.Record.parameterSettings);
         }
 
         private bool UpdateConnectTrigger(
@@ -2919,7 +3998,7 @@ namespace MatsuMotoMeterAR.Placement
             var kind = GetPlacementKind(placement);
             if (connectSource == null && connectTarget == null &&
                 ReferenceEquals(connectEditPlacement, placement) &&
-                ModularAudioPatchPolicy.GetSelectableOutputCount(kind) > 0)
+                ModularAudioPatchPolicy.SupportsSignalRole(kind))
             {
                 SelectConnectSource(placement, false, true);
                 return;
@@ -2929,8 +4008,7 @@ namespace MatsuMotoMeterAR.Placement
                 var targetKind = GetPlacementKind(connectTarget);
                 if (ReferenceEquals(connectTarget, placement))
                 {
-                    if (ModularAudioPatchPolicy.GetSelectableOutputCount(
-                            kind) > 0)
+                    if (ModularAudioPatchPolicy.SupportsSignalRole(kind))
                     {
                         SelectConnectSource(placement, false, true);
                         return;
@@ -2984,8 +4062,8 @@ namespace MatsuMotoMeterAR.Placement
                     UpdateConnectStatus();
                     return;
                 }
-                if (ModularAudioPatchPolicy.GetSelectableOutputCount(kind) >
-                    0 && InstrumentSignalPolicy.CanTarget(kind))
+                if (ModularAudioPatchPolicy.SupportsSignalRole(kind) &&
+                    InstrumentSignalPolicy.CanTarget(kind))
                 {
                     SelectConnectEditPlacement(placement);
                     return;
@@ -3012,6 +4090,18 @@ namespace MatsuMotoMeterAR.Placement
             }
 
             var sourceKind = GetPlacementKind(connectSource);
+            if (ReferenceEquals(connectSource, placement))
+            {
+                if (ModularAudioPatchPolicy.SupportsSignalRole(sourceKind))
+                {
+                    ToggleObservableSourceRole(sourceKind);
+                    return;
+                }
+                SetConnectNotice(
+                    "SOURCE AND TARGET MUST DIFFER",
+                    Color.yellow);
+                return;
+            }
             var canConnect = TryGetPendingModularRoute(
                                  sourceKind,
                                  kind,
@@ -3029,14 +4119,6 @@ namespace MatsuMotoMeterAR.Placement
                     Color.yellow);
                 return;
             }
-            if (ReferenceEquals(connectSource, placement))
-            {
-                SetConnectNotice(
-                    "SOURCE AND TARGET MUST DIFFER",
-                    Color.yellow);
-                return;
-            }
-
             selectedConnectionForRemoval = null;
             selectedAudioPatchForRemoval = null;
             connectTarget = placement;
@@ -3074,13 +4156,38 @@ namespace MatsuMotoMeterAR.Placement
             selectedConnectionForRemoval = null;
             selectedAudioPatchForRemoval = null;
             pendingObservableAudioSource = observableAudioSource;
-            pendingObservableOutputIndex = 0;
+            pendingObservableOutputIndex = observableAudioSource
+                ? connectTarget != null
+                    ? ModularAudioPatchPolicy.GetDefaultPatchOutputIndex(
+                        GetPlacementKind(placement),
+                        GetPlacementKind(connectTarget))
+                    : ModularAudioPatchPolicy.GetDefaultPatchOutputIndex(
+                        GetPlacementKind(placement))
+                : 0;
             connectSource = placement;
             connectSourceMarker = CreateConnectMarker(
                 placement,
                 "[Connect] Source",
                 ConnectSourceColor,
                 0.014f);
+            connectStatusHoldUntil = 0f;
+            PulseHaptics();
+            UpdateConnectStatus();
+        }
+
+        private void ToggleObservableSourceRole(MockInstrumentKind sourceKind)
+        {
+            pendingObservableAudioSource = !pendingObservableAudioSource;
+            pendingObservableOutputIndex = pendingObservableAudioSource
+                ? connectTarget != null
+                    ? ModularAudioPatchPolicy.GetDefaultPatchOutputIndex(
+                        sourceKind,
+                        GetPlacementKind(connectTarget))
+                    : ModularAudioPatchPolicy.GetDefaultPatchOutputIndex(
+                        sourceKind)
+                : 0;
+            selectedConnectionForRemoval = null;
+            selectedAudioPatchForRemoval = null;
             connectStatusHoldUntil = 0f;
             PulseHaptics();
             UpdateConnectStatus();
@@ -3346,54 +4453,32 @@ namespace MatsuMotoMeterAR.Placement
             }
 
             var placementId = selectedPlacement.Record.placementId;
-            var selectedKind = GetPlacementKind(selectedPlacement);
-            if (ModularAudioPatchPolicy.CanSource(selectedKind) ||
-                ModularAudioPatchPolicy.CanTarget(selectedKind))
-            {
-                SelectNextAudioPatchForRemoval(placementId);
-                return;
-            }
-            if (placementDocument?.connections == null)
-                return;
-            var next = SignalConnectionSelectionPolicy.SelectNext(
-                placementDocument.connections,
+            if (!MixedConnectionSelectionPolicy.TrySelectNext(
+                placementDocument?.connections,
+                placementDocument?.audioPatchConnections,
                 placementId,
-                selectedConnectionForRemoval?.connectionId);
-            if (next == null)
+                selectedConnectionForRemoval?.connectionId,
+                selectedAudioPatchForRemoval?.connectionId,
+                out var nextSignal,
+                out var nextAudioPatch))
             {
                 selectedConnectionForRemoval = null;
+                selectedAudioPatchForRemoval = null;
                 SetConnectNotice(
                     "SELECTED OBJECT HAS NO CONNECTION",
                     Color.yellow);
                 return;
             }
 
-            selectedConnectionForRemoval = next;
-            selectedConnectionPendingTransform =
-                (SignalTransformKind)next.transformKind;
-            selectedConnectionPendingSlot = next.targetInputSlot;
-            selectedConnectionPendingPriority = next.compositionPriority;
-            connectStatusHoldUntil = 0f;
-            PulseHaptics();
-            UpdateConnectStatus();
-        }
-
-        private void SelectNextAudioPatchForRemoval(string placementId)
-        {
-            var patches = placementDocument?.audioPatchConnections;
-            if (patches == null)
-                return;
-            selectedAudioPatchForRemoval =
-                ModularAudioPatchPolicy.SelectNext(
-                    patches,
-                    placementId,
-                    selectedAudioPatchForRemoval?.connectionId);
-            if (selectedAudioPatchForRemoval == null)
+            selectedConnectionForRemoval = nextSignal;
+            selectedAudioPatchForRemoval = nextAudioPatch;
+            if (nextSignal != null)
             {
-                SetConnectNotice(
-                    "SELECTED AUDIO MODULE HAS NO PATCH",
-                    Color.yellow);
-                return;
+                selectedConnectionPendingTransform =
+                    (SignalTransformKind)nextSignal.transformKind;
+                selectedConnectionPendingSlot = nextSignal.targetInputSlot;
+                selectedConnectionPendingPriority =
+                    nextSignal.compositionPriority;
             }
             connectStatusHoldUntil = 0f;
             PulseHaptics();
@@ -3539,7 +4624,9 @@ namespace MatsuMotoMeterAR.Placement
 
         private void UpdateConnectStatus()
         {
-            if (!AppInteractionModePolicy.AllowsConnecting(interactionMode))
+            if (!AppInteractionModePolicy.AllowsConnecting(
+                    interactionMode,
+                    connectionEditing))
                 return;
             if (Time.unscaledTime < connectStatusHoldUntil)
                 return;
@@ -3566,7 +4653,7 @@ namespace MatsuMotoMeterAR.Placement
                     $"{((ModularAudioPortDomain)patch.portDomain).ToString().ToUpperInvariant()} PATCH | " +
                     $"{audioSourceName} -> {audioTargetName}\n" +
                     $"{patch.sourcePortId} -> {patch.targetPortId}\n" +
-                    "A: NEXT PATCH | B: DELETE",
+                    "A: NEXT CONNECTION | B: DELETE",
                     SelectedAudioPatchColor);
                 return;
             }
@@ -3579,7 +4666,7 @@ namespace MatsuMotoMeterAR.Placement
                     selectedConnectionForRemoval.sourcePlacementId);
                 var input = source?.Interaction == null
                     ? 0f
-                    : source.Interaction.NormalizedValue;
+                    : source.Interaction.OutputValue;
                 var output = InstrumentSignalPolicy.Transform(
                     input,
                     connectionParameterDraft);
@@ -3672,6 +4759,8 @@ namespace MatsuMotoMeterAR.Placement
             {
                 var connectionCount = CountConnections(
                     connectEditPlacement.Record?.placementId);
+                var patchCount = CountAudioPatches(
+                    connectEditPlacement.Record?.placementId);
                 var editName = MockInstrumentCatalog.GetDisplayName(
                     GetPlacementKind(connectEditPlacement));
                 var editsWindowPanel =
@@ -3682,7 +4771,7 @@ namespace MatsuMotoMeterAR.Placement
                         GetPlacementKind(connectEditPlacement));
                 SetStatus(
                     $"SELECTED: {editName} | " +
-                    $"{connectionCount} CONNECTION(S)\n" +
+                    $"{connectionCount} SIGNAL / {patchCount} PATCH\n" +
                     (editsWindowPanel
                         ? $"PRESET: {((WindowPanelGraphicPreset)connectEditPlacement.Record.windowPanelPreset).ToString().ToUpperInvariant()} | " +
                           "R STICK U/D: CHANGE\n"
@@ -3754,21 +4843,33 @@ namespace MatsuMotoMeterAR.Placement
             {
                 var isAudioSource = ModularAudioPatchPolicy.CanSource(
                     GetPlacementKind(connectSource)) &&
-                    (ModularAudioPatchPolicy.GetSelectableOutputCount(
-                         GetPlacementKind(connectSource)) == 0 ||
+                    (!ModularAudioPatchPolicy.SupportsSignalRole(
+                         GetPlacementKind(connectSource)) ||
                      pendingObservableAudioSource);
-                var connectionCount = isAudioSource
-                    ? CountAudioPatches(connectSource.Record?.placementId)
-                    : CountConnections(connectSource.Record?.placementId);
+                var connectionCount =
+                    CountConnections(connectSource.Record?.placementId) +
+                    CountAudioPatches(connectSource.Record?.placementId);
+                var isObservableSource =
+                    ModularAudioPatchPolicy.SupportsSignalRole(
+                        GetPlacementKind(connectSource));
                 SetStatus(
                     $"SOURCE: {sourceName}\n" +
+                    (isObservableSource
+                        ? $"ROLE: {GetObservableSourceRoleLabel(connectSource)}\n"
+                        : string.Empty) +
                     (isAudioSource
                         ? GetModuleOutputStatus(
                             connectSource)
-                        : $"TRANSFORM: {transformLabel} | L STICK L/R\n") +
+                        : $"TRANSFORM: {transformLabel} | L STICK L/R\n" +
+                          (ModularAudioParameterPolicy.SupportsEditing(
+                              GetPlacementKind(connectSource))
+                              ? "Y: EDIT RANGE\n"
+                              : string.Empty)) +
                     $"TARGET + TRIGGER | A: SELECT " +
                     $"({connectionCount})\n" +
-                    "B: CANCEL",
+                    (isObservableSource
+                        ? "SOURCE + TRIGGER: SWITCH | B: CANCEL"
+                        : "B: CANCEL"),
                     isAudioSource
                         ? ModuleSourceColor(
                             GetPlacementKind(connectSource))
@@ -3785,11 +4886,19 @@ namespace MatsuMotoMeterAR.Placement
                 out var pendingSourcePort,
                 out var pendingTargetPort,
                 out var pendingDomain);
+            var isObservablePatchSource =
+                pendingObservableAudioSource &&
+                ModularAudioPatchPolicy.SupportsSignalRole(
+                    GetPlacementKind(connectSource));
             SetStatus(
                 $"{sourceName} -> {targetName}\n" +
                 (isPendingAudioPatch
                     ? $"{pendingDomain.ToString().ToUpperInvariant()} | " +
                       $"{pendingSourcePort} -> {pendingTargetPort}"
+                    : isObservablePatchSource
+                        ? $"{GetObservableSourceRoleLabel(connectSource)} | " +
+                          "TARGET HAS NO COMPATIBLE INPUT\n" +
+                          "L STICK L/R: PORT"
                     : $"{transformLabel}" +
                       (GetPlacementKind(connectTarget) ==
                            MockInstrumentKind.WindowPanel &&
@@ -3799,9 +4908,14 @@ namespace MatsuMotoMeterAR.Placement
                            out var pendingSlot)
                           ? $" | SLOT {SlotLabel(pendingSlot)}"
                           : string.Empty)) +
-                " | A CONFIRM | B CANCEL",
+                (isObservablePatchSource && !isPendingAudioPatch
+                    ? " | SOURCE + TRIGGER: SWITCH | B CANCEL"
+                    : " | A CONFIRM | B CANCEL"),
                 isPendingAudioPatch
                     ? PatchColor(pendingDomain)
+                    : isObservablePatchSource
+                        ? ModuleSourceColor(
+                            GetPlacementKind(connectSource))
                     : ConnectionColor(pendingSignalTransform));
         }
 
@@ -3810,16 +4924,16 @@ namespace MatsuMotoMeterAR.Placement
         {
             var kind = GetPlacementKind(placement);
             var editHint = ModularAudioParameterPolicy.SupportsEditing(kind)
-                ? "Y: EDIT MODULE\n"
+                ? "Y: EDIT PARAMETERS\n"
                 : string.Empty;
+            var moduleStatus = string.Empty;
             if (kind == MockInstrumentKind.AudioSequencer &&
                 placement?.AudioModule?.Node is
                     ModularSequencerNode sequencer)
             {
-                return $"{sequencer.StepCount} STEP | " +
-                       $"{sequencer.TempoBpm:0} BPM | " +
-                       $"CLOCK: {(sequencer.UsesExternalClock ? "EXTERNAL" : "INTERNAL")}\n" +
-                       "PORT: CONTROL.OUT\n" + editHint;
+                moduleStatus = $"{sequencer.StepCount} STEP | " +
+                               $"{sequencer.TempoBpm:0} BPM | " +
+                               $"CLOCK: {(sequencer.UsesExternalClock ? "EXTERNAL" : "INTERNAL")}\n";
             }
             if (kind == MockInstrumentKind.AudioDelay &&
                 placement?.AudioModule?.Node is ModularDelayNode delay)
@@ -3838,12 +4952,29 @@ namespace MatsuMotoMeterAR.Placement
                         pendingObservableOutputIndex);
                 return $"PORT: {portId?.ToUpperInvariant()} " +
                        $"({pendingObservableOutputIndex + 1}/{outputCount}) | " +
-                       "L STICK L/R\n";
+                       "L STICK L/R\n" + moduleStatus + editHint;
             }
             return kind == MockInstrumentKind.AudioLfo
                 ? $"RATE: {(pendingLfoAudioRate ? "AUDIO" : "CONTROL")} | " +
                   "L STICK L/R\n" + editHint
                 : "PORT: AUDIO.OUT\n" + editHint;
+        }
+
+        private string GetObservableSourceRoleLabel(
+            RuntimePlacement placement)
+        {
+            if (!pendingObservableAudioSource)
+                return "CONTROL SIGNAL";
+            var kind = GetPlacementKind(placement);
+            var portId = ModularAudioPatchPolicy.GetSelectableOutputPortId(
+                kind,
+                pendingObservableOutputIndex);
+            return ModularAudioPatchPolicy.TryGetOutputDomain(
+                kind,
+                portId,
+                out var domain)
+                ? $"{domain.ToString().ToUpperInvariant()} PATCH"
+                : "PATCH";
         }
 
         private Color ModuleSourceColor(MockInstrumentKind kind)
@@ -3878,7 +5009,7 @@ namespace MatsuMotoMeterAR.Placement
             out string targetPortId,
             out ModularAudioPortDomain domain)
         {
-            if (ModularAudioPatchPolicy.GetSelectableOutputCount(source) > 0 &&
+            if (ModularAudioPatchPolicy.SupportsSignalRole(source) &&
                 !pendingObservableAudioSource)
             {
                 sourcePortId = null;
@@ -4136,7 +5267,7 @@ namespace MatsuMotoMeterAR.Placement
                     }
 
                     var value = InstrumentSignalPolicy.Transform(
-                        source.NormalizedValue,
+                        source.OutputValue,
                         connection);
                     monitor.AddSample(connection.connectionId, value);
                     if (!float.IsNaN(value) && !float.IsInfinity(value))
@@ -4229,7 +5360,10 @@ namespace MatsuMotoMeterAR.Placement
         private void UpdateConnectionVisuals()
         {
             var visible =
-                AppInteractionModePolicy.AllowsConnecting(interactionMode);
+                AppInteractionModePolicy.ShowsConnectionVisuals(
+                    interactionMode,
+                    operationConnectionVisualsVisible,
+                    connectionEditing);
             foreach (var line in connectionLines.Values)
             {
                 if (line != null)
@@ -4306,7 +5440,12 @@ namespace MatsuMotoMeterAR.Placement
                         connectionLines[lineId] = line;
                     }
 
-                    SetConnectionLinePositions(line, source, target);
+                    SetConnectionLinePositions(
+                        line,
+                        source,
+                        target,
+                        connection.sourcePortId,
+                        connection.targetPortId);
                     var isSelected =
                         selectedAudioPatchForRemoval?.connectionId ==
                         connection.connectionId;
@@ -4339,10 +5478,16 @@ namespace MatsuMotoMeterAR.Placement
         private static void SetConnectionLinePositions(
             LineRenderer line,
             RuntimePlacement source,
-            RuntimePlacement target)
+            RuntimePlacement target,
+            string sourcePortId = null,
+            string targetPortId = null)
         {
-            var sourcePosition = source.Root.transform.position;
-            var targetPosition = target.Root.transform.position;
+            var sourcePosition = ResolveConnectionEndpoint(
+                source,
+                sourcePortId);
+            var targetPosition = ResolveConnectionEndpoint(
+                target,
+                targetPortId);
             var midpoint = Vector3.Lerp(
                 sourcePosition,
                 targetPosition,
@@ -4358,6 +5503,21 @@ namespace MatsuMotoMeterAR.Placement
             line.SetPosition(0, sourcePosition);
             line.SetPosition(1, midpoint);
             line.SetPosition(2, targetPosition);
+        }
+
+        private static Vector3 ResolveConnectionEndpoint(
+            RuntimePlacement placement,
+            string portId)
+        {
+            if (placement?.Root == null)
+                return Vector3.zero;
+
+            var contract = placement.Contract != null
+                ? placement.Contract
+                : placement.Root.GetComponent<InstrumentGreyboxContract>();
+            return contract != null
+                ? contract.ResolvePortAnchor(portId).position
+                : placement.Root.transform.position;
         }
 
         private LineRenderer CreateConnectionLine(
@@ -4404,6 +5564,8 @@ namespace MatsuMotoMeterAR.Placement
             {
                 ModularAudioPortDomain.Control => ControlPatchColor,
                 ModularAudioPortDomain.Clock => ClockPatchColor,
+                ModularAudioPortDomain.Gate => GatePatchColor,
+                ModularAudioPortDomain.Trigger => TriggerPatchColor,
                 _ => AudioPatchColor
             };
         }
@@ -5068,7 +6230,7 @@ namespace MatsuMotoMeterAR.Placement
                 PulseHaptics();
                 SetStatus(
                     $"GROUP SELECTED: {groupMoveSelection.Count}\n" +
-                    "AIM AT A SURFACE | A CONFIRM\n" +
+                    "AIM AT A SURFACE | RELEASE TO CONFIRM\n" +
                     "B CLEAR SELECTION",
                     new Color(1f, 0.75f, 0.15f));
                 return;
@@ -5115,7 +6277,8 @@ namespace MatsuMotoMeterAR.Placement
                 if (await ApplyEditedWorldPosesAsync(
                         groupMoveSelection,
                         poses,
-                        newSurfaces))
+                        newSurfaces,
+                        isMove: true))
                 {
                     ClearGroupMoveSelection();
                     PulseHaptics();
@@ -5322,7 +6485,8 @@ namespace MatsuMotoMeterAR.Placement
             IReadOnlyList<RuntimePlacement> editedPlacements,
             IReadOnlyList<Pose> worldPoses,
             IReadOnlyList<int> newSurfaces,
-            bool recordHistory = true)
+            bool recordHistory = true,
+            bool isMove = false)
         {
             if (editedPlacements == null ||
                 worldPoses == null ||
@@ -5464,7 +6628,8 @@ namespace MatsuMotoMeterAR.Placement
                 PushEditHistory(new EditCommand
                 {
                     Before = beforeHistory,
-                    After = CaptureEditStates(editedPlacements)
+                    After = CaptureEditStates(editedPlacements),
+                    IsMove = isMove
                 });
             }
 
@@ -5705,6 +6870,9 @@ namespace MatsuMotoMeterAR.Placement
 
             var target = activePlacement;
             activePlacement = null;
+            editPlacementModifierChordActive = false;
+            editMoveModifier = MovePlacementModifier.None;
+            moveModifierAxisEngaged = false;
             ClearPendingLayout(clearSource: true);
             if (groupMoveSelection.Remove(target))
             {
@@ -5726,7 +6894,7 @@ namespace MatsuMotoMeterAR.Placement
                     groupMovePivot = target;
                 SetStatus(
                     $"SELECTED | {groupMoveSelection.Count} TOTAL\n" +
-                    "AIM AT DESTINATION | A TO MOVE",
+                    "L-TRIGGER+GRIP TO MOVE",
                     new Color(1f, 0.75f, 0.15f));
             }
             groupMoveArmed = groupMoveSelection.Count > 0;
@@ -6183,6 +7351,9 @@ namespace MatsuMotoMeterAR.Placement
             groupMoveSelection.Clear();
             groupMovePivot = null;
             groupMoveArmed = false;
+            editPlacementModifierChordActive = false;
+            editMoveModifier = MovePlacementModifier.None;
+            moveModifierAxisEngaged = false;
             ResetAlignmentCycle();
             ClearMoveTargetMarkers();
         }
@@ -6194,7 +7365,7 @@ namespace MatsuMotoMeterAR.Placement
             interaction = null;
             reach = InstrumentInteractionHitTest.Reach.None;
             activePlacement = null;
-            if (placements.Count == 0 || rightAimAnchor == null)
+            if (placements.Count == 0 || leftAimAnchor == null)
                 return false;
 
             interactionCandidates.Clear();
@@ -6205,8 +7376,8 @@ namespace MatsuMotoMeterAR.Placement
             }
             if (!InstrumentInteractionResolver.TryResolveBest(
                     interactionCandidates,
-                    rightAimAnchor.position,
-                    rightAimAnchor.forward,
+                    leftAimAnchor.position,
+                    leftAimAnchor.forward,
                     DirectTipOffset,
                     DirectContactRadius,
                     MaxInteractionDistance,
@@ -6253,11 +7424,13 @@ namespace MatsuMotoMeterAR.Placement
                 var kind = GetPlacementKind(candidatePlacement);
                 var accepts = mode switch
                 {
-                    OperationResolveMode.Trigger =>
-                        !MockInstrumentCatalog.IsReadOnlyMeter(kind),
-                    OperationResolveMode.GripMotion =>
-                        MockInstrumentCatalog.SupportsGripMotion(kind),
+                    OperationResolveMode.DirectionalStep =>
+                        MockInstrumentCatalog.SupportsDirectionalStep(kind),
+                    OperationResolveMode.StickControl =>
+                        MockInstrumentCatalog.SupportsStickControl(kind),
                     OperationResolveMode.ContactButton =>
+                        MockInstrumentCatalog.UsesContactPress(kind),
+                    OperationResolveMode.BeamButton =>
                         MockInstrumentCatalog.UsesContactPress(kind),
                     _ => true
                 };
@@ -6305,11 +7478,12 @@ namespace MatsuMotoMeterAR.Placement
             foreach (var candidatePlacement in placements)
             {
                 var candidate = candidatePlacement?.Interaction;
-                if (candidate?.Motion?.MovingPart == null)
+                if (candidate?.Motion == null)
                     continue;
 
                 var kind = GetPlacementKind(candidatePlacement);
-                if (!MockInstrumentCatalog.SupportsGripMotion(kind))
+                if (!MockInstrumentCatalog.SupportsDirectionalStep(kind) ||
+                    MockInstrumentCatalog.IsSoundModule(kind))
                     continue;
 
                 float distanceSquared;
@@ -6317,6 +7491,8 @@ namespace MatsuMotoMeterAR.Placement
                     kind == MockInstrumentKind.Lever ||
                     kind == MockInstrumentKind.PowerSlider)
                 {
+                    if (candidate.Motion.MovingPart == null)
+                        continue;
                     distanceSquared = DistanceSquaredToMovingGrip(
                         candidate.Motion.MovingPart,
                         controllerTip,
@@ -6412,6 +7588,69 @@ namespace MatsuMotoMeterAR.Placement
                 leftOperationHand);
         }
 
+        private void UpdateBeamButton(
+            HandOperationState hand,
+            HandOperationState otherHand,
+            Transform aimAnchor,
+            float triggerValue)
+        {
+            if (triggerValue <= TriggerReleaseThreshold)
+            {
+                hand.BeamTriggerEngaged = false;
+                ReleaseBeamButton(hand, otherHand);
+                return;
+            }
+
+            if (triggerValue < TriggerPressThreshold ||
+                hand.BeamTriggerEngaged)
+            {
+                return;
+            }
+
+            hand.BeamTriggerEngaged = true;
+            if (hand.ContactButton != null ||
+                hand.GripInteraction != null ||
+                hand.StickInteraction != null ||
+                !TryResolveOperationInteraction(
+                    aimAnchor,
+                    OperationResolveMode.BeamButton,
+                    out var interaction,
+                    out var placement,
+                    out var reach) ||
+                reach != InstrumentInteractionHitTest.Reach.Ray ||
+                IsInteractionHeldByOtherHand(interaction, otherHand))
+            {
+                return;
+            }
+
+            hand.BeamButton = interaction;
+            interaction.SetPressed(true);
+            PulseHaptics(hand.Controller);
+            operationStepNoticeUntil = Time.unscaledTime + 0.5f;
+            SetStatus(
+                $"{hand.Label} BEAM TRIGGER PRESS | " +
+                $"{MockInstrumentCatalog.GetDisplayName(GetPlacementKind(placement))}",
+                Color.green);
+        }
+
+        private void ReleaseBeamButton(
+            HandOperationState hand,
+            HandOperationState otherHand)
+        {
+            var interaction = hand.BeamButton;
+            hand.BeamButton = null;
+            if (interaction == null)
+                return;
+
+            if (!ReferenceEquals(interaction, hand.ContactButton) &&
+                !ReferenceEquals(interaction, otherHand.ContactButton) &&
+                !ReferenceEquals(interaction, otherHand.BeamButton))
+            {
+                interaction.SetPressed(false);
+            }
+            SaveInteractionState(interaction);
+        }
+
         private MockInstrumentInteraction ResolveContactButton(
             Transform controllerAnchor)
         {
@@ -6487,25 +7726,52 @@ namespace MatsuMotoMeterAR.Placement
 
         private void ReleaseOperationInteractions()
         {
-            ReleaseTriggerInteraction(rightOperationHand);
-            ReleaseTriggerInteraction(leftOperationHand);
+            rightOperationHand.PendingStepDirection = 0;
+            leftOperationHand.PendingStepDirection = 0;
+            rightOperationHand.ResetChordEngaged = false;
+            leftOperationHand.ResetChordEngaged = false;
+            SaveStickInteraction(rightOperationHand);
+            SaveStickInteraction(leftOperationHand);
             ReleaseGripInteraction(rightOperationHand);
             ReleaseGripInteraction(leftOperationHand);
 
             var rightContact = rightOperationHand.ContactButton;
             var leftContact = leftOperationHand.ContactButton;
+            var rightBeam = rightOperationHand.BeamButton;
+            var leftBeam = leftOperationHand.BeamButton;
             rightOperationHand.ContactButton = null;
             leftOperationHand.ContactButton = null;
-            if (rightContact != null)
+            rightOperationHand.BeamButton = null;
+            leftOperationHand.BeamButton = null;
+            rightOperationHand.BeamTriggerEngaged = false;
+            leftOperationHand.BeamTriggerEngaged = false;
+            var pressedInteractions = new[]
             {
-                rightContact.SetPressed(false);
-                SaveInteractionState(rightContact);
-            }
-            if (leftContact != null &&
-                !ReferenceEquals(leftContact, rightContact))
+                rightContact,
+                leftContact,
+                rightBeam,
+                leftBeam
+            };
+            for (var index = 0; index < pressedInteractions.Length; index++)
             {
-                leftContact.SetPressed(false);
-                SaveInteractionState(leftContact);
+                var interaction = pressedInteractions[index];
+                if (interaction == null)
+                    continue;
+                var alreadyReleased = false;
+                for (var previous = 0; previous < index; previous++)
+                {
+                    if (ReferenceEquals(
+                            interaction,
+                            pressedInteractions[previous]))
+                    {
+                        alreadyReleased = true;
+                        break;
+                    }
+                }
+                if (alreadyReleased)
+                    continue;
+                interaction.SetPressed(false);
+                SaveInteractionState(interaction);
             }
 
             OVRInput.SetControllerVibration(
@@ -6520,14 +7786,16 @@ namespace MatsuMotoMeterAR.Placement
             leftHapticStopTime = 0f;
         }
 
-        private void ReleaseTriggerInteraction(HandOperationState hand)
+        private void SaveStickInteraction(HandOperationState hand)
         {
-            if (hand.TriggerInteraction == null)
-                return;
-
-            hand.TriggerInteraction.SetPressed(false);
-            SaveInteractionState(hand.TriggerInteraction);
-            hand.TriggerInteraction = null;
+            if (hand.StickInteraction != null)
+            {
+                hand.StickInteraction.EndStickControl();
+                SaveInteractionState(hand.StickInteraction);
+            }
+            hand.StickInteraction = null;
+            hand.StickXEngaged = false;
+            hand.StickTargetInitialized = false;
         }
 
         private void ReleaseGripInteraction(HandOperationState hand)
@@ -6549,10 +7817,28 @@ namespace MatsuMotoMeterAR.Placement
                 return;
 
             var previousValue = placement.Record.normalizedValue;
+            var previousParameters = placement.Record.parameterSettings != null
+                ? placement.Record.parameterSettings.ConvertAll(
+                    setting => setting?.Clone())
+                : null;
             placement.Record.normalizedValue = interaction.NormalizedValue;
+            var kind = GetPlacementKind(placement);
+            placement.Record.parameterSettings =
+                AdjustableParameterPolicy.NormalizeSettings(
+                    kind,
+                    placement.Record.parameterSettings,
+                    interaction.NormalizedValue);
+            if (placement.Record.parameterSettings.Count > 0)
+            {
+                placement.Record.parameterSettings[0].value =
+                    placement.AudioModule != null
+                        ? placement.AudioModule.PrimaryParameterValue
+                        : interaction.OutputValue;
+            }
             if (!SavePlacementDocument())
             {
                 placement.Record.normalizedValue = previousValue;
+                placement.Record.parameterSettings = previousParameters;
                 Debug.LogError(
                     $"[Placement] State save failed for {placement.Record.placementId}.");
             }
@@ -6760,9 +8046,9 @@ namespace MatsuMotoMeterAR.Placement
                         newAnchorRoot,
                         currentSurface);
                 }
-                var interaction = newInstrument
-                    .GetComponent<InstrumentGreyboxContract>()
-                    .InstrumentInteraction;
+                var contract = newInstrument
+                    .GetComponent<InstrumentGreyboxContract>();
+                var interaction = contract.InstrumentInteraction;
                 var localPose = new Pose(
                     newInstrument.transform.localPosition,
                     newInstrument.transform.localRotation);
@@ -6777,6 +8063,11 @@ namespace MatsuMotoMeterAR.Placement
                     normalizedValue = interaction.NormalizedValue,
                     lifecycle = (int)PlacementLifecycle.Active
                 };
+                newRecord.parameterSettings =
+                    AdjustableParameterPolicy.NormalizeSettings(
+                        selectedKind,
+                        null,
+                        interaction.NormalizedValue);
                 placementDocument.placements.Add(newRecord);
                 if (!SavePlacementDocument())
                 {
@@ -6785,12 +8076,13 @@ namespace MatsuMotoMeterAR.Placement
                         "Spatial anchor was saved but placement JSON could not be committed.");
                 }
 
-                placements.Add(new RuntimePlacement
+                var runtimePlacement = new RuntimePlacement
                 {
                     Record = newRecord,
                     Anchor = newAnchor,
                     AnchorRoot = newAnchorRoot,
                     Root = newInstrument,
+                    Contract = contract,
                     Interaction = interaction,
                     Audio = newInstrument.GetComponentInChildren<
                         InstrumentAudioController>(true),
@@ -6807,7 +8099,9 @@ namespace MatsuMotoMeterAR.Placement
                     WindowPanelGraphic = newInstrument
                         .GetComponentInChildren<
                             WindowPanelGraphicsPrototypeView>(true)
-                });
+                };
+                ApplyAudioParameters(runtimePlacement);
+                placements.Add(runtimePlacement);
                 ClearEditHistory();
                 Debug.Log(
                     $"[Placement] Committed {newRecord.placementId} " +
@@ -7101,9 +8395,9 @@ namespace MatsuMotoMeterAR.Placement
                     theme: selectedTheme);
                 root.transform.SetParent(anchorRoot.transform, true);
 
-                var interaction = root
-                    .GetComponent<InstrumentGreyboxContract>()
-                    .InstrumentInteraction;
+                var contract = root
+                    .GetComponent<InstrumentGreyboxContract>();
+                var interaction = contract.InstrumentInteraction;
                 interaction.SetNormalizedValue(
                     record.normalizedValue,
                     InstrumentValueChangeOrigin.Restore);
@@ -7113,6 +8407,7 @@ namespace MatsuMotoMeterAR.Placement
                     Anchor = anchor,
                     AnchorRoot = anchorRoot,
                     Root = root,
+                    Contract = contract,
                     Interaction = interaction,
                     Audio = root.GetComponentInChildren<
                         InstrumentAudioController>(true),

@@ -40,15 +40,6 @@ namespace MatsuMotoMeterAR.Instruments
             Transform logic,
             bool preview)
         {
-            if (kind == MockInstrumentKind.AudioOscillator ||
-                kind == MockInstrumentKind.AudioNoise ||
-                kind == MockInstrumentKind.AudioLfo ||
-                kind == MockInstrumentKind.AudioSequencer ||
-                kind == MockInstrumentKind.AudioDelay ||
-                kind == MockInstrumentKind.AudioOutput)
-            {
-                return false;
-            }
             var resourcePath = ResourcePath(kind, theme);
             var prefab = Resources.Load<GameObject>(resourcePath);
             if (prefab == null)
@@ -119,6 +110,39 @@ namespace MatsuMotoMeterAR.Instruments
             }
             foreach (var collider in visual.GetComponentsInChildren<Collider>(true))
                 DestroyComponent(collider);
+
+            if (IsAudioModule(kind))
+            {
+                var displaySurface = FindTransform(
+                    visual.transform,
+                    "display_surface");
+                var displayRenderer = displaySurface == null
+                    ? null
+                    : displaySurface.GetComponent<Renderer>();
+                if (displayRenderer == null)
+                {
+                    Object.DestroyImmediate(visual);
+                    throw new MissingReferenceException(
+                        $"{theme} prefab {prefab.name} has no display_surface " +
+                        "Renderer.");
+                }
+                visual.AddComponent<Audio.AudioModuleDisplayView>().Configure(
+                    kind,
+                    theme,
+                    displayRenderer);
+
+                var signalSurface = FindTransform(
+                    visual.transform,
+                    "signal_surface");
+                var signalRenderer = signalSurface == null
+                    ? null
+                    : signalSurface.GetComponent<Renderer>();
+                if (signalRenderer != null)
+                {
+                    visual.AddComponent<Audio.AudioModuleSignalFlowView>()
+                        .Configure(kind, theme, signalRenderer);
+                }
+            }
 
             WindowPanelGraphicsPrototypeView windowPanelGraphic = null;
             if (kind == MockInstrumentKind.WindowPanel &&
@@ -205,6 +229,12 @@ namespace MatsuMotoMeterAR.Instruments
                 0.000001f);
 
             var graphic = WindowPanelGraphicsPrototypeView.Create(visualRoot);
+            RuntimeMaterialUtility.SetColor(
+                displaySurface.GetComponent<Renderer>(),
+                new Color(0.015f, 0.035f, 0.045f, 1f));
+            RuntimeMaterialUtility.SetEmissionColor(
+                displaySurface.GetComponent<Renderer>(),
+                new Color(0.01f, 0.08f, 0.10f, 1f));
             graphic.transform.SetPositionAndRotation(
                 center + visualRoot.forward * 0.002f,
                 visualRoot.rotation * Quaternion.Euler(0f, 180f, 0f));
@@ -681,6 +711,33 @@ namespace MatsuMotoMeterAR.Instruments
                         InstrumentGreyboxSpecification.MeterSweepDegrees,
                         0.1f);
                     break;
+                case MockInstrumentKind.AudioOscillator:
+                case MockInstrumentKind.AudioNoise:
+                case MockInstrumentKind.AudioLfo:
+                case MockInstrumentKind.AudioSequencer:
+                case MockInstrumentKind.AudioDelay:
+                case MockInstrumentKind.AudioVca:
+                case MockInstrumentKind.AudioMixer:
+                case MockInstrumentKind.AudioFilter:
+                case MockInstrumentKind.AudioEnvelope:
+                case MockInstrumentKind.AudioOutput:
+                    var hadAudioMotion =
+                        logic.GetComponent<MockInstrumentMotion>() != null;
+                    AddMotion(
+                        logic,
+                        MockInstrumentMotion.MotionKind.Rotate,
+                        motionTarget,
+                        Vector3.forward,
+                        360f,
+                        0f);
+                    if (!hadAudioMotion)
+                    {
+                        logic.GetComponent<MockInstrumentMotion>()
+                            .SetNormalizedValue(
+                                MockInstrumentCatalog.DefaultSoundModuleValue(
+                                    kind));
+                    }
+                    break;
             }
         }
 
@@ -765,6 +822,16 @@ namespace MatsuMotoMeterAR.Instruments
                 MockInstrumentKind.RoundMeterMedium => "MeterMedium",
                 MockInstrumentKind.RoundMeterLarge => "MeterLarge",
                 MockInstrumentKind.TrendMonitor => "TrendMonitor",
+                MockInstrumentKind.AudioOscillator => "AudioOscillator",
+                MockInstrumentKind.AudioNoise => "AudioNoise",
+                MockInstrumentKind.AudioLfo => "AudioLFO",
+                MockInstrumentKind.AudioSequencer => "AudioSequencer",
+                MockInstrumentKind.AudioDelay => "AudioDelay",
+                MockInstrumentKind.AudioVca => "AudioVca",
+                MockInstrumentKind.AudioMixer => "AudioMixer",
+                MockInstrumentKind.AudioFilter => "AudioFilter",
+                MockInstrumentKind.AudioEnvelope => "AudioEnvelope",
+                MockInstrumentKind.AudioOutput => "AudioOutput",
                 _ => "MeterRound"
             };
             return $"PF_Visual_{key}_{ThemeFolder(theme)}";
@@ -778,8 +845,33 @@ namespace MatsuMotoMeterAR.Instruments
                 MockInstrumentTheme.KineticSafety => "KineticSafety",
                 MockInstrumentTheme.MachinedErgonomics =>
                     "MachinedErgonomics",
+                MockInstrumentTheme.Superfine => "Superfine",
                 _ => "OrbitalAnalog"
             };
+        }
+
+        private static bool IsAudioModule(MockInstrumentKind kind)
+        {
+            return kind == MockInstrumentKind.AudioOscillator ||
+                   kind == MockInstrumentKind.AudioNoise ||
+                   kind == MockInstrumentKind.AudioLfo ||
+                   kind == MockInstrumentKind.AudioSequencer ||
+                   kind == MockInstrumentKind.AudioDelay ||
+                   kind == MockInstrumentKind.AudioVca ||
+                   kind == MockInstrumentKind.AudioMixer ||
+                   kind == MockInstrumentKind.AudioFilter ||
+                   kind == MockInstrumentKind.AudioEnvelope ||
+                   kind == MockInstrumentKind.AudioOutput;
+        }
+
+        private static Transform FindTransform(Transform root, string name)
+        {
+            foreach (var candidate in root.GetComponentsInChildren<Transform>(true))
+            {
+                if (candidate.name == name)
+                    return candidate;
+            }
+            return null;
         }
 
         private static void DestroyComponent(Component component)

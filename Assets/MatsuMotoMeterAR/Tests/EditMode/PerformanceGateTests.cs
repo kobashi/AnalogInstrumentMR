@@ -53,6 +53,8 @@ namespace MatsuMotoMeterAR.Tests
         [TestCase("forgebrass", MockInstrumentTheme.ForgeBrass)]
         [TestCase("MachinedErgonomics", MockInstrumentTheme.MachinedErgonomics)]
         [TestCase("machined-ergonomics", MockInstrumentTheme.MachinedErgonomics)]
+        [TestCase("Superfine", MockInstrumentTheme.Superfine)]
+        [TestCase("superfine", MockInstrumentTheme.Superfine)]
         [TestCase("invalid", MockInstrumentTheme.OrbitalAnalog)]
         public void ParseTheme_UsesKnownThemeOrDefault(string value, MockInstrumentTheme expected)
         {

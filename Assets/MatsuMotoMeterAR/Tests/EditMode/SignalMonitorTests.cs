@@ -349,7 +349,8 @@ namespace MatsuMotoMeterAR.Tests
                              MockInstrumentTheme.ForgeBrass,
                              MockInstrumentTheme.KineticSafety,
                              MockInstrumentTheme.OrbitalAnalog,
-                             MockInstrumentTheme.MachinedErgonomics
+                             MockInstrumentTheme.MachinedErgonomics,
+                             MockInstrumentTheme.Superfine
                          })
                 {
                     Assert.That(

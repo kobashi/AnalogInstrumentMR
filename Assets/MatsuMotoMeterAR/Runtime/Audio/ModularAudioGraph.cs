@@ -25,6 +25,10 @@ namespace MatsuMotoMeterAR.Audio
             new float[MaximumBlockFrames];
         private readonly float[] clockScratch =
             new float[MaximumBlockFrames];
+        private readonly float[] gateScratch =
+            new float[MaximumBlockFrames];
+        private readonly float[] triggerScratch =
+            new float[MaximumBlockFrames];
         private int nodeCount;
         private int connectionCount;
         private int outputNodeIndex = -1;
@@ -69,9 +73,7 @@ namespace MatsuMotoMeterAR.Audio
                 !IsNodeIndex(targetNodeIndex) ||
                 (sourceNodeIndex == targetNodeIndex &&
                  nodes[targetNodeIndex] is not ModularDelayNode) ||
-                (domain != ModularAudioPortDomain.Audio &&
-                 domain != ModularAudioPortDomain.Control &&
-                 domain != ModularAudioPortDomain.Clock) ||
+                !Enum.IsDefined(typeof(ModularAudioPortDomain), domain) ||
                 connectionCount >= MaximumConnections)
             {
                 return false;
@@ -192,9 +194,14 @@ namespace MatsuMotoMeterAR.Audio
                 var nodeIndex = renderOrder[orderIndex];
                 Array.Clear(inputScratch, 0, frameCount);
                 Array.Clear(clockScratch, 0, frameCount);
+                Array.Clear(gateScratch, 0, frameCount);
+                Array.Clear(triggerScratch, 0, frameCount);
                 Array.Clear(nodeBuffers[nodeIndex], 0, frameCount);
                 var controlInput = 0f;
+                var hasControlInput = false;
                 var hasClockInput = false;
+                var hasGateInput = false;
+                var hasTriggerInput = false;
                 for (var connectionIndex = 0;
                      connectionIndex < connectionCount;
                      connectionIndex++)
@@ -205,6 +212,7 @@ namespace MatsuMotoMeterAR.Audio
                     var source = nodeBuffers[connection.Source];
                     if (connection.Domain == ModularAudioPortDomain.Control)
                     {
+                        hasControlInput = true;
                         controlInput += nodes[connection.Source].ReadOutput(
                             connection.SourcePortId,
                             source,
@@ -220,6 +228,26 @@ namespace MatsuMotoMeterAR.Audio
                                     source,
                                     frame);
                     }
+                    else if (connection.Domain == ModularAudioPortDomain.Gate)
+                    {
+                        hasGateInput = true;
+                        for (var frame = 0; frame < frameCount; frame++)
+                            gateScratch[frame] +=
+                                nodes[connection.Source].ReadOutput(
+                                    connection.SourcePortId,
+                                    source,
+                                    frame);
+                    }
+                    else if (connection.Domain == ModularAudioPortDomain.Trigger)
+                    {
+                        hasTriggerInput = true;
+                        for (var frame = 0; frame < frameCount; frame++)
+                            triggerScratch[frame] +=
+                                nodes[connection.Source].ReadOutput(
+                                    connection.SourcePortId,
+                                    source,
+                                    frame);
+                    }
                     else
                     {
                         for (var frame = 0; frame < frameCount; frame++)
@@ -230,9 +258,15 @@ namespace MatsuMotoMeterAR.Audio
                                     frame);
                     }
                 }
+                nodes[nodeIndex].SetDiscreteInputs(
+                    gateScratch,
+                    hasGateInput,
+                    triggerScratch,
+                    hasTriggerInput);
                 nodes[nodeIndex].Process(
                     inputScratch,
                     controlInput,
+                    hasControlInput,
                     clockScratch,
                     hasClockInput,
                     nodeBuffers[nodeIndex],
@@ -262,8 +296,13 @@ namespace MatsuMotoMeterAR.Audio
                     var nodeIndex = renderOrder[orderIndex];
                     inputScratch[0] = 0f;
                     clockScratch[0] = 0f;
+                    gateScratch[0] = 0f;
+                    triggerScratch[0] = 0f;
                     var controlInput = 0f;
+                    var hasControlInput = false;
                     var hasClockInput = false;
+                    var hasGateInput = false;
+                    var hasTriggerInput = false;
                     for (var connectionIndex = 0;
                          connectionIndex < connectionCount;
                          connectionIndex++)
@@ -280,6 +319,7 @@ namespace MatsuMotoMeterAR.Audio
                         if (connection.Domain ==
                             ModularAudioPortDomain.Control)
                         {
+                            hasControlInput = true;
                             if (frame == 0)
                                 controlBlockValues[connectionIndex] =
                                     sourceValue;
@@ -292,14 +332,32 @@ namespace MatsuMotoMeterAR.Audio
                             hasClockInput = true;
                             clockScratch[0] += sourceValue;
                         }
+                        else if (connection.Domain ==
+                                 ModularAudioPortDomain.Gate)
+                        {
+                            hasGateInput = true;
+                            gateScratch[0] += sourceValue;
+                        }
+                        else if (connection.Domain ==
+                                 ModularAudioPortDomain.Trigger)
+                        {
+                            hasTriggerInput = true;
+                            triggerScratch[0] += sourceValue;
+                        }
                         else
                         {
                             inputScratch[0] += sourceValue;
                         }
                     }
+                    nodes[nodeIndex].SetDiscreteInputs(
+                        gateScratch,
+                        hasGateInput,
+                        triggerScratch,
+                        hasTriggerInput);
                     nodes[nodeIndex].Process(
                         inputScratch,
                         controlInput,
+                        hasControlInput,
                         clockScratch,
                         hasClockInput,
                         nodeBuffers[nodeIndex],

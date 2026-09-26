@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using MatsuMotoMeterAR.Instruments;
@@ -52,6 +53,49 @@ namespace MatsuMotoMeterAR.Editor
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.Log("All instrument theme materials and prefabs rebuilt.");
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Audio Modules/" +
+            "Configure Production Model Importers")]
+        public static void ConfigureProductionAudioModuleModels()
+        {
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            var folders = new[]
+            {
+                "OrbitalAnalog",
+                "ForgeBrass",
+                "KineticSafety",
+                "MachinedErgonomics",
+                "Superfine"
+            };
+            var keys = new[]
+            {
+                "AudioOscillator",
+                "AudioNoise",
+                "AudioLFO",
+                "AudioSequencer",
+                "AudioDelay",
+                "AudioOutput",
+                "AudioVca",
+                "AudioMixer",
+                "AudioFilter",
+                "AudioEnvelope"
+            };
+            foreach (var folder in folders)
+            {
+                foreach (var key in keys)
+                {
+                    ConfigureModel(
+                        $"Assets/MatsuMotoMeterAR/Content/Themes/{folder}/" +
+                        $"Models/SM_{key}_{folder}.fbx",
+                        readable: true);
+                }
+            }
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
+            Debug.Log("Production audio module model importers configured.");
         }
 
         internal static void RebuildModel(string folder, string key)
@@ -131,6 +175,50 @@ namespace MatsuMotoMeterAR.Editor
             }
 
             throw new InvalidDataException($"Unsupported visual theme: {folder}");
+        }
+
+        internal static void RebuildAudioModule(string folder, string key)
+        {
+            if (!IsAudioModule(key))
+                throw new InvalidDataException($"Unsupported audio model: {key}");
+            if (folder != "OrbitalAnalog" && folder != "ForgeBrass" &&
+                folder != "KineticSafety" && folder != "MachinedErgonomics" &&
+                folder != "Superfine")
+            {
+                throw new InvalidDataException($"Unsupported visual theme: {folder}");
+            }
+
+            var themeRoot =
+                $"Assets/MatsuMotoMeterAR/Content/Themes/{folder}";
+            var modelRoot = themeRoot + "/Models";
+            var materialRoot = themeRoot + "/Materials";
+            var prefabRoot =
+                $"Assets/MatsuMotoMeterAR/Resources/{folder}/Prefabs";
+            Directory.CreateDirectory(materialRoot);
+            Directory.CreateDirectory(prefabRoot);
+            var modelPath = $"{modelRoot}/SM_{key}_{folder}.fbx";
+            ConfigureModel(modelPath, readable: true);
+            var roles = new Dictionary<string, Material>(
+                StringComparer.OrdinalIgnoreCase)
+            {
+                ["Housing"] = BuildAudioModuleRoleMaterial(
+                    materialRoot, folder, "Housing"),
+                ["FaceMetal"] = BuildAudioModuleRoleMaterial(
+                    materialRoot, folder, "FaceMetal"),
+                ["EmissionDisplay"] = BuildAudioModuleRoleMaterial(
+                    materialRoot, folder, "EmissionDisplay")
+            };
+            BuildPrefab(
+                modelRoot,
+                prefabRoot,
+                folder,
+                key,
+                "parameter_knob_pivot",
+                roles["Housing"],
+                roles["EmissionDisplay"],
+                namedRoles: roles);
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
         }
 
         private static void BuildTheme(
@@ -320,6 +408,74 @@ namespace MatsuMotoMeterAR.Editor
             return material;
         }
 
+        private static Material BuildAudioModuleRoleMaterial(
+            string materialRoot,
+            string theme,
+            string role)
+        {
+            var path =
+                $"{materialRoot}/MAT_{theme}_AudioModule_{role}.mat";
+            if (role == "EmissionDisplay")
+            {
+                var shader = Shader.Find("Universal Render Pipeline/Unlit");
+                if (shader == null)
+                    throw new InvalidOperationException(
+                        "Universal Render Pipeline/Unlit shader was not found.");
+                var display = AssetDatabase.LoadAssetAtPath<Material>(path);
+                if (display == null)
+                {
+                    display = new Material(shader);
+                    AssetDatabase.CreateAsset(display, path);
+                }
+                else
+                {
+                    display.shader = shader;
+                }
+                display.SetColor("_BaseColor", Color.white);
+                EditorUtility.SetDirty(display);
+                return display;
+            }
+
+            var material = LoadOrCreateMaterial(path);
+            foreach (var property in new[]
+                     {
+                         "_BaseMap", "_MainTex", "_BumpMap",
+                         "_MetallicGlossMap", "_EmissionMap"
+                     })
+            {
+                if (material.HasProperty(property))
+                    material.SetTexture(property, null);
+            }
+            material.DisableKeyword("_NORMALMAP");
+            material.DisableKeyword("_METALLICSPECGLOSSMAP");
+            material.DisableKeyword("_EMISSION");
+            material.SetColor("_EmissionColor", Color.black);
+            var color = (theme, role) switch
+            {
+                ("OrbitalAnalog", "Housing") =>
+                    new Color(0.075f, 0.09f, 0.105f, 1f),
+                ("OrbitalAnalog", _) =>
+                    new Color(0.56f, 0.58f, 0.58f, 1f),
+                ("ForgeBrass", "Housing") =>
+                    new Color(0.075f, 0.065f, 0.055f, 1f),
+                ("ForgeBrass", _) =>
+                    new Color(0.43f, 0.27f, 0.09f, 1f),
+                ("KineticSafety", "Housing") =>
+                    new Color(0.055f, 0.065f, 0.075f, 1f),
+                ("KineticSafety", _) =>
+                    new Color(0.43f, 0.46f, 0.47f, 1f),
+                ("MachinedErgonomics", "Housing") =>
+                    new Color(0.69f, 0.68f, 0.64f, 1f),
+                _ => new Color(0.24f, 0.27f, 0.28f, 1f)
+            };
+            material.color = color;
+            material.SetColor("_BaseColor", color);
+            material.SetFloat("_Metallic", role == "Housing" ? 0.45f : 0.72f);
+            material.SetFloat("_Smoothness", role == "Housing" ? 0.30f : 0.48f);
+            EditorUtility.SetDirty(material);
+            return material;
+        }
+
         private static Material BuildTrendMonitorRoleMaterial(
             string materialRoot,
             string textureRoot,
@@ -502,7 +658,8 @@ namespace MatsuMotoMeterAR.Editor
             string targetName,
             Material opaque,
             Material emissive,
-            Material display = null)
+            Material display = null,
+            IReadOnlyDictionary<string, Material> namedRoles = null)
         {
             var expectedRootName = $"PF_Visual_{key}_{suffix}";
             var modelPath = $"{modelRoot}/SM_{key}_{suffix}.fbx";
@@ -539,9 +696,12 @@ namespace MatsuMotoMeterAR.Editor
                             renderer.transform.name == "display_surface" &&
                             display != null
                                 ? display
-                                : IsEmissiveMaterialRole(source[index]?.name)
-                                ? emissive
-                                : opaque;
+                                : ResolveRoleMaterial(
+                                    source[index]?.name,
+                                    namedRoles) ??
+                                  (IsEmissiveMaterialRole(source[index]?.name)
+                                      ? emissive
+                                      : opaque);
                     }
                     renderer.sharedMaterials = replacements;
                 }
@@ -628,7 +788,7 @@ namespace MatsuMotoMeterAR.Editor
             string key,
             string targetName)
         {
-            if (key != "TrendMonitor")
+            if (key != "TrendMonitor" && !IsAudioModule(key))
             {
                 imported.transform.localRotation =
                     Quaternion.Euler(-90f, 0f, 0f);
@@ -636,7 +796,9 @@ namespace MatsuMotoMeterAR.Editor
             }
 
             imported.transform.localRotation = Quaternion.identity;
-            var displaySurface = FindNode(imported.transform, targetName);
+            var displaySurface = FindNode(
+                imported.transform,
+                IsAudioModule(key) ? "display_surface" : targetName);
             var mesh = displaySurface.GetComponent<MeshFilter>()?.sharedMesh;
             if (mesh == null || mesh.normals.Length == 0)
             {
@@ -648,21 +810,70 @@ namespace MatsuMotoMeterAR.Editor
             imported.transform.rotation =
                 Quaternion.FromToRotation(currentNormal, Vector3.forward) *
                 imported.transform.rotation;
-            var currentUp = Vector3.ProjectOnPlane(
-                displaySurface.up,
-                Vector3.forward).normalized;
-            if (currentUp.sqrMagnitude < 0.000001f)
+            var alignmentDirection = IsAudioModule(key)
+                ? DisplayWidthDirection(displaySurface, mesh)
+                : Vector3.ProjectOnPlane(
+                    displaySurface.up,
+                    Vector3.forward).normalized;
+            if (alignmentDirection.sqrMagnitude < 0.000001f)
             {
                 throw new InvalidOperationException(
                     "TrendMonitor display_surface has no usable up axis.");
             }
             var roll = Vector3.SignedAngle(
-                currentUp,
-                Vector3.up,
+                alignmentDirection,
+                IsAudioModule(key) ? Vector3.right : Vector3.up,
                 Vector3.forward);
             imported.transform.rotation =
                 Quaternion.AngleAxis(roll, Vector3.forward) *
                 imported.transform.rotation;
+        }
+
+        private static Material ResolveRoleMaterial(
+            string sourceName,
+            IReadOnlyDictionary<string, Material> namedRoles)
+        {
+            if (namedRoles == null || string.IsNullOrWhiteSpace(sourceName))
+                return null;
+            foreach (var role in namedRoles)
+            {
+                if (sourceName.Contains(
+                        role.Key,
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return role.Value;
+                }
+            }
+            return null;
+        }
+
+        private static Vector3 DisplayWidthDirection(
+            Transform displaySurface,
+            Mesh mesh)
+        {
+            var size = mesh.bounds.size;
+            var axis = size.x >= size.y && size.x >= size.z
+                ? Vector3.right
+                : size.y >= size.z
+                    ? Vector3.up
+                    : Vector3.forward;
+            return Vector3.ProjectOnPlane(
+                displaySurface.TransformDirection(axis),
+                Vector3.forward).normalized;
+        }
+
+        internal static bool IsAudioModule(string key)
+        {
+            return key == "AudioOscillator" ||
+                   key == "AudioNoise" ||
+                   key == "AudioLFO" ||
+                   key == "AudioSequencer" ||
+                   key == "AudioDelay" ||
+                   key == "AudioOutput" ||
+                   key == "AudioVca" ||
+                   key == "AudioMixer" ||
+                   key == "AudioFilter" ||
+                   key == "AudioEnvelope";
         }
 
         private static bool IsEmissiveMaterialRole(string materialName)
@@ -722,7 +933,9 @@ namespace MatsuMotoMeterAR.Editor
             ConfigureTexture(paths[2], false, linear: true);
         }
 
-        private static void ConfigureModel(string path)
+        private static void ConfigureModel(
+            string path,
+            bool? readable = null)
         {
             if (AssetImporter.GetAtPath(path) is not ModelImporter importer)
                 throw new FileNotFoundException($"Model importer was not found: {path}");
@@ -733,6 +946,8 @@ namespace MatsuMotoMeterAR.Editor
             importer.importCameras = false;
             importer.importLights = false;
             importer.addCollider = false;
+            if (readable.HasValue)
+                importer.isReadable = readable.Value;
             importer.SaveAndReimport();
         }
     }

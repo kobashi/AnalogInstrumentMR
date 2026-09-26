@@ -206,4 +206,148 @@ namespace MatsuMotoMeterAR.Signals
             return first;
         }
     }
+
+    public static class MixedConnectionSelectionPolicy
+    {
+        public static bool TrySelectNext(
+            IReadOnlyList<SignalConnectionRecord> signalConnections,
+            IReadOnlyList<AudioPatchConnectionRecord> audioPatches,
+            string placementId,
+            string currentSignalConnectionId,
+            string currentAudioPatchId,
+            out SignalConnectionRecord selectedSignal,
+            out AudioPatchConnectionRecord selectedAudioPatch)
+        {
+            selectedSignal = null;
+            selectedAudioPatch = null;
+            if (string.IsNullOrEmpty(placementId))
+                return false;
+
+            if (!string.IsNullOrEmpty(currentSignalConnectionId))
+            {
+                selectedSignal = SelectSignalAfterCurrent(
+                    signalConnections,
+                    placementId,
+                    currentSignalConnectionId);
+                if (selectedSignal != null)
+                    return true;
+                selectedAudioPatch = SelectFirstAudioPatch(
+                    audioPatches,
+                    placementId);
+                if (selectedAudioPatch != null)
+                    return true;
+                selectedSignal = SignalConnectionSelectionPolicy.SelectNext(
+                    signalConnections,
+                    placementId,
+                    null);
+                return selectedSignal != null;
+            }
+
+            if (!string.IsNullOrEmpty(currentAudioPatchId))
+            {
+                selectedAudioPatch = SelectAudioPatchAfterCurrent(
+                    audioPatches,
+                    placementId,
+                    currentAudioPatchId);
+                if (selectedAudioPatch != null)
+                    return true;
+                selectedSignal = SignalConnectionSelectionPolicy.SelectNext(
+                    signalConnections,
+                    placementId,
+                    null);
+                if (selectedSignal != null)
+                    return true;
+                selectedAudioPatch = SelectFirstAudioPatch(
+                    audioPatches,
+                    placementId);
+                return selectedAudioPatch != null;
+            }
+
+            selectedSignal = SignalConnectionSelectionPolicy.SelectNext(
+                signalConnections,
+                placementId,
+                null);
+            if (selectedSignal != null)
+                return true;
+            selectedAudioPatch = SelectFirstAudioPatch(
+                audioPatches,
+                placementId);
+            return selectedAudioPatch != null;
+        }
+
+        private static SignalConnectionRecord SelectSignalAfterCurrent(
+            IReadOnlyList<SignalConnectionRecord> connections,
+            string placementId,
+            string currentConnectionId)
+        {
+            if (connections == null)
+                return null;
+            var foundCurrent = false;
+            foreach (var connection in connections)
+            {
+                if (!SignalConnectionSelectionPolicy.TouchesPlacement(
+                        connection,
+                        placementId))
+                {
+                    continue;
+                }
+                if (foundCurrent)
+                    return connection;
+                if (string.Equals(
+                        connection.connectionId,
+                        currentConnectionId,
+                        StringComparison.Ordinal))
+                {
+                    foundCurrent = true;
+                }
+            }
+            return null;
+        }
+
+        private static AudioPatchConnectionRecord SelectAudioPatchAfterCurrent(
+            IReadOnlyList<AudioPatchConnectionRecord> connections,
+            string placementId,
+            string currentConnectionId)
+        {
+            if (connections == null)
+                return null;
+            var foundCurrent = false;
+            foreach (var connection in connections)
+            {
+                if (!TouchesPlacement(connection, placementId))
+                    continue;
+                if (foundCurrent)
+                    return connection;
+                if (string.Equals(
+                        connection.connectionId,
+                        currentConnectionId,
+                        StringComparison.Ordinal))
+                {
+                    foundCurrent = true;
+                }
+            }
+            return null;
+        }
+
+        private static AudioPatchConnectionRecord SelectFirstAudioPatch(
+            IReadOnlyList<AudioPatchConnectionRecord> connections,
+            string placementId)
+        {
+            if (connections == null)
+                return null;
+            foreach (var connection in connections)
+                if (TouchesPlacement(connection, placementId))
+                    return connection;
+            return null;
+        }
+
+        private static bool TouchesPlacement(
+            AudioPatchConnectionRecord connection,
+            string placementId)
+        {
+            return connection != null &&
+                   (connection.sourcePlacementId == placementId ||
+                    connection.targetPlacementId == placementId);
+        }
+    }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using MatsuMotoMeterAR.Instruments;
 using MatsuMotoMeterAR.Signals;
 using NUnit.Framework;
 using UnityEngine;
@@ -200,6 +201,8 @@ namespace MatsuMotoMeterAR.Tests
                 display.transform.SetParent(root.transform, false);
                 display.transform.localPosition =
                     new Vector3(0f, 0f, 0.06f);
+                display.transform.localRotation =
+                    Quaternion.Euler(0f, 31f, 0f);
                 mesh.vertices = new[]
                 {
                     new Vector3(-0.65f, -0.30f, 0f),
@@ -232,7 +235,9 @@ namespace MatsuMotoMeterAR.Tests
                         root.transform.forward),
                     Is.EqualTo(0.002f).Within(0.00001f));
                 Assert.That(
-                    Vector3.Dot(view.transform.forward, root.transform.forward),
+                    Vector3.Dot(
+                        view.transform.forward,
+                        root.transform.forward),
                     Is.LessThan(-0.999f));
                 var graphicBounds = view.GetComponent<MeshRenderer>().bounds;
                 Assert.That(graphicBounds.size.x, Is.LessThan(1.30f * 0.95f));
@@ -242,6 +247,56 @@ namespace MatsuMotoMeterAR.Tests
             {
                 UnityEngine.Object.DestroyImmediate(root);
                 UnityEngine.Object.DestroyImmediate(mesh);
+            }
+        }
+
+        [Test]
+        public void ProductionWindowPanelGraphic_FacesDisplayFrontForEveryTheme()
+        {
+            foreach (MockInstrumentTheme theme in
+                     Enum.GetValues(typeof(MockInstrumentTheme)))
+            {
+                var root = MockInstrumentFactory.Create(
+                    MockInstrumentKind.WindowPanel,
+                    Pose.identity,
+                    theme: theme);
+                try
+                {
+                    var manifest = root.GetComponentInChildren<
+                        ThemeVisualManifest>(true);
+                    var view = root.GetComponentInChildren<
+                        WindowPanelGraphicsPrototypeView>(true);
+                    Assert.That(manifest, Is.Not.Null, theme.ToString());
+                    Assert.That(manifest.MotionTarget, Is.Not.Null,
+                        theme.ToString());
+                    Assert.That(view, Is.Not.Null, theme.ToString());
+                    Assert.That(
+                        view.transform.lossyScale.x,
+                        Is.GreaterThan(0.0001f),
+                        $"{theme} display_surface must yield non-zero " +
+                        "runtime graphic scale.");
+                    Assert.That(
+                        Vector3.Dot(
+                            view.transform.forward,
+                            view.transform.parent.forward),
+                        Is.LessThan(-0.999f),
+                        $"{theme} graphic uses the established front winding.");
+                    var displayMesh = manifest.MotionTarget
+                        .GetComponent<MeshFilter>()?.sharedMesh;
+                    Assert.That(displayMesh, Is.Not.Null, theme.ToString());
+                    var displayCenter = manifest.MotionTarget.TransformPoint(
+                        displayMesh.bounds.center);
+                    Assert.That(
+                        Vector3.Dot(
+                            view.transform.position - displayCenter,
+                            view.transform.parent.forward),
+                        Is.EqualTo(0.002f).Within(0.00001f),
+                        $"{theme} graphic must sit in front of the display.");
+                }
+                finally
+                {
+                    UnityEngine.Object.DestroyImmediate(root);
+                }
             }
         }
 

@@ -19,7 +19,11 @@ namespace MatsuMotoMeterAR.Editor
             "Promote Selected Gate C Candidate to Production")]
         public static void PromoteSelected()
         {
-            var manifestPath = CandidateStagingManifest.SelectedAssetPath();
+            Promote(CandidateStagingManifest.SelectedAssetPath());
+        }
+
+        internal static void Promote(string manifestPath)
+        {
             var manifest = CandidateStagingManifest.Load(manifestPath);
             var checks = CandidateGateCReadiness.Evaluate(manifest, File.Exists);
             var failures = checks.Where(check => !check.Passed).ToArray();
@@ -50,15 +54,30 @@ namespace MatsuMotoMeterAR.Editor
                         asset.ActiveModel,
                         ImportAssetOptions.ForceSynchronousImport |
                         ImportAssetOptions.ForceUpdate);
-                    OrbitalAnalogUnityAssetBuilder.RebuildModel(
-                        asset.Entry.theme,
-                        asset.Entry.model);
+                    if (IsAudioModule(asset.Entry.model))
+                    {
+                        OrbitalAnalogUnityAssetBuilder.RebuildAudioModule(
+                            asset.Entry.theme,
+                            asset.Entry.model);
+                    }
+                    else if (asset.Entry.theme == "Superfine")
+                    {
+                        RebuildSuperfineNonAudio(asset);
+                    }
+                    else
+                    {
+                        OrbitalAnalogUnityAssetBuilder.RebuildModel(
+                            asset.Entry.theme,
+                            asset.Entry.model);
+                    }
                 }
 
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
                 RejectCandidateDependencies(assets);
-                RefinedModelReplacementValidator.ValidateActivePrefabs();
+                foreach (var asset in assets)
+                    RefinedModelReplacementValidator.ValidateActivePrefab(
+                        asset.Entry);
                 WriteReport(manifest, assets, backupRoot);
                 Debug.Log(
                     $"Candidate {manifest.candidateId} production promotion " +
@@ -86,17 +105,21 @@ namespace MatsuMotoMeterAR.Editor
                 var activePrefab =
                     $"Assets/MatsuMotoMeterAR/Resources/{entry.theme}/Prefabs/" +
                     $"PF_Visual_{entry.model}_{entry.theme}.prefab";
+                var stagedPrefab = manifest.CandidatePrefabPath(entry);
                 if (!File.Exists(stagedModel))
                     throw new FileNotFoundException("Staged model missing", stagedModel);
+                if (!File.Exists(stagedPrefab))
+                    throw new FileNotFoundException("Staged prefab missing", stagedPrefab);
                 var activeModelExists = File.Exists(activeModel);
                 var activePrefabExists = File.Exists(activePrefab);
-                var initialTrendMonitorRegistration =
-                    entry.model == "TrendMonitor" &&
+                var initialRegistration =
+                    (entry.model == "TrendMonitor" ||
+                     IsAudioModule(entry.model)) &&
                     !activeModelExists &&
                     !activePrefabExists;
-                if (!initialTrendMonitorRegistration && !activeModelExists)
+                if (!initialRegistration && !activeModelExists)
                     throw new FileNotFoundException("Active model missing", activeModel);
-                if (!initialTrendMonitorRegistration && !activePrefabExists)
+                if (!initialRegistration && !activePrefabExists)
                     throw new FileNotFoundException("Active prefab missing", activePrefab);
                 if (activeModelExists != activePrefabExists)
                 {
@@ -115,16 +138,114 @@ namespace MatsuMotoMeterAR.Editor
                         $"{materialRoot}/" +
                         $"MAT_{entry.theme}_V6_TrendMonitor_Readout.mat"
                     }
-                    : Array.Empty<string>();
+                    : IsAudioModule(entry.model)
+                        ? new[]
+                        {
+                            $"{materialRoot}/" +
+                            $"MAT_{entry.theme}_AudioModule_Housing.mat",
+                            $"{materialRoot}/" +
+                            $"MAT_{entry.theme}_AudioModule_FaceMetal.mat",
+                            $"{materialRoot}/" +
+                            $"MAT_{entry.theme}_AudioModule_EmissionDisplay.mat"
+                        }
+                        : Array.Empty<string>();
                 assets.Add(
                     new PromotionAsset(
                         entry,
                         stagedModel,
+                        stagedPrefab,
                         activeModel,
                         activePrefab,
                         managedMaterials));
             }
             return assets;
+        }
+
+        private static void RebuildSuperfineNonAudio(PromotionAsset asset)
+        {
+            var productionMeshes = AssetDatabase
+                .LoadAllAssetsAtPath(asset.ActiveModel)
+                .OfType<Mesh>()
+                .GroupBy(mesh => mesh.name, StringComparer.Ordinal)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.First(),
+                    StringComparer.Ordinal);
+            var candidatePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(
+                asset.StagedPrefab);
+            var root = PrefabUtility.InstantiatePrefab(candidatePrefab) as GameObject;
+            if (root == null)
+            {
+                throw new InvalidDataException(
+                    $"Could not instantiate candidate prefab: {asset.StagedPrefab}");
+            }
+
+            try
+            {
+                PrefabUtility.UnpackPrefabInstance(
+                    root,
+                    PrefabUnpackMode.Completely,
+                    InteractionMode.AutomatedAction);
+                foreach (var filter in root.GetComponentsInChildren<MeshFilter>(true))
+                {
+                    if (filter.sharedMesh == null)
+                        continue;
+                    if (!productionMeshes.TryGetValue(
+                            filter.sharedMesh.name,
+                            out var replacement))
+                    {
+                        throw new InvalidDataException(
+                            $"{asset.Entry.model}: production mesh missing for " +
+                            filter.sharedMesh.name);
+                    }
+                    filter.sharedMesh = replacement;
+                }
+
+                foreach (var renderer in root.GetComponentsInChildren<Renderer>(true))
+                {
+                    var assigned = renderer.sharedMaterials;
+                    for (var index = 0; index < assigned.Length; index++)
+                    {
+                        assigned[index] = ResolveSuperfineNonAudioMaterial(
+                            assigned[index]);
+                    }
+                    renderer.sharedMaterials = assigned;
+                }
+
+                root.name = $"PF_Visual_{asset.Entry.model}_Superfine";
+                PrefabUtility.SaveAsPrefabAsset(root, asset.ActivePrefab);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+            AssetDatabase.ImportAsset(
+                asset.ActivePrefab,
+                ImportAssetOptions.ForceSynchronousImport |
+                ImportAssetOptions.ForceUpdate);
+        }
+
+        private static Material ResolveSuperfineNonAudioMaterial(Material source)
+        {
+            if (source == null)
+                throw new InvalidDataException("Candidate renderer material is null.");
+            foreach (var role in new[]
+                     {
+                         "Housing", "FaceMetal", "EmissionDisplay", "Glass"
+                     })
+            {
+                if (!source.name.Contains(role, StringComparison.Ordinal))
+                    continue;
+                var path =
+                    "Assets/MatsuMotoMeterAR/Content/Themes/Superfine/" +
+                    $"Materials/MAT_Superfine_NonAudio_{role}.mat";
+                var material = AssetDatabase.LoadAssetAtPath<Material>(path);
+                if (material == null)
+                    throw new FileNotFoundException("Production material missing", path);
+                return material;
+            }
+            throw new InvalidDataException(
+                $"Unmapped Superfine material: {source.name}.");
         }
 
         private static void BackupAll(
@@ -248,17 +369,33 @@ namespace MatsuMotoMeterAR.Editor
                 sha.ComputeHash(stream).Select(value => value.ToString("x2")));
         }
 
+        internal static bool IsAudioModule(string model)
+        {
+            return model == "AudioOscillator" ||
+                   model == "AudioNoise" ||
+                   model == "AudioLFO" ||
+                   model == "AudioSequencer" ||
+                   model == "AudioDelay" ||
+                   model == "AudioOutput" ||
+                   model == "AudioVca" ||
+                   model == "AudioMixer" ||
+                   model == "AudioFilter" ||
+                   model == "AudioEnvelope";
+        }
+
         private readonly struct PromotionAsset
         {
             public PromotionAsset(
                 CandidateStagingEntry entry,
                 string stagedModel,
+                string stagedPrefab,
                 string activeModel,
                 string activePrefab,
                 string[] managedMaterials)
             {
                 Entry = entry;
                 StagedModel = stagedModel;
+                StagedPrefab = stagedPrefab;
                 ActiveModel = activeModel;
                 ActivePrefab = activePrefab;
                 ManagedMaterials = managedMaterials ?? Array.Empty<string>();
@@ -280,6 +417,7 @@ namespace MatsuMotoMeterAR.Editor
 
             public CandidateStagingEntry Entry { get; }
             public string StagedModel { get; }
+            public string StagedPrefab { get; }
             public string ActiveModel { get; }
             public string ActivePrefab { get; }
             public string[] ManagedMaterials { get; }

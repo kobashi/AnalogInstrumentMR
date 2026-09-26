@@ -21,7 +21,8 @@ namespace MatsuMotoMeterAR.Editor
             MockInstrumentTheme.OrbitalAnalog,
             MockInstrumentTheme.ForgeBrass,
             MockInstrumentTheme.KineticSafety,
-            MockInstrumentTheme.MachinedErgonomics
+            MockInstrumentTheme.MachinedErgonomics,
+            MockInstrumentTheme.Superfine
         };
 
         private static readonly MockInstrumentKind[] Kinds =

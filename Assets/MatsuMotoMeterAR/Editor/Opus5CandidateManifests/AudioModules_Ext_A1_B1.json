@@ -1,0 +1,366 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "AudioModules_Ext_A1_B1",
+  "integrationStage": "GateC",
+  "entries": [
+    {
+      "theme": "OrbitalAnalog",
+      "model": "AudioVca",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_A1/fbx/SM_AudioVca_OrbitalAnalog_ExtA1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_A1/report/SM_AudioVca_OrbitalAnalog_ExtA1_inspection.json",
+      "revision": "ExtA1",
+      "includedRevisions": [
+        "ExtA1"
+      ],
+      "requiredRevisions": [
+        "ExtA1"
+      ]
+    },
+    {
+      "theme": "OrbitalAnalog",
+      "model": "AudioMixer",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_A1/fbx/SM_AudioMixer_OrbitalAnalog_ExtA1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_A1/report/SM_AudioMixer_OrbitalAnalog_ExtA1_inspection.json",
+      "revision": "ExtA1",
+      "includedRevisions": [
+        "ExtA1"
+      ],
+      "requiredRevisions": [
+        "ExtA1"
+      ]
+    },
+    {
+      "theme": "OrbitalAnalog",
+      "model": "AudioFilter",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_A1/fbx/SM_AudioFilter_OrbitalAnalog_ExtA1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_A1/report/SM_AudioFilter_OrbitalAnalog_ExtA1_inspection.json",
+      "revision": "ExtA1",
+      "includedRevisions": [
+        "ExtA1"
+      ],
+      "requiredRevisions": [
+        "ExtA1"
+      ]
+    },
+    {
+      "theme": "OrbitalAnalog",
+      "model": "AudioEnvelope",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_A1/fbx/SM_AudioEnvelope_OrbitalAnalog_ExtA1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_A1/report/SM_AudioEnvelope_OrbitalAnalog_ExtA1_inspection.json",
+      "revision": "ExtA1",
+      "includedRevisions": [
+        "ExtA1"
+      ],
+      "requiredRevisions": [
+        "ExtA1"
+      ]
+    },
+    {
+      "theme": "OrbitalAnalog",
+      "model": "AudioLFO",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_A1/fbx/SM_AudioLFO_OrbitalAnalog_ExtA1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_A1/report/SM_AudioLFO_OrbitalAnalog_ExtA1_inspection.json",
+      "revision": "ExtA1",
+      "includedRevisions": [
+        "A1",
+        "R2A4",
+        "ExtA1"
+      ],
+      "requiredRevisions": [
+        "A1",
+        "R2A4",
+        "ExtA1"
+      ],
+      "replacesCandidateId": "AudioModules_A1_B1",
+      "replacesRevision": "A1"
+    },
+    {
+      "theme": "OrbitalAnalog",
+      "model": "AudioSequencer",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_A1/fbx/SM_AudioSequencer_OrbitalAnalog_ExtA1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_A1/report/SM_AudioSequencer_OrbitalAnalog_ExtA1_inspection.json",
+      "revision": "ExtA1",
+      "includedRevisions": [
+        "A1",
+        "R2A4",
+        "ExtA1"
+      ],
+      "requiredRevisions": [
+        "A1",
+        "R2A4",
+        "ExtA1"
+      ],
+      "replacesCandidateId": "AudioModules_A1_B1",
+      "replacesRevision": "A1"
+    },
+    {
+      "theme": "ForgeBrass",
+      "model": "AudioVca",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/fbx/SM_AudioVca_ForgeBrass_ExtB1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/report/SM_AudioVca_ForgeBrass_ExtB1_inspection.json",
+      "revision": "ExtB1",
+      "includedRevisions": [
+        "ExtB1"
+      ],
+      "requiredRevisions": [
+        "ExtB1"
+      ]
+    },
+    {
+      "theme": "ForgeBrass",
+      "model": "AudioMixer",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/fbx/SM_AudioMixer_ForgeBrass_ExtB1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/report/SM_AudioMixer_ForgeBrass_ExtB1_inspection.json",
+      "revision": "ExtB1",
+      "includedRevisions": [
+        "ExtB1"
+      ],
+      "requiredRevisions": [
+        "ExtB1"
+      ]
+    },
+    {
+      "theme": "ForgeBrass",
+      "model": "AudioFilter",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/fbx/SM_AudioFilter_ForgeBrass_ExtB1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/report/SM_AudioFilter_ForgeBrass_ExtB1_inspection.json",
+      "revision": "ExtB1",
+      "includedRevisions": [
+        "ExtB1"
+      ],
+      "requiredRevisions": [
+        "ExtB1"
+      ]
+    },
+    {
+      "theme": "ForgeBrass",
+      "model": "AudioEnvelope",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/fbx/SM_AudioEnvelope_ForgeBrass_ExtB1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/report/SM_AudioEnvelope_ForgeBrass_ExtB1_inspection.json",
+      "revision": "ExtB1",
+      "includedRevisions": [
+        "ExtB1"
+      ],
+      "requiredRevisions": [
+        "ExtB1"
+      ]
+    },
+    {
+      "theme": "ForgeBrass",
+      "model": "AudioLFO",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/fbx/SM_AudioLFO_ForgeBrass_ExtB1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/report/SM_AudioLFO_ForgeBrass_ExtB1_inspection.json",
+      "revision": "ExtB1",
+      "includedRevisions": [
+        "B1",
+        "ExtB1"
+      ],
+      "requiredRevisions": [
+        "B1",
+        "ExtB1"
+      ],
+      "replacesCandidateId": "AudioModules_A1_B1",
+      "replacesRevision": "B1"
+    },
+    {
+      "theme": "ForgeBrass",
+      "model": "AudioSequencer",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/fbx/SM_AudioSequencer_ForgeBrass_ExtB1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/report/SM_AudioSequencer_ForgeBrass_ExtB1_inspection.json",
+      "revision": "ExtB1",
+      "includedRevisions": [
+        "B1",
+        "ExtB1"
+      ],
+      "requiredRevisions": [
+        "B1",
+        "ExtB1"
+      ],
+      "replacesCandidateId": "AudioModules_A1_B1",
+      "replacesRevision": "B1"
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "AudioVca",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/fbx/SM_AudioVca_KineticSafety_ExtB1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/report/SM_AudioVca_KineticSafety_ExtB1_inspection.json",
+      "revision": "ExtB1",
+      "includedRevisions": [
+        "ExtB1"
+      ],
+      "requiredRevisions": [
+        "ExtB1"
+      ]
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "AudioMixer",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/fbx/SM_AudioMixer_KineticSafety_ExtB1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/report/SM_AudioMixer_KineticSafety_ExtB1_inspection.json",
+      "revision": "ExtB1",
+      "includedRevisions": [
+        "ExtB1"
+      ],
+      "requiredRevisions": [
+        "ExtB1"
+      ]
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "AudioFilter",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/fbx/SM_AudioFilter_KineticSafety_ExtB1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/report/SM_AudioFilter_KineticSafety_ExtB1_inspection.json",
+      "revision": "ExtB1",
+      "includedRevisions": [
+        "ExtB1"
+      ],
+      "requiredRevisions": [
+        "ExtB1"
+      ]
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "AudioEnvelope",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/fbx/SM_AudioEnvelope_KineticSafety_ExtB1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/report/SM_AudioEnvelope_KineticSafety_ExtB1_inspection.json",
+      "revision": "ExtB1",
+      "includedRevisions": [
+        "ExtB1"
+      ],
+      "requiredRevisions": [
+        "ExtB1"
+      ]
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "AudioLFO",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/fbx/SM_AudioLFO_KineticSafety_ExtB1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/report/SM_AudioLFO_KineticSafety_ExtB1_inspection.json",
+      "revision": "ExtB1",
+      "includedRevisions": [
+        "B1",
+        "ExtB1"
+      ],
+      "requiredRevisions": [
+        "B1",
+        "ExtB1"
+      ],
+      "replacesCandidateId": "AudioModules_A1_B1",
+      "replacesRevision": "B1"
+    },
+    {
+      "theme": "KineticSafety",
+      "model": "AudioSequencer",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/fbx/SM_AudioSequencer_KineticSafety_ExtB1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/report/SM_AudioSequencer_KineticSafety_ExtB1_inspection.json",
+      "revision": "ExtB1",
+      "includedRevisions": [
+        "B1",
+        "ExtB1"
+      ],
+      "requiredRevisions": [
+        "B1",
+        "ExtB1"
+      ],
+      "replacesCandidateId": "AudioModules_A1_B1",
+      "replacesRevision": "B1"
+    },
+    {
+      "theme": "MachinedErgonomics",
+      "model": "AudioVca",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/fbx/SM_AudioVca_MachinedErgonomics_ExtB1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/report/SM_AudioVca_MachinedErgonomics_ExtB1_inspection.json",
+      "revision": "ExtB1",
+      "includedRevisions": [
+        "ExtB1"
+      ],
+      "requiredRevisions": [
+        "ExtB1"
+      ]
+    },
+    {
+      "theme": "MachinedErgonomics",
+      "model": "AudioMixer",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/fbx/SM_AudioMixer_MachinedErgonomics_ExtB1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/report/SM_AudioMixer_MachinedErgonomics_ExtB1_inspection.json",
+      "revision": "ExtB1",
+      "includedRevisions": [
+        "ExtB1"
+      ],
+      "requiredRevisions": [
+        "ExtB1"
+      ]
+    },
+    {
+      "theme": "MachinedErgonomics",
+      "model": "AudioFilter",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/fbx/SM_AudioFilter_MachinedErgonomics_ExtB1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/report/SM_AudioFilter_MachinedErgonomics_ExtB1_inspection.json",
+      "revision": "ExtB1",
+      "includedRevisions": [
+        "ExtB1"
+      ],
+      "requiredRevisions": [
+        "ExtB1"
+      ]
+    },
+    {
+      "theme": "MachinedErgonomics",
+      "model": "AudioEnvelope",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/fbx/SM_AudioEnvelope_MachinedErgonomics_ExtB1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/report/SM_AudioEnvelope_MachinedErgonomics_ExtB1_inspection.json",
+      "revision": "ExtB1",
+      "includedRevisions": [
+        "ExtB1"
+      ],
+      "requiredRevisions": [
+        "ExtB1"
+      ]
+    },
+    {
+      "theme": "MachinedErgonomics",
+      "model": "AudioLFO",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/fbx/SM_AudioLFO_MachinedErgonomics_ExtB1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/report/SM_AudioLFO_MachinedErgonomics_ExtB1_inspection.json",
+      "revision": "ExtB1",
+      "includedRevisions": [
+        "B1",
+        "ExtB1"
+      ],
+      "requiredRevisions": [
+        "B1",
+        "ExtB1"
+      ],
+      "replacesCandidateId": "AudioModules_A1_B1",
+      "replacesRevision": "B1"
+    },
+    {
+      "theme": "MachinedErgonomics",
+      "model": "AudioSequencer",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/fbx/SM_AudioSequencer_MachinedErgonomics_ExtB1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Ext_B1/report/SM_AudioSequencer_MachinedErgonomics_ExtB1_inspection.json",
+      "revision": "ExtB1",
+      "includedRevisions": [
+        "B1",
+        "ExtB1"
+      ],
+      "requiredRevisions": [
+        "B1",
+        "ExtB1"
+      ],
+      "replacesCandidateId": "AudioModules_A1_B1",
+      "replacesRevision": "B1"
+    }
+  ],
+  "gateCEvidence": {
+    "semanticUvAudit": "Builds/Reports/candidate-AudioModules_Ext_A1_B1-source-integrity.md",
+    "fixedCameraVisualReview": "Builds/Reports/candidate-AudioModules_Ext_A1_B1-unity-audio-display-contact-sheet.png",
+    "motionAudit": "Builds/Reports/candidate-AudioModules_Ext_A1_B1-motion-audit.md",
+    "unityStagingValidation": "Builds/Reports/candidate-AudioModules_Ext_A1_B1-staging-validation.md",
+    "editModeTests": "Builds/Reports/candidate-AudioModules_Ext_A1_B1-editmode-results.xml",
+    "quest48Gate": "",
+    "quest64Stress": "",
+    "questValidationDeferral": "docs/AUDIO_MODULE_VISUAL_QUEST_DEFERRAL.md",
+    "rollbackPlan": "docs/AUDIO_MODULE_VISUAL_ROLLBACK.md"
+  }
+}

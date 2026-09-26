@@ -10,7 +10,8 @@ Every production instrument has an `AudioSocket`. This feature makes that
 socket functional while preserving existing instrument geometry, interaction
 ranges, and scalar signal semantics. Modular patch persistence extends the
 released schema-v7 contract to schema v8; editable module parameters extend it
-to schema v9 with backward migration.
+to schema v9; adjustable numeric ranges and step counts extend it to schema
+v10 with backward migration.
 
 Audio is derived from the current instrument kind, theme, value, and display
 state. Audio playback state is not persisted. Placement previews are silent.
@@ -62,11 +63,33 @@ produces an event or sound.
 | Trend Monitor | composed value, slope, spread, valid inputs | continuous generated signal/roar texture |
 | Window Panel | Energy, Balance, Phase, Detail, preset | continuous preset-dependent generated texture |
 | Oscillator | parameter knob and future typed inputs | Sine/Triangle/Saw/Square audio source |
-| Noise | parameter knob and future Gate input | deterministic White/Pink/Brown audio source |
-| LFO | rate knob and typed output selection | 0.05–20 Hz bipolar modulation at Control or Audio rate |
-| Sequencer | lower/upper knob half selects 8/16 steps; position within half selects 40–240 BPM | fixed bipolar step pattern with internal or external clock |
+| Noise | parameter knob and Gate input | deterministic White/Pink/Brown audio source |
+| LFO | rate knob, Gate Length, and typed output selection | periodic Control/Clock/Gate/Trigger or Audio-rate waveform output |
+| Sequencer | lower/upper knob half selects 8/16 steps; position within half selects 40–240 BPM | editable bipolar steps plus step Gate/Trigger, using internal or external clock |
 | Delay | parameter knob | 20–750 ms bounded wet delay with protected 42% internal feedback |
+| VCA | manual level or Control input | smoothed voltage-controlled amplitude with bounded gain |
+| Mixer | multiple Audio inputs | summed audio bus with master gain and output limit |
+| Filter | cutoff knob or Control input | resonant low-pass processing with smoothed cutoff |
+| Envelope | manual Gate, Gate input, or Trigger input | ADSR Control output for VCA/Filter modulation |
 | Audio Output | parameter knob and Audio input | limited full-3D streaming output |
+
+In Operation mode, either controller's Trigger moves a sound module's primary
+knob one step forward and Grip moves it one step backward. Pressing Trigger
+and Grip together resets only that primary knob to its initial normalized
+value (Noise 0.35, Sequencer 0.25, other sound modules 0.5). The configured
+range, step count, secondary parameters, and patch connections are preserved.
+The chord replaces audio-module contact drag; non-audio adjustable controls
+retain their contact-drag chord.
+
+While aiming in Operation mode, vertical stick input changes an operable value
+at an analog rate. Lever and Throttle Lever invert the vertical direction so Up
+decreases and Down increases; other controls retain their existing direction.
+Left sets minimum, Right sets maximum, and stick click restores the configured
+default. Lever-family controls preserve their logical step count and output
+while the visible moving part uses a damped continuous target and settles onto
+the final detent on release. Push Button and Toggle Switch respond either to
+direct contact or to beam + Trigger; a beam press is held until Trigger release
+and is not also interpreted as a directional step.
 
 If one update crosses several detents, the runtime reports the final transition
 without creating an unbounded burst. Direct physical motion normally crosses
@@ -150,7 +173,7 @@ The initial runtime candidate on `codex/instrument-audio-contract` implements:
 - four-stage Indicator Lamp sound state with OFF/LOW/MID/HIGH cues and
   hysteresis at every boundary. A multi-stage jump emits one destination cue;
 - Connect-mode typed Patch cables, cyan Audio / amber Control / violet Clock /
-  magenta selected rendering,
+  green Gate / orange Trigger / magenta selected rendering,
   per-module patch cycling with A, and deletion with B.
 
 Desktop structural validation on 2026-09-04:
@@ -182,20 +205,22 @@ Implemented foundation:
 - graph compilation with duplicate-edge rejection and zero-delay cycle
   rejection;
 - four-waveform Oscillator and LFO, deterministic White/Pink/Brown Noise,
-  8/16-step Sequencer, protected Delay, and bounded Audio Output nodes;
-- standard typed port catalogs for the six dedicated module kinds and three
+  8/16-step Sequencer, protected Delay, smoothed VCA, bounded Mixer, resonant
+  low-pass Filter, ADSR Envelope, and bounded Audio Output nodes;
+- standard typed port catalogs for the ten dedicated module kinds and three
   existing-instrument source kinds;
-- sample-accurate Audio edges and block-rate sample-and-hold Control edges;
-- sample-accurate Clock edges with rising-edge step advancement and automatic
-  internal-clock fallback;
+- sample-accurate Audio, Clock, Gate, and Trigger edges and block-rate
+  sample-and-hold Control edges;
+- Clock rising-edge step advancement and automatic internal-clock fallback;
 - preallocated Delay ring buffers, feedback clamped to 0.92, internal-state
   clamping, and delay-boundary cycle compilation;
 - finite/clamped rendering, source mixing, output limiting, and verified 0 B
   managed allocation across warmed render calls.
 
-Oscillator, Noise, LFO, Sequencer, Delay, and Audio Output are registered placement
-kinds with stable `audio.oscillator`, `audio.noise`, `audio.lfo`,
-`audio.sequencer`, `audio.delay`, and `audio.output` type IDs. They have
+Oscillator, Noise, LFO, Sequencer, Delay, VCA, Mixer, Filter, Envelope, and Audio Output are
+registered placement kinds with stable `audio.oscillator`, `audio.noise`,
+`audio.lfo`, `audio.sequencer`, `audio.delay`, `audio.vca`, `audio.mixer`,
+`audio.filter`, `audio.envelope`, and `audio.output` type IDs. They have
 theme-colored code-contract visuals, parameter-knob motion, preview behavior,
 theme rebinding, and normal placement-value persistence. Audio Output owns a
 full-3D streaming player and an initially silent compiled graph. Schema v8
@@ -204,11 +229,14 @@ Schema v9 adds per-placement Oscillator/LFO waveform, Noise color, and the
 16-value Sequencer pattern.
 Connect mode can patch or re-route an Oscillator/Noise/LFO `audio.out` to an
 Audio Output `audio.in`. An LFO can also drive Oscillator `pitch.in` through
-`control.out`, or `fm.in` through `audio.out`; left-stick horizontal selects
-Control or Audio rate before confirmation. Runtime builds the complete
+`control.out`, or `fm.in` through `audio.out`. Left-stick horizontal cycles
+the LFO's `control.out`, `clock.out`, `gate.out`, `trigger.out`, and
+`audio.out`; it cycles the Sequencer's `control.out`, `gate.out`, and
+`trigger.out`. Runtime builds the complete
 upstream LFO → Oscillator → Output topology and rebuilds only when placements
-or patch records change. Cables use cyan for Audio, amber for Control, and
-magenta for the selected patch. LFO `clock.out` can drive Sequencer `clock.in`;
+or patch records change. Cables use cyan for Audio, amber for Control, violet
+for Clock, green for Gate, orange for Trigger, and magenta for the selected
+patch. LFO `clock.out` can drive Sequencer `clock.in`;
 without that edge the Sequencer runs from its 40–240 BPM internal clock. Its
 `control.out` drives Oscillator `pitch.in`, producing the full
 LFO → Sequencer → Oscillator → Output chain. The parameter knob's lower half
@@ -216,6 +244,37 @@ selects 8 steps and upper half selects 16, while its position within that half
 sets tempo. Clock cables are violet. With a module endpoint selected, A cycles its
 patches and B deletes the selected patch transactionally. Deleting either
 endpoint also removes its patches. Authored FBX prefabs remain deferred.
+
+VCA accepts Audio at `audio.in`, optional Control at `level.in`, and emits
+`audio.out`. Without a Control cable its parameter knob supplies the manual
+level. With Control connected, the finite 0–1 input replaces the manual level;
+changes use a 5 ms DSP ramp to avoid block-boundary clicks. Mixer accepts any
+number of graph-bounded Audio connections at `audio.in`, sums them without
+allocating, then applies editable master gain and an editable hard limit before
+emitting `audio.out`. Filter accepts Audio at `audio.in`, optional Control at
+`cutoff.in`, and emits `audio.out`. Its editable logarithmic cutoff range is
+80–12000 Hz by default (DSP hard limits 20–18000 Hz); Control shifts cutoff by
+up to four octaves in either direction. Resonance is editable from 0–1. The
+state-variable low-pass clamps internal state/output and smooths cutoff
+coefficient changes over 5 ms. These three modules currently use
+theme-colored code-contract visuals with live displays. Dedicated authored FBX
+visuals remain a later Gate C candidate and are not claimed as production
+assets.
+
+Envelope accepts sample-accurate `gate.in` and `trigger.in` events and emits a
+0–1 block-rate `control.out`. Gate rising starts Attack, Gate high holds the
+Sustain level after Decay, and Gate falling starts Release. Trigger rising
+retriggers Attack; without an active Gate it completes as a one-shot
+Attack→Decay→Release contour. A two-state manual Gate keeps the module usable
+without a patch. LFO and Sequencer provide directly patchable `gate.out` and
+`trigger.out`; their editable Gate Length defaults to 50%. LFO Gate follows
+its phase duty cycle and Trigger pulses once at each cycle start. Sequencer
+Gate follows each internal step's duty cycle, or the high portion of an
+external Clock; Trigger pulses once per step advance. Attack, Decay, and Release
+use editable logarithmic 0.005–5 s defaults with 0.001–10 s DSP hard limits;
+Sustain is editable from 0–1. Envelope Control routes to VCA `level.in` and
+Filter `cutoff.in`. Oscillator/Noise Gate and LFO reset inputs now consume the
+same sample-accurate discrete-input path.
 
 Delay accepts Audio at `audio.in`, optional LFO time modulation at `time.in`,
 and emits `audio.out`. Its placement value maps monotonically to 20–750 ms;
@@ -243,14 +302,21 @@ routes to Oscillator `fm.in`, Delay `audio.in`, or Audio Output `audio.in`.
 Unavailable Trend/Panel inputs produce silent texture output. Their typed
 control values remain finite and clamped.
 
-Editable dedicated modules expose a compact Connect-mode parameter editor.
-Select an Oscillator, Noise, LFO, or Sequencer as Source and press Y. For
-Oscillator/LFO, left-stick horizontal cycles Sine/Triangle/Saw/Square; for
-Noise it cycles White/Pink/Brown. For Sequencer, left-stick horizontal selects
-one of the active 8/16 steps and right-stick vertical adjusts its bipolar value
-in 0.05 increments. Changes are audible while editing. A or left-stick press
-saves; B restores the complete pre-edit parameter state. Saved values are
-normalized before serialization and restored onto the existing DSP node.
+Editable controls and dedicated modules expose a common Connect-mode parameter
+editor. Select a Lever, Toggle, Rotary, Push Button, Throttle, Power Slider,
+Oscillator, Noise, LFO, Sequencer, Delay, VCA, Mixer, Filter, Envelope, or
+Audio Output as Source and press Y. Left-stick horizontal
+selects a parameter; left-stick vertical selects Value, Minimum, Maximum, or
+Step Count. Right-stick vertical adjusts the selected field. Step Count 0 is
+continuous; 2-128 quantizes the range including both endpoints. Oscillator and
+LFO frequency ranges are logarithmic. LFO and Sequencer Gate Length ranges and
+step counts are adjustable. Module-specific waveform, noise color, and sequence
+entries remain available; the Sequencer step-value range and quantization are
+adjustable as well. Changes are audible while editing. A or
+left-stick press saves; B restores the complete pre-edit parameter state.
+Saved values are normalized before serialization and restored onto the existing
+DSP node. Toggle and Push Button retain their mandatory two-state behavior;
+their output minimum and maximum are configurable.
 
 Implementation order:
 

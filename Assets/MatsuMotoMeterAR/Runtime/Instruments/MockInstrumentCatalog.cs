@@ -14,7 +14,7 @@ namespace MatsuMotoMeterAR.Instruments
     public static class MockInstrumentCatalog
     {
         public const int PerformanceBaselineCount = 6;
-        public const int Count = 20;
+        public const int Count = 24;
         public const int CategoryCount = 5;
 
         private static readonly MockInstrumentKind[] OrderedKinds =
@@ -37,7 +37,11 @@ namespace MatsuMotoMeterAR.Instruments
             MockInstrumentKind.AudioNoise,
             MockInstrumentKind.AudioLfo,
             MockInstrumentKind.AudioSequencer,
+            MockInstrumentKind.AudioEnvelope,
+            MockInstrumentKind.AudioFilter,
             MockInstrumentKind.AudioDelay,
+            MockInstrumentKind.AudioVca,
+            MockInstrumentKind.AudioMixer,
             MockInstrumentKind.AudioOutput
         };
 
@@ -63,7 +67,11 @@ namespace MatsuMotoMeterAR.Instruments
                 MockInstrumentKind.AudioNoise => "audio.noise",
                 MockInstrumentKind.AudioLfo => "audio.lfo",
                 MockInstrumentKind.AudioSequencer => "audio.sequencer",
+                MockInstrumentKind.AudioEnvelope => "audio.envelope",
+                MockInstrumentKind.AudioFilter => "audio.filter",
                 MockInstrumentKind.AudioDelay => "audio.delay",
+                MockInstrumentKind.AudioVca => "audio.vca",
+                MockInstrumentKind.AudioMixer => "audio.mixer",
                 MockInstrumentKind.AudioOutput => "audio.output",
                 _ => "meter.round"
             };
@@ -91,7 +99,11 @@ namespace MatsuMotoMeterAR.Instruments
                 MockInstrumentKind.AudioNoise => "NOISE",
                 MockInstrumentKind.AudioLfo => "LFO",
                 MockInstrumentKind.AudioSequencer => "SEQUENCER",
+                MockInstrumentKind.AudioEnvelope => "ENVELOPE",
+                MockInstrumentKind.AudioFilter => "FILTER",
                 MockInstrumentKind.AudioDelay => "DELAY",
+                MockInstrumentKind.AudioVca => "VCA",
+                MockInstrumentKind.AudioMixer => "MIXER",
                 MockInstrumentKind.AudioOutput => "AUDIO OUTPUT",
                 _ => "ROUND METER"
             };
@@ -118,7 +130,11 @@ namespace MatsuMotoMeterAR.Instruments
                 "audio.noise" => MockInstrumentKind.AudioNoise,
                 "audio.lfo" => MockInstrumentKind.AudioLfo,
                 "audio.sequencer" => MockInstrumentKind.AudioSequencer,
+                "audio.envelope" => MockInstrumentKind.AudioEnvelope,
+                "audio.filter" => MockInstrumentKind.AudioFilter,
                 "audio.delay" => MockInstrumentKind.AudioDelay,
+                "audio.vca" => MockInstrumentKind.AudioVca,
+                "audio.mixer" => MockInstrumentKind.AudioMixer,
                 "audio.output" => MockInstrumentKind.AudioOutput,
                 _ => MockInstrumentKind.RoundMeter
             };
@@ -144,7 +160,11 @@ namespace MatsuMotoMeterAR.Instruments
                    typeId == "audio.noise" ||
                    typeId == "audio.lfo" ||
                    typeId == "audio.sequencer" ||
+                   typeId == "audio.envelope" ||
+                   typeId == "audio.filter" ||
                    typeId == "audio.delay" ||
+                   typeId == "audio.vca" ||
+                   typeId == "audio.mixer" ||
                    typeId == "audio.output";
         }
 
@@ -190,7 +210,15 @@ namespace MatsuMotoMeterAR.Instruments
                     MockInstrumentCategory.AudioModules,
                 MockInstrumentKind.AudioSequencer =>
                     MockInstrumentCategory.AudioModules,
+                MockInstrumentKind.AudioEnvelope =>
+                    MockInstrumentCategory.AudioModules,
+                MockInstrumentKind.AudioFilter =>
+                    MockInstrumentCategory.AudioModules,
                 MockInstrumentKind.AudioDelay =>
+                    MockInstrumentCategory.AudioModules,
+                MockInstrumentKind.AudioVca =>
+                    MockInstrumentCategory.AudioModules,
+                MockInstrumentKind.AudioMixer =>
                     MockInstrumentCategory.AudioModules,
                 MockInstrumentKind.AudioOutput =>
                     MockInstrumentCategory.AudioModules,
@@ -272,7 +300,35 @@ namespace MatsuMotoMeterAR.Instruments
 
         public static bool UsesContactPress(MockInstrumentKind kind)
         {
-            return kind == MockInstrumentKind.PushButton;
+            return kind == MockInstrumentKind.PushButton ||
+                   kind == MockInstrumentKind.ToggleSwitch;
+        }
+
+        public static bool SupportsDirectionalStep(MockInstrumentKind kind)
+        {
+            return kind != MockInstrumentKind.TrendMonitor &&
+                   !IsReadOnlyMeter(kind) && !UsesContactPress(kind);
+        }
+
+        public static bool SupportsStickControl(MockInstrumentKind kind)
+        {
+            return kind != MockInstrumentKind.TrendMonitor &&
+                   !IsReadOnlyMeter(kind);
+        }
+
+        public static bool IsSoundModule(MockInstrumentKind kind)
+        {
+            return GetCategory(kind) == MockInstrumentCategory.AudioModules;
+        }
+
+        public static float DefaultSoundModuleValue(MockInstrumentKind kind)
+        {
+            return kind switch
+            {
+                MockInstrumentKind.AudioNoise => 0.35f,
+                MockInstrumentKind.AudioSequencer => 0.25f,
+                _ => 0.5f
+            };
         }
 
     }

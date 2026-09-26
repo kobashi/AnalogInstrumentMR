@@ -48,6 +48,10 @@ namespace MatsuMotoMeterAR.Tests
         [TestCase(MockInstrumentKind.AudioLfo, "audio.lfo")]
         [TestCase(MockInstrumentKind.AudioSequencer, "audio.sequencer")]
         [TestCase(MockInstrumentKind.AudioDelay, "audio.delay")]
+        [TestCase(MockInstrumentKind.AudioVca, "audio.vca")]
+        [TestCase(MockInstrumentKind.AudioMixer, "audio.mixer")]
+        [TestCase(MockInstrumentKind.AudioFilter, "audio.filter")]
+        [TestCase(MockInstrumentKind.AudioEnvelope, "audio.envelope")]
         [TestCase(MockInstrumentKind.AudioOutput, "audio.output")]
         public void TypeIds_PreservePlacementDataContract(
             MockInstrumentKind kind,
@@ -211,6 +215,10 @@ namespace MatsuMotoMeterAR.Tests
         [TestCase(MockInstrumentKind.AudioLfo)]
         [TestCase(MockInstrumentKind.AudioSequencer)]
         [TestCase(MockInstrumentKind.AudioDelay)]
+        [TestCase(MockInstrumentKind.AudioVca)]
+        [TestCase(MockInstrumentKind.AudioMixer)]
+        [TestCase(MockInstrumentKind.AudioFilter)]
+        [TestCase(MockInstrumentKind.AudioEnvelope)]
         [TestCase(MockInstrumentKind.AudioOutput)]
         public void DisplayAndCompactControls_SupportAllSurfaces(MockInstrumentKind kind)
         {

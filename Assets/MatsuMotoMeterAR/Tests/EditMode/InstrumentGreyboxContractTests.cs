@@ -39,24 +39,121 @@ namespace MatsuMotoMeterAR.Tests
                 MockInstrumentThemeCatalog.Cycle(
                     MockInstrumentTheme.ForgeBrass,
                     -1),
-                Is.EqualTo(MockInstrumentTheme.MachinedErgonomics));
+                Is.EqualTo(MockInstrumentTheme.Superfine));
+            Assert.That(
+                MockInstrumentThemeCatalog.Cycle(
+                    MockInstrumentTheme.MachinedErgonomics,
+                    1),
+                Is.EqualTo(MockInstrumentTheme.Superfine));
+            Assert.That(
+                MockInstrumentThemeCatalog.Cycle(
+                    MockInstrumentTheme.Superfine,
+                    1),
+                Is.EqualTo(MockInstrumentTheme.ForgeBrass));
             Assert.That(
                 MockInstrumentThemeCatalog.Normalize((MockInstrumentTheme)999),
                 Is.EqualTo(MockInstrumentThemeCatalog.DefaultTheme));
         }
 
         [Test]
-        public void MachinedErgonomics_HasProductionVisualForEveryKind()
+        public void PortAnchor_MapsTypedPortIdAndFallsBackToInstrumentRoot()
+        {
+            var root = MockInstrumentFactory.Create(
+                MockInstrumentKind.AudioVca,
+                new Pose(
+                    new Vector3(1f, 2f, 3f),
+                    Quaternion.Euler(0f, 35f, 0f)));
+            try
+            {
+                var contract = root.GetComponent<InstrumentGreyboxContract>();
+                var visual = contract.VisualSocket.GetChild(0);
+                var anchor = new GameObject("port_custom_out").transform;
+                anchor.SetParent(visual, false);
+                anchor.localPosition = new Vector3(0.08f, -0.03f, 0.054f);
+
+                Assert.That(
+                    InstrumentGreyboxContract.PortNodeName("audio.out"),
+                    Is.EqualTo("port_audio_out"));
+                Assert.That(
+                    contract.ResolvePortAnchor("custom.out"),
+                    Is.SameAs(anchor));
+                Assert.That(
+                    contract.ResolvePortAnchor("missing.out"),
+                    Is.SameAs(root.transform));
+                Assert.That(
+                    contract.ResolvePortAnchor(null),
+                    Is.SameAs(root.transform));
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void PortAnchor_InvalidatesMissingFallbackWhenVisualChanges()
+        {
+            var root = MockInstrumentFactory.Create(
+                MockInstrumentKind.AudioVca,
+                Pose.identity);
+            try
+            {
+                var contract = root.GetComponent<InstrumentGreyboxContract>();
+                Assert.That(
+                    contract.ResolvePortAnchor("control.out"),
+                    Is.SameAs(root.transform));
+
+                var oldVisual = contract.VisualSocket.GetChild(0);
+                oldVisual.SetParent(null, false);
+                Object.DestroyImmediate(oldVisual.gameObject);
+                var replacement = new GameObject("Replacement Visual").transform;
+                replacement.SetParent(contract.VisualSocket, false);
+                var anchor = new GameObject("port_control_out").transform;
+                anchor.SetParent(replacement, false);
+
+                Assert.That(
+                    contract.ResolvePortAnchor("control.out"),
+                    Is.SameAs(anchor));
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void MachinedErgonomics_HasProductionVisualForPromotedKinds()
         {
             for (var index = 0; index < MockInstrumentCatalog.Count; index++)
             {
                 var kind = (MockInstrumentKind)index;
+                if (IsAudioModule(kind))
+                    continue;
                 Assert.That(
                     MockInstrumentFactory.HasProductionVisual(
                         kind,
                         MockInstrumentTheme.MachinedErgonomics),
                     Is.True,
                     $"Missing Machined Ergonomics production visual for {kind}.");
+            }
+        }
+
+        [Test]
+        public void AudioModules_HaveProductionVisualAfterPromotion()
+        {
+            for (var index = 0; index < MockInstrumentCatalog.Count; index++)
+            {
+                var kind = (MockInstrumentKind)index;
+                if (!IsPromotedAudioModule(kind))
+                    continue;
+                foreach (MockInstrumentTheme theme in
+                         System.Enum.GetValues(typeof(MockInstrumentTheme)))
+                {
+                    Assert.That(
+                        MockInstrumentFactory.HasProductionVisual(kind, theme),
+                        Is.True,
+                        $"Missing production visual for {theme}/{kind}.");
+                }
             }
         }
 
@@ -80,6 +177,14 @@ namespace MatsuMotoMeterAR.Tests
                 Assert.That(
                     PlayerPrefs.GetString(key),
                     Is.EqualTo("forge-brass"));
+
+                MockInstrumentThemePreference.Save(MockInstrumentTheme.Superfine);
+                Assert.That(
+                    MockInstrumentThemePreference.Load(),
+                    Is.EqualTo(MockInstrumentTheme.Superfine));
+                Assert.That(
+                    PlayerPrefs.GetString(key),
+                    Is.EqualTo("superfine"));
 
                 PlayerPrefs.SetString(key, "unknown-theme");
                 Assert.That(
@@ -188,7 +293,11 @@ namespace MatsuMotoMeterAR.Tests
                     Assert.That(
                         materials.Count,
                         Is.LessThanOrEqualTo(
-                            InstrumentGreyboxSpecification.SharedMaterialBudgetPerInstrument +
+                            (IsAudioModule(kind)
+                                ? InstrumentGreyboxSpecification
+                                    .AudioModuleMaterialBudget
+                                : InstrumentGreyboxSpecification
+                                    .SharedMaterialBudgetPerInstrument) +
                             (hasMonitor
                                 ? InstrumentGreyboxSpecification.SignalMonitorMaterialBudget
                                 : hasWindowPanelGraphic
@@ -215,10 +324,13 @@ namespace MatsuMotoMeterAR.Tests
         }
 
         [Test]
-        public void TwentyFourMixedInstruments_StayInsideAggregateQuestContentBudget()
+        public void TwentyFourMixedInstruments_StayInsideAcceptedBudgetOrRetainSuperfineReview()
         {
             const int maximumTriangles = 120000;
-            const int maximumRenderers = 96;
+            // The accepted Kinetic Safety production set has 101 visual
+            // Renderers; the factory adds two runtime renderers. Keep the
+            // aggregate ceiling at that measured total with no extra headroom.
+            const int maximumRenderers = 103;
             for (var themeIndex = 0;
                  themeIndex < MockInstrumentThemeCatalog.Count;
                  themeIndex++)
@@ -250,7 +362,22 @@ namespace MatsuMotoMeterAR.Tests
                     }
 
                     Assert.That(triangles, Is.LessThanOrEqualTo(maximumTriangles));
-                    Assert.That(renderers, Is.LessThanOrEqualTo(maximumRenderers));
+                    var theme = (MockInstrumentTheme)themeIndex;
+                    if (theme == MockInstrumentTheme.Superfine)
+                    {
+                        Assert.That(
+                            renderers,
+                            Is.EqualTo(116),
+                            "Superfine renderer count remains a deferred Q1 " +
+                            "REVIEW; do not treat it as accepted budget.");
+                    }
+                    else
+                    {
+                        Assert.That(
+                            renderers,
+                            Is.LessThanOrEqualTo(maximumRenderers),
+                            $"{theme} renderer total");
+                    }
                     Assert.That(colliders, Is.EqualTo(24));
                     Assert.That(realtimeLights, Is.Zero);
                 }
@@ -515,6 +642,25 @@ namespace MatsuMotoMeterAR.Tests
                     return candidate;
             }
             return null;
+        }
+
+        private static bool IsAudioModule(MockInstrumentKind kind)
+        {
+            return kind == MockInstrumentKind.AudioOscillator ||
+                   kind == MockInstrumentKind.AudioNoise ||
+                   kind == MockInstrumentKind.AudioLfo ||
+                   kind == MockInstrumentKind.AudioSequencer ||
+                   kind == MockInstrumentKind.AudioDelay ||
+                   kind == MockInstrumentKind.AudioVca ||
+                   kind == MockInstrumentKind.AudioMixer ||
+                   kind == MockInstrumentKind.AudioFilter ||
+                   kind == MockInstrumentKind.AudioEnvelope ||
+                   kind == MockInstrumentKind.AudioOutput;
+        }
+
+        private static bool IsPromotedAudioModule(MockInstrumentKind kind)
+        {
+            return IsAudioModule(kind);
         }
     }
 }

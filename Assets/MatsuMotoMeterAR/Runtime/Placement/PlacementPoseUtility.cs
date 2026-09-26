@@ -20,5 +20,34 @@ namespace MatsuMotoMeterAR.Placement
 
             return new Pose(position, Quaternion.LookRotation(normal, up.normalized));
         }
+
+        public static Pose AlignNearestAxis(Pose candidate, Pose reference)
+        {
+            var delta = candidate.position - reference.position;
+            var right = reference.rotation * Vector3.right;
+            var up = reference.rotation * Vector3.up;
+            var horizontalOffset = Vector3.Dot(delta, right);
+            var verticalOffset = Vector3.Dot(delta, up);
+            delta -= Mathf.Abs(horizontalOffset) <= Mathf.Abs(verticalOffset)
+                ? right * horizontalOffset
+                : up * verticalOffset;
+            return new Pose(reference.position + delta, reference.rotation);
+        }
+
+        public static Pose SnapToGrid(Pose pose, float spacing)
+        {
+            if (spacing <= 0f)
+                return pose;
+
+            var right = pose.rotation * Vector3.right;
+            var up = pose.rotation * Vector3.up;
+            var x = Vector3.Dot(pose.position, right);
+            var y = Vector3.Dot(pose.position, up);
+            pose.position += right *
+                             (Mathf.Round(x / spacing) * spacing - x);
+            pose.position += up *
+                             (Mathf.Round(y / spacing) * spacing - y);
+            return pose;
+        }
     }
 }

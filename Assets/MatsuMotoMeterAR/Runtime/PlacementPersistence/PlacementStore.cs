@@ -517,6 +517,25 @@ namespace MatsuMotoMeterAR.PlacementPersistence
                 ? ModularAudioParameterPolicy.NormalizeSequencerSteps(
                     source.audioSequencerSteps)
                 : ModularAudioParameterPolicy.CreateDefaultSequencerSteps();
+            var instrumentKind = MockInstrumentCatalog.FromTypeId(
+                record.instrumentTypeId);
+            record.parameterSettings =
+                AdjustableParameterPolicy.NormalizeSettings(
+                    instrumentKind,
+                    sourceSchemaVersion >= 10
+                        ? source.parameterSettings
+                        : null,
+                    source.normalizedValue);
+            if (sourceSchemaVersion >= 10 &&
+                instrumentKind == MockInstrumentKind.AudioSequencer)
+            {
+                record.audioSequencerSteps =
+                    ModularAudioParameterPolicy.NormalizeSequencerSteps(
+                        source.audioSequencerSteps,
+                        AdjustableParameterPolicy.Find(
+                            record.parameterSettings,
+                            AdjustableParameterPolicy.SequencerStepValueId));
+            }
             record.surfaceKind = surface;
             record.localOffset = SerializablePose.FromPose(
                 new Pose(new Vector3(offset.px, offset.py, offset.pz), rotation));

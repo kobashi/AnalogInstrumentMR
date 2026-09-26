@@ -51,6 +51,10 @@ namespace MatsuMotoMeterAR.Instruments
                     var module = logic.gameObject
                         .AddComponent<ModularAudioModuleRuntime>();
                     module.Configure(kind, motion);
+                    visualSocket.GetComponentInChildren<
+                        AudioModuleDisplayView>(true)?.Bind(module);
+                    visualSocket.GetComponentInChildren<
+                        AudioModuleSignalFlowView>(true)?.Bind(module);
                     if (kind == MockInstrumentKind.AudioOutput)
                     {
                         var graph = new ModularAudioGraph();
@@ -163,6 +167,15 @@ namespace MatsuMotoMeterAR.Instruments
                     .GetComponent<InstrumentAudioController>()
                     ?.SetTheme(theme);
             }
+            if (!preview && IsModularAudioKind(contract.Kind))
+            {
+                var module = contract.Logic.GetComponent<
+                    ModularAudioModuleRuntime>();
+                contract.VisualSocket.GetComponentInChildren<
+                    AudioModuleDisplayView>(true)?.Bind(module);
+                contract.VisualSocket.GetComponentInChildren<
+                    AudioModuleSignalFlowView>(true)?.Bind(module);
+            }
             contract.SetTheme(theme);
             return true;
         }
@@ -261,6 +274,10 @@ namespace MatsuMotoMeterAR.Instruments
                 case MockInstrumentKind.AudioLfo:
                 case MockInstrumentKind.AudioSequencer:
                 case MockInstrumentKind.AudioDelay:
+                case MockInstrumentKind.AudioVca:
+                case MockInstrumentKind.AudioMixer:
+                case MockInstrumentKind.AudioFilter:
+                case MockInstrumentKind.AudioEnvelope:
                 case MockInstrumentKind.AudioOutput:
                     BuildModularAudioModule(
                         kind,
@@ -291,6 +308,10 @@ namespace MatsuMotoMeterAR.Instruments
                 MockInstrumentKind.AudioLfo => "AudioLfo",
                 MockInstrumentKind.AudioSequencer => "AudioSequencer",
                 MockInstrumentKind.AudioDelay => "AudioDelay",
+                MockInstrumentKind.AudioVca => "AudioVca",
+                MockInstrumentKind.AudioMixer => "AudioMixer",
+                MockInstrumentKind.AudioFilter => "AudioFilter",
+                MockInstrumentKind.AudioEnvelope => "AudioEnvelope",
                 _ => "AudioOutput"
             };
             var visualRoot = new GameObject(
@@ -304,35 +325,54 @@ namespace MatsuMotoMeterAR.Instruments
                 new Vector3(0.24f, 0.20f, 0.064f),
                 Quaternion.identity,
                 ColorFor(preview, palette.Housing));
-            CreatePrimitive(
-                PrimitiveType.Cube,
-                "Module Face",
-                visualRoot.transform,
-                new Vector3(0f, 0f, 0.067f),
-                new Vector3(0.215f, 0.175f, 0.008f),
-                Quaternion.identity,
-                ColorFor(preview, palette.Face));
+            if (kind != MockInstrumentKind.AudioEnvelope)
+            {
+                CreatePrimitive(
+                    PrimitiveType.Cube,
+                    "Module Face",
+                    visualRoot.transform,
+                    new Vector3(0f, 0f, 0.067f),
+                    new Vector3(0.215f, 0.175f, 0.008f),
+                    Quaternion.identity,
+                    ColorFor(preview, palette.Face));
+            }
 
             var knobPivot = CreatePivot(
                 visualRoot.transform,
                 "Parameter Knob Pivot",
-                new Vector3(0f, 0.035f, 0.082f));
-            CreatePrimitive(
-                PrimitiveType.Cylinder,
-                "Parameter Knob",
-                knobPivot,
-                Vector3.zero,
-                new Vector3(0.045f, 0.022f, 0.045f),
-                Quaternion.Euler(90f, 0f, 0f),
-                ColorFor(preview, palette.Dark));
-            CreatePrimitive(
+                new Vector3(-0.055f, 0.035f, 0.082f));
+            if (kind != MockInstrumentKind.AudioEnvelope)
+            {
+                CreatePrimitive(
+                    PrimitiveType.Cylinder,
+                    "Parameter Knob",
+                    knobPivot,
+                    Vector3.zero,
+                    new Vector3(0.045f, 0.022f, 0.045f),
+                    Quaternion.Euler(90f, 0f, 0f),
+                    ColorFor(preview, palette.Dark));
+            }
+            if (kind != MockInstrumentKind.AudioFilter &&
+                kind != MockInstrumentKind.AudioEnvelope)
+            {
+                CreatePrimitive(
+                    PrimitiveType.Cube,
+                    "Parameter Index",
+                    knobPivot,
+                    new Vector3(0f, 0.024f, 0.024f),
+                    new Vector3(0.007f, 0.036f, 0.006f),
+                    Quaternion.identity,
+                    ColorFor(preview, palette.Primary));
+            }
+
+            var display = CreatePrimitive(
                 PrimitiveType.Cube,
-                "Parameter Index",
-                knobPivot,
-                new Vector3(0f, 0.024f, 0.024f),
-                new Vector3(0.007f, 0.036f, 0.006f),
+                "display_surface",
+                visualRoot.transform,
+                new Vector3(0.052f, 0.043f, 0.074f),
+                new Vector3(0.085f, 0.052f, 0.006f),
                 Quaternion.identity,
-                ColorFor(preview, palette.Primary));
+                ColorFor(preview, palette.Dark));
 
             var portColor = kind switch
             {
@@ -341,34 +381,77 @@ namespace MatsuMotoMeterAR.Instruments
                 MockInstrumentKind.AudioLfo => palette.Ready,
                 MockInstrumentKind.AudioSequencer => palette.Primary,
                 MockInstrumentKind.AudioDelay => palette.Warning,
+                MockInstrumentKind.AudioVca => palette.Ready,
+                MockInstrumentKind.AudioMixer => palette.Primary,
+                MockInstrumentKind.AudioFilter => palette.Warning,
+                MockInstrumentKind.AudioEnvelope => palette.Ready,
                 _ => palette.Ready
             };
             var portCount = kind switch
             {
                 MockInstrumentKind.AudioOscillator => 4,
                 MockInstrumentKind.AudioNoise => 2,
-                MockInstrumentKind.AudioLfo => 5,
-                MockInstrumentKind.AudioSequencer => 2,
+                MockInstrumentKind.AudioLfo => 7,
+                MockInstrumentKind.AudioSequencer => 4,
                 MockInstrumentKind.AudioDelay => 3,
+                MockInstrumentKind.AudioVca => 3,
+                MockInstrumentKind.AudioMixer => 2,
+                MockInstrumentKind.AudioFilter => 3,
+                MockInstrumentKind.AudioEnvelope => 3,
                 _ => 1
             };
-            for (var index = 0; index < portCount; index++)
+            if (kind == MockInstrumentKind.AudioFilter ||
+                kind == MockInstrumentKind.AudioEnvelope ||
+                portCount > 5)
             {
-                var portX = portCount == 1
-                    ? 0f
-                    : Mathf.Lerp(-0.075f, 0.075f,
-                        index / (float)(portCount - 1));
                 CreatePrimitive(
-                    PrimitiveType.Cylinder,
-                    $"Port {index + 1}",
+                    PrimitiveType.Cube,
+                    "Port Bank",
                     visualRoot.transform,
-                    new Vector3(portX, -0.052f, 0.081f),
-                    new Vector3(0.018f, 0.012f, 0.018f),
-                    Quaternion.Euler(90f, 0f, 0f),
+                    new Vector3(0f, -0.052f, 0.081f),
+                    new Vector3(0.168f, 0.024f, 0.024f),
+                    Quaternion.identity,
                     ColorFor(preview, portColor));
+                for (var index = 0; index < portCount; index++)
+                {
+                    CreatePivot(
+                        visualRoot.transform,
+                        $"Port {index + 1}",
+                        new Vector3(
+                            Mathf.Lerp(-0.075f, 0.075f,
+                                index / (float)(portCount - 1)),
+                            -0.052f,
+                            0.094f));
+                }
+            }
+            else
+            {
+                for (var index = 0; index < portCount; index++)
+                {
+                    var portX = portCount == 1
+                        ? 0f
+                        : Mathf.Lerp(-0.075f, 0.075f,
+                            index / (float)(portCount - 1));
+                    CreatePrimitive(
+                        PrimitiveType.Cylinder,
+                        $"Port {index + 1}",
+                        visualRoot.transform,
+                        new Vector3(portX, -0.052f, 0.081f),
+                        new Vector3(0.018f, 0.012f, 0.018f),
+                        Quaternion.Euler(90f, 0f, 0f),
+                        ColorFor(preview, portColor));
+                }
             }
 
             visualRoot.AddComponent<ThemeVisualManifest>().Configure(knobPivot);
+
+            if (!preview)
+            {
+                visualRoot.AddComponent<AudioModuleDisplayView>().Configure(
+                    kind,
+                    theme,
+                    display.GetComponent<Renderer>());
+            }
 
             if (!preview)
             {
@@ -382,13 +465,8 @@ namespace MatsuMotoMeterAR.Instruments
                     0f);
                 if (!hadMotion)
                 {
-                    var initialValue = kind switch
-                    {
-                        MockInstrumentKind.AudioNoise => 0.35f,
-                        MockInstrumentKind.AudioSequencer => 0.25f,
-                        _ => 0.5f
-                    };
-                    motion.SetNormalizedValue(initialValue);
+                    motion.SetNormalizedValue(
+                        MockInstrumentCatalog.DefaultSoundModuleValue(kind));
                 }
             }
         }
@@ -400,13 +478,23 @@ namespace MatsuMotoMeterAR.Instruments
                    kind == MockInstrumentKind.AudioLfo ||
                    kind == MockInstrumentKind.AudioSequencer ||
                    kind == MockInstrumentKind.AudioDelay ||
+                   kind == MockInstrumentKind.AudioVca ||
+                   kind == MockInstrumentKind.AudioMixer ||
+                   kind == MockInstrumentKind.AudioFilter ||
+                   kind == MockInstrumentKind.AudioEnvelope ||
                    kind == MockInstrumentKind.AudioOutput ||
                    kind == MockInstrumentKind.RoundMeter ||
                    kind == MockInstrumentKind.RoundMeterMedium ||
                    kind == MockInstrumentKind.RoundMeterLarge ||
                    kind == MockInstrumentKind.WindowMeter ||
                    kind == MockInstrumentKind.TrendMonitor ||
-                   kind == MockInstrumentKind.WindowPanel;
+                   kind == MockInstrumentKind.WindowPanel ||
+                   kind == MockInstrumentKind.Lever ||
+                   kind == MockInstrumentKind.ToggleSwitch ||
+                   kind == MockInstrumentKind.RotaryKnob ||
+                   kind == MockInstrumentKind.PushButton ||
+                   kind == MockInstrumentKind.ThrottleLever ||
+                   kind == MockInstrumentKind.PowerSlider;
         }
 
         private static void DestroyObject(Object value)
@@ -992,6 +1080,7 @@ namespace MatsuMotoMeterAR.Instruments
                 MockInstrumentTheme.KineticSafety => "KineticSafety",
                 MockInstrumentTheme.MachinedErgonomics =>
                     "MachinedErgonomics",
+                MockInstrumentTheme.Superfine => "Superfine",
                 _ => "OrbitalAnalog"
             };
         }

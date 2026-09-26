@@ -103,6 +103,7 @@ namespace MatsuMotoMeterAR.Audio
                 MockInstrumentTheme.ForgeBrass => 470f,
                 MockInstrumentTheme.KineticSafety => 930f,
                 MockInstrumentTheme.MachinedErgonomics => 690f,
+                MockInstrumentTheme.Superfine => 1180f,
                 _ => 790f
             };
         }

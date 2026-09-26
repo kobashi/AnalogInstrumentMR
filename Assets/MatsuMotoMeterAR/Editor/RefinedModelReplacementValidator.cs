@@ -59,8 +59,13 @@ namespace MatsuMotoMeterAR.Editor
             new("OrbitalAnalog", MockInstrumentTheme.OrbitalAnalog),
             new("ForgeBrass", MockInstrumentTheme.ForgeBrass),
             new("KineticSafety", MockInstrumentTheme.KineticSafety),
-            new("MachinedErgonomics", MockInstrumentTheme.MachinedErgonomics)
+            new("MachinedErgonomics", MockInstrumentTheme.MachinedErgonomics),
+            new("Superfine", MockInstrumentTheme.Superfine)
         };
+
+        private static readonly ThemeEntry SuperfineCandidateTheme = new(
+            "Superfine",
+            MockInstrumentTheme.Superfine);
 
         private static readonly ModelEntry[] Models =
         {
@@ -137,6 +142,66 @@ namespace MatsuMotoMeterAR.Editor
                 MockInstrumentKind.TrendMonitor,
                 "display_surface",
                 "display_surface",
+                requiredActive: false),
+            new(
+                "AudioOscillator",
+                MockInstrumentKind.AudioOscillator,
+                "parameter_knob_pivot",
+                "parameter_knob",
+                requiredActive: false),
+            new(
+                "AudioNoise",
+                MockInstrumentKind.AudioNoise,
+                "parameter_knob_pivot",
+                "parameter_knob",
+                requiredActive: false),
+            new(
+                "AudioLFO",
+                MockInstrumentKind.AudioLfo,
+                "parameter_knob_pivot",
+                "parameter_knob",
+                requiredActive: false),
+            new(
+                "AudioSequencer",
+                MockInstrumentKind.AudioSequencer,
+                "parameter_knob_pivot",
+                "parameter_knob",
+                requiredActive: false),
+            new(
+                "AudioDelay",
+                MockInstrumentKind.AudioDelay,
+                "parameter_knob_pivot",
+                "parameter_knob",
+                requiredActive: false),
+            new(
+                "AudioOutput",
+                MockInstrumentKind.AudioOutput,
+                "parameter_knob_pivot",
+                "parameter_knob",
+                requiredActive: false),
+            new(
+                "AudioVca",
+                MockInstrumentKind.AudioVca,
+                "parameter_knob_pivot",
+                "parameter_knob",
+                requiredActive: false),
+            new(
+                "AudioMixer",
+                MockInstrumentKind.AudioMixer,
+                "parameter_knob_pivot",
+                "parameter_knob",
+                requiredActive: false),
+            new(
+                "AudioFilter",
+                MockInstrumentKind.AudioFilter,
+                "parameter_knob_pivot",
+                "parameter_knob",
+                requiredActive: false),
+            new(
+                "AudioEnvelope",
+                MockInstrumentKind.AudioEnvelope,
+                "parameter_knob_pivot",
+                "parameter_knob",
                 requiredActive: false)
         };
 
@@ -233,12 +298,46 @@ namespace MatsuMotoMeterAR.Editor
                         theme,
                         model,
                         report,
-                        failures);
+                        failures,
+                        triangleBudgetReview:
+                            theme.Theme == MockInstrumentTheme.Superfine);
                 }
             }
 
             Finish(
                 "active-visual-prefab-validation.md",
+                report,
+                failures);
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Superfine/" +
+            "Validate Production Prefabs")]
+        public static void ValidateSuperfineActivePrefabs()
+        {
+            var report = CreateReport(
+                "Superfine active visual prefab baseline");
+            var failures = new List<string>();
+            var theme = new ThemeEntry(
+                "Superfine",
+                MockInstrumentTheme.Superfine);
+            foreach (var model in Models)
+            {
+                var path =
+                    "Assets/MatsuMotoMeterAR/Resources/Superfine/Prefabs/" +
+                    $"PF_Visual_{model.Key}_Superfine.prefab";
+                ValidatePrefab(
+                    path,
+                    theme,
+                    model,
+                    report,
+                    failures,
+                    allowOptionalFallback: false,
+                    triangleBudgetReview: true);
+            }
+
+            Finish(
+                "superfine-active-visual-prefab-validation.md",
                 report,
                 failures);
         }
@@ -253,6 +352,8 @@ namespace MatsuMotoMeterAR.Editor
             var failures = new List<string>();
             foreach (var theme in Themes)
             {
+                if (theme.Theme == MockInstrumentTheme.Superfine)
+                    continue;
                 foreach (var model in Models)
                 {
                     var path =
@@ -379,7 +480,17 @@ namespace MatsuMotoMeterAR.Editor
                     report,
                     failures,
                     allowOptionalFallback: false,
-                    sourceReport: LoadSourceReport(entry));
+                    sourceReport: LoadSourceReport(entry),
+                    requireSignalSurface:
+                        entry.theme == "Superfine" ||
+                        IsAudioModule(model.Kind) &&
+                        entry.includedRevisions != null &&
+                        entry.includedRevisions.Any(revision =>
+                            revision == "R2A4" ||
+                            revision.StartsWith(
+                                "Ext",
+                                StringComparison.Ordinal)),
+                    triangleBudgetReview: entry.theme == "Superfine");
             }
 
             ValidateManifestSnapshot(
@@ -392,11 +503,105 @@ namespace MatsuMotoMeterAR.Editor
                 expectedPrefabs,
                 report,
                 failures);
+            ValidateNoCrossCandidateDependencies(
+                $"{CandidateDirectory}/CandidateStaging/{manifest.candidateId}",
+                expectedPrefabs,
+                report,
+                failures);
 
             Finish(
                 $"candidate-{manifest.candidateId}-staging-validation.md",
                 report,
                 failures);
+        }
+
+        internal static void ValidateActivePrefab(CandidateStagingEntry entry)
+        {
+            if (entry == null)
+                throw new ArgumentNullException(nameof(entry));
+            var theme = FindTheme(entry.theme);
+            var model = entry.model == "WindowPanel"
+                ? new ModelEntry(
+                    "WindowPanel",
+                    MockInstrumentKind.WindowPanel,
+                    "display_surface",
+                    "display_surface",
+                    requiredActive: false)
+                : FindModel(entry.model);
+            var report = CreateReport(
+                $"Active {entry.theme}/{entry.model} visual prefab validation");
+            var failures = new List<string>();
+            var path =
+                $"Assets/MatsuMotoMeterAR/Resources/{theme.Folder}/Prefabs/" +
+                $"PF_Visual_{model.Key}_{theme.Folder}.prefab";
+            ValidatePrefab(
+                path,
+                theme,
+                model,
+                report,
+                failures,
+                allowOptionalFallback: false,
+                sourceReport: LoadSourceReport(entry),
+                requireSignalSurface: entry.theme == "Superfine" ||
+                                      IsAudioModule(model.Kind),
+                triangleBudgetReview: entry.theme == "Superfine");
+            Finish(
+                $"active-{entry.theme}-{entry.model}-validation.md",
+                report,
+                failures);
+        }
+
+        private static void ValidateNoCrossCandidateDependencies(
+            string candidateRoot,
+            IEnumerable<string> prefabPaths,
+            StringBuilder report,
+            ICollection<string> failures)
+        {
+            report.AppendLine();
+            report.AppendLine("## Candidate staging dependencies");
+            report.AppendLine();
+            var normalizedRoot = candidateRoot.TrimEnd('/') + "/";
+            var found = false;
+            foreach (var prefabPath in prefabPaths.OrderBy(
+                         value => value,
+                         StringComparer.Ordinal))
+            {
+                var forbidden = CrossCandidateDependencies(
+                    AssetDatabase.GetDependencies(prefabPath, true),
+                    normalizedRoot);
+                foreach (var dependency in forbidden)
+                {
+                    found = true;
+                    AddFailure(
+                        failures,
+                        prefabPath,
+                        $"Cross-candidate dependency remains: {dependency}");
+                    report.AppendLine(
+                        $"- FAIL `{prefabPath}` -> `{dependency}`");
+                }
+            }
+            if (!found)
+                report.AppendLine("- PASS: cross-candidate dependencies: 0");
+        }
+
+        internal static IReadOnlyList<string> CrossCandidateDependencies(
+            IEnumerable<string> dependencies,
+            string candidateRoot)
+        {
+            var normalizedRoot = (candidateRoot ?? string.Empty)
+                .Replace('\\', '/')
+                .TrimEnd('/') + "/";
+            return (dependencies ?? Array.Empty<string>())
+                .Select(path => path.Replace('\\', '/'))
+                .Where(path => path.Contains(
+                    "/CandidateStaging/",
+                    StringComparison.Ordinal))
+                .Where(path => !path.StartsWith(
+                    normalizedRoot,
+                    StringComparison.Ordinal))
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(path => path, StringComparer.Ordinal)
+                .ToArray();
         }
 
         private static void ValidateManifestSnapshot(
@@ -737,7 +942,9 @@ namespace MatsuMotoMeterAR.Editor
             StringBuilder report,
             List<string> failures,
             bool allowOptionalFallback = true,
-            SourceReportExpectation sourceReport = null)
+            SourceReportExpectation sourceReport = null,
+            bool requireSignalSurface = false,
+            bool triangleBudgetReview = false)
         {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
             if (prefab == null)
@@ -785,13 +992,34 @@ namespace MatsuMotoMeterAR.Editor
                                 ? 7000
                                 : null,
                     materialBudgetOverride:
-                        model.Kind == MockInstrumentKind.TrendMonitor ||
-                        model.Kind == MockInstrumentKind.WindowPanel &&
-                        model.MotionTarget == "display_surface"
+                        IsAudioModule(model.Kind) ||
+                        theme.Folder != "Superfine" &&
+                        (model.Kind == MockInstrumentKind.TrendMonitor ||
+                         model.Kind == MockInstrumentKind.WindowPanel &&
+                         model.MotionTarget == "display_surface")
                             ? 3
                             : null,
                     useDisplayPlaneContract:
-                        theme.Theme == MockInstrumentTheme.MachinedErgonomics);
+                        theme.Theme == MockInstrumentTheme.MachinedErgonomics ||
+                        theme.Folder == "Superfine");
+                if (triangleBudgetReview)
+                {
+                    var budgetProblems = result.Problems.Where(
+                        problem => problem.StartsWith(
+                                       "Triangle count ",
+                                       StringComparison.Ordinal) ||
+                                   problem.StartsWith(
+                                       "Material count ",
+                                       StringComparison.Ordinal) ||
+                                   problem.StartsWith(
+                                       "TrendMonitor display surface ",
+                                       StringComparison.Ordinal)).ToArray();
+                    foreach (var budgetProblem in budgetProblems)
+                    {
+                        result.Problems.Remove(budgetProblem);
+                        result.Reviews.Add(budgetProblem);
+                    }
+                }
                 if (instance.name != expectedName)
                     result.Problems.Add($"Root name must be {expectedName}.");
                 if (instance.transform.localScale != Vector3.one)
@@ -802,6 +1030,14 @@ namespace MatsuMotoMeterAR.Editor
                 {
                     result.Problems.AddRange(
                         WindowPanelCandidateContractValidator.Evaluate(instance));
+                }
+                if (IsAudioModule(model.Kind))
+                {
+                    result.Problems.AddRange(
+                        AudioModuleCandidateContractValidator.Evaluate(
+                            instance,
+                            model.Kind,
+                            requireSignalSurface));
                 }
 
                 if (sourceReport != null)
@@ -878,10 +1114,15 @@ namespace MatsuMotoMeterAR.Editor
                 : !string.IsNullOrWhiteSpace(document.theme) &&
                   !string.IsNullOrWhiteSpace(document.@object)
                     ? $"{document.theme}/{document.@object}"
-                    : InferInventoryReportIdentity(
-                        document.theme,
-                        document.fbx,
-                        json);
+                    : !string.IsNullOrWhiteSpace(document.kind)
+                        ? $"{entry.theme}/{document.kind}"
+                    : !string.IsNullOrWhiteSpace(document.module)
+                        ? $"{document.theme}/" +
+                          AudioModelKey(document.module)
+                        : InferInventoryReportIdentity(
+                            document.theme,
+                            document.fbx,
+                            json);
             var triangles = document.triangles > 0
                 ? document.triangles
                 : document.candidate?.triangles > 0
@@ -895,7 +1136,9 @@ namespace MatsuMotoMeterAR.Editor
 
             var reportedSha = !string.IsNullOrWhiteSpace(document.fbx_sha256)
                 ? document.fbx_sha256
-                : document.staged_sha256;
+                : !string.IsNullOrWhiteSpace(document.outputs?.fbx_sha256)
+                    ? document.outputs.fbx_sha256
+                    : document.staged_sha256;
             if (!string.IsNullOrWhiteSpace(reportedSha))
             {
                 var actualSha = Sha256(entry.sourceFbx);
@@ -924,7 +1167,9 @@ namespace MatsuMotoMeterAR.Editor
                 Path = entry.sourceReport,
                 Identity = reportedIdentity,
                 ExpectedIdentity = expectedIdentity,
-                ReportedFbx = document.fbx,
+                ReportedFbx = !string.IsNullOrWhiteSpace(document.fbx)
+                    ? document.fbx
+                    : document.outputs?.fbx,
                 ExpectedFbx = entry.sourceFbx,
                 Triangles = triangles,
                 Renderers = renderers,
@@ -933,7 +1178,8 @@ namespace MatsuMotoMeterAR.Editor
                     : document.gates?.submesh_budget?.measured ?? 0,
                 SubmeshBudget =
                     document.gates?.submesh_budget?.budget ?? 0,
-                Materials = document.material_slots?.Length ?? 0
+                Materials = document.material_slots?.Length ??
+                            document.material_roles?.Length ?? 0
             };
 
             var bounds = document.candidate?.bounds;
@@ -961,7 +1207,32 @@ namespace MatsuMotoMeterAR.Editor
                         blenderSize.z,
                         blenderSize.y);
             }
+            else if (document.unity_envelope?.size_m?.Length == 3)
+            {
+                expectation.Bounds = new Vector3(
+                    document.unity_envelope.size_m[0],
+                    document.unity_envelope.size_m[1],
+                    document.unity_envelope.size_m[2]);
+            }
             return expectation;
+        }
+
+        private static string AudioModelKey(string module)
+        {
+            return module?.ToUpperInvariant() switch
+            {
+                "OSCILLATOR" => "AudioOscillator",
+                "NOISE" => "AudioNoise",
+                "LFO" => "AudioLFO",
+                "SEQUENCER" => "AudioSequencer",
+                "DELAY" => "AudioDelay",
+                "OUTPUT" => "AudioOutput",
+                "VCA" => "AudioVca",
+                "MIXER" => "AudioMixer",
+                "FILTER" => "AudioFilter",
+                "ENVELOPE" => "AudioEnvelope",
+                _ => module ?? string.Empty
+            };
         }
 
         private static string InferInventoryReportIdentity(
@@ -1249,7 +1520,7 @@ namespace MatsuMotoMeterAR.Editor
                 MockInstrumentKind.Lever =>
                     new Vector3(0.18f, 0.256f, 0.102f),
                 MockInstrumentKind.ToggleSwitch =>
-                    new Vector3(0.125f, 0.17f, 0.088f),
+                    new Vector3(0.125f, 0.17f, 0.13f),
                 MockInstrumentKind.RotaryKnob =>
                     new Vector3(0.153f, 0.153f, 0.112f),
                 MockInstrumentKind.PushButton =>
@@ -1272,8 +1543,33 @@ namespace MatsuMotoMeterAR.Editor
                     new Vector3(1.60f, 0.90f, 0.22f),
                 MockInstrumentKind.TrendMonitor =>
                     new Vector3(0.44f, 0.28f, 0.10f),
+                MockInstrumentKind.AudioOscillator or
+                MockInstrumentKind.AudioNoise or
+                MockInstrumentKind.AudioLfo or
+                MockInstrumentKind.AudioSequencer or
+                MockInstrumentKind.AudioDelay or
+                MockInstrumentKind.AudioOutput or
+                MockInstrumentKind.AudioVca or
+                MockInstrumentKind.AudioMixer or
+                MockInstrumentKind.AudioFilter or
+                MockInstrumentKind.AudioEnvelope =>
+                    new Vector3(0.24f, 0.20f, 0.10f),
                 _ => new Vector3(0.17f, 0.17f, 0.082f)
             };
+        }
+
+        private static bool IsAudioModule(MockInstrumentKind kind)
+        {
+            return kind == MockInstrumentKind.AudioOscillator ||
+                   kind == MockInstrumentKind.AudioNoise ||
+                   kind == MockInstrumentKind.AudioLfo ||
+                   kind == MockInstrumentKind.AudioSequencer ||
+                   kind == MockInstrumentKind.AudioDelay ||
+                   kind == MockInstrumentKind.AudioOutput ||
+                   kind == MockInstrumentKind.AudioVca ||
+                   kind == MockInstrumentKind.AudioMixer ||
+                   kind == MockInstrumentKind.AudioFilter ||
+                   kind == MockInstrumentKind.AudioEnvelope;
         }
 
         private static Vector3 MachinedErgonomicsEnvelope(
@@ -1379,22 +1675,45 @@ namespace MatsuMotoMeterAR.Editor
                     $"actual={frontTriangles}.");
             }
 
-            var size = mesh.bounds.size;
-            var axes = new[]
-            {
-                (extent: size.x, axis: Vector3.right),
-                (extent: size.y, axis: Vector3.up),
-                (extent: size.z, axis: Vector3.forward)
-            };
-            var heightAxis = axes.OrderByDescending(item => item.extent)
-                .Skip(1).First().axis;
-            if (Vector3.Dot(
-                    displaySurface.TransformDirection(heightAxis).normalized,
-                    Vector3.up) < 0.999f)
+            var displayUp = DisplayUvUpDirection(displaySurface, mesh);
+            if (displayUp.sqrMagnitude < 0.000001f ||
+                Vector3.Dot(displayUp, Vector3.up) < 0.999f)
             {
                 result.Problems.Add(
                     "TrendMonitor display up axis must face local +Y.");
             }
+        }
+
+        private static Vector3 DisplayUvUpDirection(
+            Transform displaySurface,
+            Mesh mesh)
+        {
+            var vertices = mesh.vertices;
+            var uv = mesh.uv;
+            var triangles = mesh.triangles;
+            for (var index = 0; index + 2 < triangles.Length; index += 3)
+            {
+                var first = triangles[index];
+                var second = triangles[index + 1];
+                var third = triangles[index + 2];
+                if (first >= uv.Length || second >= uv.Length || third >= uv.Length)
+                    continue;
+                var edge1 = vertices[second] - vertices[first];
+                var edge2 = vertices[third] - vertices[first];
+                var delta1 = uv[second] - uv[first];
+                var delta2 = uv[third] - uv[first];
+                var determinant =
+                    delta1.x * delta2.y - delta1.y * delta2.x;
+                if (Mathf.Abs(determinant) < 0.000001f)
+                    continue;
+                var localUp =
+                    (-delta2.x * edge1 + delta1.x * edge2) /
+                    determinant;
+                var worldUp = displaySurface.TransformDirection(localUp);
+                if (worldUp.sqrMagnitude >= 0.000001f)
+                    return worldUp.normalized;
+            }
+            return Vector3.zero;
         }
 
         private static int CountTriangles(GameObject root)
@@ -1576,6 +1895,8 @@ namespace MatsuMotoMeterAR.Editor
 
         private static ThemeEntry FindTheme(string folder)
         {
+            if (folder == SuperfineCandidateTheme.Folder)
+                return SuperfineCandidateTheme;
             foreach (var theme in Themes)
             {
                 if (theme.Folder == folder)
@@ -1625,9 +1946,11 @@ namespace MatsuMotoMeterAR.Editor
                 .Append(" | ")
                 .Append(result.MinimumMountZ.ToString("F4"))
                 .Append(" | ")
-                .Append(result.Problems.Count == 0
-                    ? "PASS"
-                    : "FAIL: " + string.Join("; ", result.Problems))
+                .Append(result.Problems.Count > 0
+                    ? "FAIL: " + string.Join("; ", result.Problems)
+                    : result.Reviews.Count > 0
+                        ? "REVIEW: " + string.Join("; ", result.Reviews)
+                        : "PASS")
                 .AppendLine(" |");
         }
 
@@ -1739,6 +2062,7 @@ namespace MatsuMotoMeterAR.Editor
         private sealed class InspectionResult
         {
             public readonly List<string> Problems = new();
+            public readonly List<string> Reviews = new();
             public int Triangles;
             public int Renderers;
             public int Submeshes;
@@ -1751,6 +2075,8 @@ namespace MatsuMotoMeterAR.Editor
         private sealed class CandidateSourceReport
         {
             public string theme;
+            public string kind;
+            public string module;
             public string @object;
             public string model;
             public string fbx;
@@ -1760,6 +2086,7 @@ namespace MatsuMotoMeterAR.Editor
             public int renderers;
             public int submeshes;
             public string[] material_slots;
+            public string[] material_roles;
             public string bounds_space;
             public float[] bounds_min;
             public float[] bounds_max;
@@ -1767,6 +2094,21 @@ namespace MatsuMotoMeterAR.Editor
             public string blender_version;
             public CandidateSourceSnapshot candidate;
             public CandidateSourceGates gates;
+            public CandidateAudioOutputs outputs;
+            public CandidateAudioEnvelope unity_envelope;
+        }
+
+        [Serializable]
+        private sealed class CandidateAudioOutputs
+        {
+            public string fbx;
+            public string fbx_sha256;
+        }
+
+        [Serializable]
+        private sealed class CandidateAudioEnvelope
+        {
+            public float[] size_m;
         }
 
         [Serializable]

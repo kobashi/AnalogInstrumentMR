@@ -211,7 +211,7 @@ namespace MatsuMotoMeterAR.Tests
                 Is.EqualTo(PlacementLoadStatus.Corrupt));
 
             var future = PlacementJsonCodec.Deserialize(
-                "{\"schemaVersion\":10,\"revision\":9,\"placements\":[]}");
+                "{\"schemaVersion\":11,\"revision\":9,\"placements\":[]}");
             Assert.That(future.Status, Is.EqualTo(PlacementLoadStatus.UnsupportedVersion));
             Assert.That(future.CanWrite, Is.False);
             Assert.That(future.Document.revision, Is.EqualTo(9));
@@ -761,6 +761,56 @@ namespace MatsuMotoMeterAR.Tests
         }
 
         [Test]
+        public void MixedConnectionSelection_CyclesSignalsThenAudioPatches()
+        {
+            var signals = new List<SignalConnectionRecord>
+            {
+                Connection("signal-a", "selected", "target-a"),
+                Connection("other", "source-b", "target-b"),
+                Connection("signal-b", "source-c", "selected")
+            };
+            var patches = new List<AudioPatchConnectionRecord>
+            {
+                AudioPatch("patch-a", "selected", "audio-out"),
+                AudioPatch("patch-b", "noise", "selected")
+            };
+
+            Assert.That(MixedConnectionSelectionPolicy.TrySelectNext(
+                signals, patches, "selected", null, null,
+                out var signal, out var patch), Is.True);
+            Assert.That(signal.connectionId, Is.EqualTo("signal-a"));
+            Assert.That(patch, Is.Null);
+
+            Assert.That(MixedConnectionSelectionPolicy.TrySelectNext(
+                signals, patches, "selected", signal.connectionId, null,
+                out signal, out patch), Is.True);
+            Assert.That(signal.connectionId, Is.EqualTo("signal-b"));
+
+            Assert.That(MixedConnectionSelectionPolicy.TrySelectNext(
+                signals, patches, "selected", signal.connectionId, null,
+                out signal, out patch), Is.True);
+            Assert.That(signal, Is.Null);
+            Assert.That(patch.connectionId, Is.EqualTo("patch-a"));
+
+            Assert.That(MixedConnectionSelectionPolicy.TrySelectNext(
+                signals, patches, "selected", null, patch.connectionId,
+                out signal, out patch), Is.True);
+            Assert.That(patch.connectionId, Is.EqualTo("patch-b"));
+
+            Assert.That(MixedConnectionSelectionPolicy.TrySelectNext(
+                signals, patches, "selected", null, patch.connectionId,
+                out signal, out patch), Is.True);
+            Assert.That(signal.connectionId, Is.EqualTo("signal-a"));
+            Assert.That(patch, Is.Null);
+
+            Assert.That(MixedConnectionSelectionPolicy.TrySelectNext(
+                null, patches, "audio-out", null, null,
+                out signal, out patch), Is.True);
+            Assert.That(signal, Is.Null);
+            Assert.That(patch.connectionId, Is.EqualTo("patch-a"));
+        }
+
+        [Test]
         public void ConnectionTransform_CyclesInBothDirectionsAndWraps()
         {
             Assert.That(
@@ -821,7 +871,11 @@ namespace MatsuMotoMeterAR.Tests
             {
                 Result = new PlacementLoadResult(
                     PlacementLoadStatus.UnsupportedVersion,
-                    new PlacementDocument { schemaVersion = 10 })
+                    new PlacementDocument
+                    {
+                        schemaVersion =
+                            PlacementDocument.CurrentSchemaVersion + 1
+                    })
             };
 
             var result = LegacyPlacementMigration.LoadOrMigrate(

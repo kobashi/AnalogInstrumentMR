@@ -12,7 +12,12 @@ namespace MatsuMotoMeterAR.Audio
         Delay = 5,
         MeterSource = 6,
         TrendSource = 7,
-        PanelSource = 8
+        PanelSource = 8,
+        Vca = 9,
+        Mixer = 10,
+        Filter = 11,
+        Envelope = 12,
+        ControlSource = 13
     }
 
     public enum ModularAudioPortDomain
@@ -106,6 +111,10 @@ namespace MatsuMotoMeterAR.Audio
                 ModularAudioPortDirection.Output),
             new("clock.out", ModularAudioPortDomain.Clock,
                 ModularAudioPortDirection.Output),
+            new("gate.out", ModularAudioPortDomain.Gate,
+                ModularAudioPortDirection.Output),
+            new("trigger.out", ModularAudioPortDomain.Trigger,
+                ModularAudioPortDirection.Output),
             new("audio.out", ModularAudioPortDomain.Audio,
                 ModularAudioPortDirection.Output)
         };
@@ -114,7 +123,13 @@ namespace MatsuMotoMeterAR.Audio
         {
             new("clock.in", ModularAudioPortDomain.Clock,
                 ModularAudioPortDirection.Input),
+            new("trigger.in", ModularAudioPortDomain.Trigger,
+                ModularAudioPortDirection.Input),
             new("control.out", ModularAudioPortDomain.Control,
+                ModularAudioPortDirection.Output),
+            new("gate.out", ModularAudioPortDomain.Gate,
+                ModularAudioPortDirection.Output),
+            new("trigger.out", ModularAudioPortDomain.Trigger,
                 ModularAudioPortDirection.Output)
         };
 
@@ -128,9 +143,49 @@ namespace MatsuMotoMeterAR.Audio
                 ModularAudioPortDirection.Output)
         };
 
+        private static readonly ModularAudioPort[] VcaPorts =
+        {
+            new("audio.in", ModularAudioPortDomain.Audio,
+                ModularAudioPortDirection.Input),
+            new("level.in", ModularAudioPortDomain.Control,
+                ModularAudioPortDirection.Input),
+            new("audio.out", ModularAudioPortDomain.Audio,
+                ModularAudioPortDirection.Output)
+        };
+
+        private static readonly ModularAudioPort[] MixerPorts =
+        {
+            new("audio.in", ModularAudioPortDomain.Audio,
+                ModularAudioPortDirection.Input),
+            new("audio.out", ModularAudioPortDomain.Audio,
+                ModularAudioPortDirection.Output)
+        };
+
+        private static readonly ModularAudioPort[] FilterPorts =
+        {
+            new("audio.in", ModularAudioPortDomain.Audio,
+                ModularAudioPortDirection.Input),
+            new("cutoff.in", ModularAudioPortDomain.Control,
+                ModularAudioPortDirection.Input),
+            new("audio.out", ModularAudioPortDomain.Audio,
+                ModularAudioPortDirection.Output)
+        };
+
+        private static readonly ModularAudioPort[] EnvelopePorts =
+        {
+            new("gate.in", ModularAudioPortDomain.Gate,
+                ModularAudioPortDirection.Input),
+            new("trigger.in", ModularAudioPortDomain.Trigger,
+                ModularAudioPortDirection.Input),
+            new("control.out", ModularAudioPortDomain.Control,
+                ModularAudioPortDirection.Output)
+        };
+
         private static readonly ModularAudioPort[] MeterSourcePorts =
         {
             new("value.out", ModularAudioPortDomain.Control,
+                ModularAudioPortDirection.Output),
+            new("trigger.out", ModularAudioPortDomain.Trigger,
                 ModularAudioPortDirection.Output),
             new("audio.out", ModularAudioPortDomain.Audio,
                 ModularAudioPortDirection.Output)
@@ -143,6 +198,8 @@ namespace MatsuMotoMeterAR.Audio
             new("slope.out", ModularAudioPortDomain.Control,
                 ModularAudioPortDirection.Output),
             new("spread.out", ModularAudioPortDomain.Control,
+                ModularAudioPortDirection.Output),
+            new("trigger.out", ModularAudioPortDomain.Trigger,
                 ModularAudioPortDirection.Output),
             new("audio.out", ModularAudioPortDomain.Audio,
                 ModularAudioPortDirection.Output)
@@ -158,7 +215,19 @@ namespace MatsuMotoMeterAR.Audio
                 ModularAudioPortDirection.Output),
             new("detail.out", ModularAudioPortDomain.Control,
                 ModularAudioPortDirection.Output),
+            new("trigger.out", ModularAudioPortDomain.Trigger,
+                ModularAudioPortDirection.Output),
             new("audio.out", ModularAudioPortDomain.Audio,
+                ModularAudioPortDirection.Output)
+        };
+
+        private static readonly ModularAudioPort[] ControlSourcePorts =
+        {
+            new("control.out", ModularAudioPortDomain.Control,
+                ModularAudioPortDirection.Output),
+            new("gate.out", ModularAudioPortDomain.Gate,
+                ModularAudioPortDirection.Output),
+            new("trigger.out", ModularAudioPortDomain.Trigger,
                 ModularAudioPortDirection.Output)
         };
 
@@ -172,9 +241,14 @@ namespace MatsuMotoMeterAR.Audio
                 ModularAudioModuleKind.Lfo => LfoPorts,
                 ModularAudioModuleKind.Sequencer => SequencerPorts,
                 ModularAudioModuleKind.Delay => DelayPorts,
+                ModularAudioModuleKind.Vca => VcaPorts,
+                ModularAudioModuleKind.Mixer => MixerPorts,
+                ModularAudioModuleKind.Filter => FilterPorts,
+                ModularAudioModuleKind.Envelope => EnvelopePorts,
                 ModularAudioModuleKind.MeterSource => MeterSourcePorts,
                 ModularAudioModuleKind.TrendSource => TrendSourcePorts,
                 ModularAudioModuleKind.PanelSource => PanelSourcePorts,
+                ModularAudioModuleKind.ControlSource => ControlSourcePorts,
                 _ => AudioOutputPorts
             };
         }

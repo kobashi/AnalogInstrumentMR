@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Linq;
+using MatsuMotoMeterAR.Audio;
 using MatsuMotoMeterAR.Instruments;
 using MatsuMotoMeterAR.Signals;
 using UnityEditor;
@@ -30,12 +32,22 @@ namespace MatsuMotoMeterAR.Editor
         private const string WindowPanelWp3ManifestPath =
             "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
             "WindowPanel_WP3_r2.json";
+        private const string AudioModulesManifestPath =
+            "Assets/MatsuMotoMeterAR/Editor/Opus5CandidateManifests/" +
+            "AudioModules_A1_B1.json";
+        private static readonly string[] AudioModuleModels =
+        {
+            "AudioOscillator", "AudioNoise", "AudioLFO",
+            "AudioSequencer", "AudioDelay", "AudioOutput", "AudioVca",
+            "AudioMixer", "AudioFilter", "AudioEnvelope"
+        };
         private static readonly MockInstrumentTheme[] ProductionTrendThemes =
         {
             MockInstrumentTheme.OrbitalAnalog,
             MockInstrumentTheme.ForgeBrass,
             MockInstrumentTheme.KineticSafety,
-            MockInstrumentTheme.MachinedErgonomics
+            MockInstrumentTheme.MachinedErgonomics,
+            MockInstrumentTheme.Superfine
         };
         private static readonly string[] ProductionTrendMonitorPaths =
         {
@@ -46,7 +58,9 @@ namespace MatsuMotoMeterAR.Editor
             "Assets/MatsuMotoMeterAR/Resources/KineticSafety/Prefabs/" +
             "PF_Visual_TrendMonitor_KineticSafety.prefab",
             "Assets/MatsuMotoMeterAR/Resources/MachinedErgonomics/Prefabs/" +
-            "PF_Visual_TrendMonitor_MachinedErgonomics.prefab"
+            "PF_Visual_TrendMonitor_MachinedErgonomics.prefab",
+            "Assets/MatsuMotoMeterAR/Resources/Superfine/Prefabs/" +
+            "PF_Visual_TrendMonitor_Superfine.prefab"
         };
         private const int TileSize = 512;
 
@@ -73,6 +87,135 @@ namespace MatsuMotoMeterAR.Editor
         {
             RenderCandidateOnlyManifest(
                 CandidateStagingManifest.SelectedAssetPath());
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Render Audio Module Display Review")]
+        public static void RunAudioModuleDisplayReview()
+        {
+            RenderAudioModuleDisplayManifest(AudioModulesManifestPath);
+        }
+
+        [MenuItem(
+            "Tools/MatsuMotoMeterAR/Model Replacement/" +
+            "Render Production Audio Module Display Review")]
+        public static void RunProductionAudioModuleDisplayReview()
+        {
+            RenderAudioModuleDisplayManifest(
+                AudioModulesManifestPath,
+                production: true);
+        }
+
+        internal static string RenderAudioModuleDisplayManifest(
+            string manifestPath)
+        {
+            return RenderAudioModuleDisplayManifest(
+                manifestPath,
+                production: false);
+        }
+
+        internal static string RenderSuperfineComparisonManifest(
+            string manifestPath)
+        {
+            var manifest = CandidateStagingManifest.Load(manifestPath);
+            if (manifest.entries.Any(entry => entry.theme != "Superfine"))
+            {
+                throw new InvalidDataException(
+                    "Superfine comparison requires a Superfine-only manifest.");
+            }
+
+            return RenderManifest(
+                manifestPath,
+                neutralShapeReview: false,
+                candidateOnly: false);
+        }
+
+        private static string RenderAudioModuleDisplayManifest(
+            string manifestPath,
+            bool production)
+        {
+            var manifest = CandidateStagingManifest.Load(manifestPath);
+            var themes = manifest.entries
+                .Select(entry => Enum.TryParse<MockInstrumentTheme>(
+                    entry.theme,
+                    out var parsed)
+                    ? MockInstrumentThemeCatalog.Normalize(parsed)
+                    : throw new InvalidDataException(
+                        $"Unsupported audio module theme: {entry.theme}"))
+                .Distinct()
+                .ToArray();
+            var models = AudioModuleModels
+                .Where(model => manifest.entries.Any(entry =>
+                    entry.model == model))
+                .ToArray();
+            if (models.Length == 0)
+            {
+                throw new InvalidDataException(
+                    $"Manifest {manifest.candidateId} has no audio modules.");
+            }
+            var outputPath =
+                $"Builds/Reports/candidate-{manifest.candidateId}-" +
+                (production
+                    ? "production-audio-display-contact-sheet.png"
+                    : "unity-audio-display-contact-sheet.png");
+            var cameraObject = new GameObject("[Review] Camera");
+            var lightObject = new GameObject("[Review] Light");
+            var camera = cameraObject.AddComponent<Camera>();
+            var light = lightObject.AddComponent<Light>();
+            var sheet = new Texture2D(
+                TileSize * themes.Length,
+                TileSize * models.Length,
+                TextureFormat.RGBA32,
+                false);
+            try
+            {
+                ConfigureScene(camera, light);
+                Fill(sheet, new Color(0.012f, 0.018f, 0.025f, 1f));
+                for (var row = 0; row < models.Length; row++)
+                {
+                    var model = models[row];
+                    var kind = AudioKind(model);
+                    for (var column = 0; column < themes.Length; column++)
+                    {
+                        var theme = themes[column];
+                        var entry = manifest.entries.Single(item =>
+                            item.model == model && item.theme == theme.ToString());
+                        var candidatePath = production
+                            ? CandidateStagingManifest.ActivePrefabPath(entry)
+                            : manifest.CandidatePrefabPath(entry);
+                        RenderIntoSheet(
+                            sheet,
+                            camera,
+                            candidatePath,
+                            CalculateFraming(candidatePath),
+                            emissionEnabled: true,
+                            column: column,
+                            row: row,
+                            rowCount: models.Length,
+                            audioKind: kind,
+                            audioTheme: theme);
+                    }
+                }
+
+                Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
+                File.WriteAllBytes(outputPath, sheet.EncodeToPNG());
+                AssetDatabase.Refresh();
+                Debug.Log(
+                    $"Audio module Unity " +
+                    $"{(production ? "production" : "candidate")} " +
+                    $"display review rendered. " +
+                    $"Columns: {string.Join(", ", themes)}. " +
+                    $"Rows: {string.Join(", ", models)}. " +
+                    $"Output: {outputPath}");
+                return outputPath;
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(sheet);
+                UnityEngine.Object.DestroyImmediate(cameraObject);
+                UnityEngine.Object.DestroyImmediate(lightObject);
+            }
         }
 
         [MenuItem(
@@ -411,7 +554,10 @@ namespace MatsuMotoMeterAR.Editor
             var manifest = CandidateStagingManifest.Load(manifestPath);
             var outputPath =
                 $"Builds/Reports/candidate-{manifest.candidateId}-" +
-                (neutralShapeReview
+                (manifest.entries.All(entry => entry.theme == "Superfine") &&
+                 !neutralShapeReview && !candidateOnly
+                    ? "kinetic-vs-superfine-comparison.png"
+                    : neutralShapeReview
                     ? "unity-neutral-shape-contact-sheet.png"
                     : candidateOnly
                     ? "unity-shape-contact-sheet.png"
@@ -469,9 +615,19 @@ namespace MatsuMotoMeterAR.Editor
                             showWindowPanelGraphic: showWindowPanelGraphic);
                         continue;
                     }
-                    var activePath =
-                        CandidateStagingManifest.ActivePrefabPath(entry);
+                    var activePath = entry.theme == "Superfine"
+                        ? "Assets/MatsuMotoMeterAR/Resources/" +
+                          "KineticSafety/Prefabs/" +
+                          $"PF_Visual_{entry.model}_KineticSafety.prefab"
+                        : CandidateStagingManifest.ActivePrefabPath(entry);
                     var framing = CalculateFraming(activePath, candidatePath);
+                    var audioKind = entry.model.StartsWith(
+                        "Audio",
+                        StringComparison.Ordinal)
+                            ? AudioKind(entry.model)
+                            : (MockInstrumentKind?)null;
+                    var showTrendRuntime = entry.model == "TrendMonitor";
+                    var showWindowRuntime = entry.model == "WindowPanel";
                     if (neutralShapeReview)
                     {
                         RenderIntoSheet(
@@ -503,7 +659,14 @@ namespace MatsuMotoMeterAR.Editor
                         emissionEnabled: true,
                         column: 1,
                         row: row,
-                        rowCount: manifest.entries.Length);
+                        rowCount: manifest.entries.Length,
+                        audioKind: audioKind,
+                        audioTheme: entry.theme == "Superfine"
+                            ? MockInstrumentTheme.KineticSafety
+                            : ReviewTheme(entry.theme),
+                        showTrendGraph: showTrendRuntime,
+                        showWindowPanelGraphic: showWindowRuntime,
+                        runtimeModel: entry.model);
                     RenderIntoSheet(
                         sheet,
                         camera,
@@ -521,7 +684,14 @@ namespace MatsuMotoMeterAR.Editor
                         emissionEnabled: true,
                         column: 3,
                         row: row,
-                        rowCount: manifest.entries.Length);
+                        rowCount: manifest.entries.Length,
+                        audioKind: audioKind,
+                        audioTheme: entry.theme == "Superfine"
+                            ? MockInstrumentTheme.KineticSafety
+                            : ReviewTheme(entry.theme),
+                        showTrendGraph: showTrendRuntime,
+                        showWindowPanelGraphic: showWindowRuntime,
+                        runtimeModel: entry.model);
                 }
 
                 Directory.CreateDirectory(Path.GetDirectoryName(outputPath));
@@ -634,7 +804,11 @@ namespace MatsuMotoMeterAR.Editor
             bool showTrendGraph = false,
             bool showWindowPanelGraphic = false,
             WindowPanelGraphicPreset windowPanelPreset =
-                WindowPanelGraphicPreset.Orbit)
+                WindowPanelGraphicPreset.Orbit,
+            MockInstrumentKind? audioKind = null,
+            MockInstrumentTheme audioTheme =
+                MockInstrumentTheme.OrbitalAnalog,
+            string runtimeModel = null)
         {
             var instance = Instantiate(path);
             var target = new RenderTexture(
@@ -668,6 +842,10 @@ namespace MatsuMotoMeterAR.Editor
                     AddTrendGraph(instance);
                 if (showWindowPanelGraphic)
                     AddWindowPanelGraphic(instance, windowPanelPreset);
+                if (audioKind.HasValue)
+                    AddAudioModuleDisplay(instance, audioKind.Value, audioTheme);
+                if (emissionEnabled)
+                    ApplyNonAudioRuntimeState(instance, runtimeModel);
                 camera.orthographicSize = framing.OrthographicSize;
                 var yawRadians = viewYawDegrees * Mathf.Deg2Rad;
                 camera.transform.SetPositionAndRotation(
@@ -706,65 +884,63 @@ namespace MatsuMotoMeterAR.Editor
 
         private static void AddTrendGraph(GameObject instance)
         {
-            var contract = instance.GetComponent<InstrumentGreyboxContract>();
-            var displaySurface = instance
-                .GetComponentInChildren<ThemeVisualManifest>(true)
-                ?.MotionTarget;
-            if (displaySurface == null)
+            // Unity 6000.3 headless rendering can crash natively while drawing
+            // LineRenderer geometry. Use the same fixed-input procedural mesh
+            // path as WindowPanel for the disposable comparison sheet.
+            AddWindowPanelGraphic(
+                instance,
+                WindowPanelGraphicPreset.Lissajous,
+                0.12f);
+        }
+
+        private static void ApplyNonAudioRuntimeState(
+            GameObject instance,
+            string model)
+        {
+            var manifest = instance.GetComponent<ThemeVisualManifest>();
+            if (manifest == null)
+                return;
+            if (model == "Lamp" && manifest.IndicatorRenderer != null)
             {
-                throw new MissingReferenceException(
-                    $"{instance.name}: TrendMonitor display surface missing.");
+                SetRuntimeColor(
+                    manifest.IndicatorRenderer,
+                    new Color(1f, 0.42f, 0.04f, 1f));
+                return;
             }
-            var monitor = instance
-                .GetComponentInChildren<SignalMonitorView>(true);
-            if (monitor == null)
+            if (model != "StatusIndicator" ||
+                manifest.StateRenderers == null ||
+                manifest.StateRenderers.Length < 3)
             {
-                monitor = SignalMonitorView.Create(
-                    contract?.LabelSocket ?? instance.transform,
-                    displaySurface);
-            }
-            else
-            {
-                monitor.AlignToDisplay(displaySurface);
-            }
-            var first = new[] { 0.15f, 0.65f, 0.30f, 0.85f };
-            var second = new[] { 0.80f, 0.45f, 0.70f, 0.20f };
-            var sampleTime = 0f;
-            for (var index = 0; index < first.Length; index++)
-            {
-                monitor.BeginRefresh();
-                monitor.AddSample(
-                    "review-lever",
-                    first[index],
-                    sampleTime);
-                monitor.AddSample(
-                    "review-meter",
-                    second[index],
-                    sampleTime);
-                monitor.AddComposedSample(
-                    SignalCompositionKind.Average,
-                    (first[index] + second[index]) * 0.5f,
-                    validInputCount: 2,
-                    sampleTime: sampleTime);
-                monitor.EndRefresh();
-                sampleTime += SignalMonitorView.RefreshIntervalSeconds;
+                return;
             }
 
-            // The runtime depth-tested font shader is validated separately.
-            // Unity's editor RenderTexture path displays that transparent
-            // shader as the magenta error material, so use the font's own
-            // material only on this disposable review instance.
-            foreach (var text in monitor.GetComponentsInChildren<TextMesh>(true))
+            var colors = new[]
             {
-                var renderer = text.GetComponent<MeshRenderer>();
-                if (renderer != null && text.font != null)
-                    renderer.sharedMaterial = text.font.material;
+                new Color(0.10f, 0.95f, 0.38f, 1f),
+                new Color(1f, 0.58f, 0.04f, 1f),
+                new Color(1f, 0.10f, 0.06f, 1f)
+            };
+            for (var index = 0; index < 3; index++)
+            {
+                if (manifest.StateRenderers[index] != null)
+                    SetRuntimeColor(manifest.StateRenderers[index], colors[index]);
             }
+        }
+
+        private static void SetRuntimeColor(Renderer renderer, Color color)
+        {
+            var block = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(block);
+            block.SetColor("_BaseColor", color);
+            block.SetColor("_Color", color);
+            block.SetColor("_EmissionColor", color * 2.6f);
+            renderer.SetPropertyBlock(block);
         }
 
         private static void AddWindowPanelGraphic(
             GameObject instance,
-            WindowPanelGraphicPreset preset)
+            WindowPanelGraphicPreset preset,
+            float scale = 0.54f)
         {
             var displaySurface = instance
                 .GetComponentInChildren<ThemeVisualManifest>(true)
@@ -796,13 +972,73 @@ namespace MatsuMotoMeterAR.Editor
             graphic.transform.SetPositionAndRotation(
                 surfaceCenter + instance.transform.forward * 0.002f,
                 instance.transform.rotation * Quaternion.Euler(0f, 180f, 0f));
-            graphic.transform.localScale = Vector3.one * 0.54f;
+            graphic.transform.localScale = Vector3.one * scale;
             graphic.SetPreset(preset);
             graphic.SetSlot(0, 0.72f, true);
             graphic.SetSlot(1, 0.50f, true);
             graphic.SetSlot(2, 0.62f, true);
             graphic.SetSlot(3, 0.45f, true);
             graphic.ApplyNow();
+        }
+
+        private static void AddAudioModuleDisplay(
+            GameObject instance,
+            MockInstrumentKind kind,
+            MockInstrumentTheme theme)
+        {
+            var display = instance.GetComponentsInChildren<Transform>(true)
+                .FirstOrDefault(item => item.name == "display_surface");
+            var renderer = display?.GetComponent<Renderer>();
+            if (renderer == null)
+            {
+                throw new MissingReferenceException(
+                    $"{instance.name}: audio display_surface missing.");
+            }
+            var runtime = instance.AddComponent<ModularAudioModuleRuntime>();
+            runtime.Configure(kind, null);
+            var view = instance.AddComponent<AudioModuleDisplayView>();
+            view.Configure(kind, theme, renderer);
+            view.Bind(runtime);
+            view.RedrawNow();
+
+            var signal = instance.GetComponentsInChildren<Transform>(true)
+                .FirstOrDefault(item => item.name == "signal_surface");
+            var signalRenderer = signal?.GetComponent<Renderer>();
+            if (signalRenderer != null)
+            {
+                var signalView =
+                    instance.AddComponent<AudioModuleSignalFlowView>();
+                signalView.Configure(kind, theme, signalRenderer);
+                signalView.Bind(runtime);
+                signalView.ApplyNow(1.25f);
+            }
+        }
+
+        private static MockInstrumentKind AudioKind(string model)
+        {
+            return model switch
+            {
+                "AudioOscillator" => MockInstrumentKind.AudioOscillator,
+                "AudioNoise" => MockInstrumentKind.AudioNoise,
+                "AudioLFO" => MockInstrumentKind.AudioLfo,
+                "AudioSequencer" => MockInstrumentKind.AudioSequencer,
+                "AudioDelay" => MockInstrumentKind.AudioDelay,
+                "AudioOutput" => MockInstrumentKind.AudioOutput,
+                "AudioVca" => MockInstrumentKind.AudioVca,
+                "AudioMixer" => MockInstrumentKind.AudioMixer,
+                "AudioFilter" => MockInstrumentKind.AudioFilter,
+                "AudioEnvelope" => MockInstrumentKind.AudioEnvelope,
+                _ => throw new ArgumentOutOfRangeException(
+                    nameof(model), model, "Unknown audio module model.")
+            };
+        }
+
+        private static MockInstrumentTheme ReviewTheme(string folder)
+        {
+            if (Enum.TryParse<MockInstrumentTheme>(folder, out var parsed))
+                return MockInstrumentThemeCatalog.Normalize(parsed);
+            throw new InvalidDataException(
+                $"Unsupported review theme: {folder}");
         }
 
         private static GameObject Instantiate(string path)

@@ -11,6 +11,7 @@ namespace MatsuMotoMeterAR.Audio
         private AudioSource source;
         private AudioClip clip;
         private int sampleRate = 48000;
+        private bool pausedByGlobalSetting;
 
         public ModularAudioGraph Graph => graph;
         public AudioSource Source => source;
@@ -36,8 +37,41 @@ namespace MatsuMotoMeterAR.Audio
             int frameCount,
             int outputSampleRate = 48000)
         {
-            return graph != null &&
-                   graph.Render(output, frameCount, outputSampleRate);
+            if (!GlobalAudioSettings.ModularAudioEnabled)
+            {
+                if (output != null)
+                    System.Array.Clear(
+                        output,
+                        0,
+                        Mathf.Min(output.Length, frameCount));
+                return false;
+            }
+            return graph != null && graph.Render(
+                output,
+                frameCount,
+                outputSampleRate);
+        }
+
+        private void Update()
+        {
+            if (source == null)
+                return;
+            if (!GlobalAudioSettings.ModularAudioEnabled)
+            {
+                source.mute = true;
+                if (!pausedByGlobalSetting)
+                {
+                    source.Pause();
+                    pausedByGlobalSetting = true;
+                }
+                return;
+            }
+            source.mute = false;
+            if (pausedByGlobalSetting)
+            {
+                source.UnPause();
+                pausedByGlobalSetting = false;
+            }
         }
 
         private void Start()
@@ -60,6 +94,11 @@ namespace MatsuMotoMeterAR.Audio
         {
             if (data == null)
                 return;
+            if (!GlobalAudioSettings.ModularAudioEnabled)
+            {
+                System.Array.Clear(data, 0, data.Length);
+                return;
+            }
             var offset = 0;
             while (offset < data.Length)
             {

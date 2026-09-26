@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "AudioModules_R2A4_OA1",
+  "integrationStage": "GateB",
+  "entries": [
+    {
+      "theme": "OrbitalAnalog",
+      "model": "AudioOscillator",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_R2_A4_OA1/fbx/SM_AudioOscillator_OrbitalAnalog_R2A4.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_R2_A4_OA1/report/SM_AudioOscillator_OrbitalAnalog_R2A4_inspection.json",
+      "revision": "R2A4",
+      "includedRevisions": ["R2A4"],
+      "requiredRevisions": ["R2A4"]
+    },
+    {
+      "theme": "OrbitalAnalog",
+      "model": "AudioNoise",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_R2_A4_OA1/fbx/SM_AudioNoise_OrbitalAnalog_R2A4.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_R2_A4_OA1/report/SM_AudioNoise_OrbitalAnalog_R2A4_inspection.json",
+      "revision": "R2A4",
+      "includedRevisions": ["R2A4"],
+      "requiredRevisions": ["R2A4"]
+    },
+    {
+      "theme": "OrbitalAnalog",
+      "model": "AudioLFO",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_R2_A4_OA1/fbx/SM_AudioLFO_OrbitalAnalog_R2A4.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_R2_A4_OA1/report/SM_AudioLFO_OrbitalAnalog_R2A4_inspection.json",
+      "revision": "R2A4",
+      "includedRevisions": ["R2A4"],
+      "requiredRevisions": ["R2A4"]
+    },
+    {
+      "theme": "OrbitalAnalog",
+      "model": "AudioSequencer",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_R2_A4_OA1/fbx/SM_AudioSequencer_OrbitalAnalog_R2A4.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_R2_A4_OA1/report/SM_AudioSequencer_OrbitalAnalog_R2A4_inspection.json",
+      "revision": "R2A4",
+      "includedRevisions": ["R2A4"],
+      "requiredRevisions": ["R2A4"]
+    },
+    {
+      "theme": "OrbitalAnalog",
+      "model": "AudioDelay",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_R2_A4_OA1/fbx/SM_AudioDelay_OrbitalAnalog_R2A4.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_R2_A4_OA1/report/SM_AudioDelay_OrbitalAnalog_R2A4_inspection.json",
+      "revision": "R2A4",
+      "includedRevisions": ["R2A4"],
+      "requiredRevisions": ["R2A4"]
+    },
+    {
+      "theme": "OrbitalAnalog",
+      "model": "AudioOutput",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_R2_A4_OA1/fbx/SM_AudioOutput_OrbitalAnalog_R2A4.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_R2_A4_OA1/report/SM_AudioOutput_OrbitalAnalog_R2A4_inspection.json",
+      "revision": "R2A4",
+      "includedRevisions": ["R2A4"],
+      "requiredRevisions": ["R2A4"]
+    }
+  ]
+}

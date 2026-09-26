@@ -58,7 +58,7 @@ Meta SDK の更新は adapter と専用 asmdef 内に閉じ込める。Meta 固�
 そのまま移行し、互換キーはconcept.4実機確認まで保持する。Quest実装は
 `MetaQuestAnchorService`を介してUUID一括load、個別localize、root bind、eraseを行う。
 
-現行schema v9は`schemaVersion`、`revision`、Roomごと最大48件・全Room合計最大192件の
+現行schema v10は`schemaVersion`、`revision`、Roomごと最大48件・全Room合計最大192件の
 配置recordと、最大192件の`SignalConnectionRecord`を持つ。各配置recordは
 `placementId`、`anchorId`、MRUK Room UUID、stable `instrumentTypeId`、surface、
 local offset、normalized value、lifecycle、Window Panel graphic preset、通常targetの
@@ -69,23 +69,45 @@ schema v8はこれに最大64件の型付き`AudioPatchConnectionRecord`を追�
 placement ID、port ID、port domainを保存する。Audio PatchはOscillator／Noise／LFOの
 `audio.out`からAudio Outputの`audio.in`、およびLFOからOscillatorの`pitch.in`／`fm.in`を
 対象とする。加えてLFOの`clock.out`からSequencerの`clock.in`、Sequencerの
-`control.out`からOscillatorの`pitch.in`を接続でき、外部clock未接続時はSequencerの内部clockへ
-自動fallbackする。Meterは値とmotor tone、Trend Monitorは値・符号付き傾き・spread・texture、
-Window PanelはEnergy・Balance・Phase・Detail・textureを型付き出力する。これらは従来のSignal target
+`control.out`からOscillatorの`pitch.in`を接続できる。LFOとSequencerは
+`gate.out`／`trigger.out`も持ち、Envelope、Oscillator／Noise Gate、LFO resetへ接続できる。
+Sequencerは`CLOCK`と`STEP TRIGGER`の再生モードを持つ。CLOCKでは外部clock未接続時に
+内部clockへ自動fallbackする。STEP TRIGGERでは`trigger.in`の0→1立ち上がりだけで
+1ステップ進み、High保持中は再進行しない。LFOまたは別Sequencerの`trigger.out`を
+Trigger源にできる。Meterは値とmotor tone、Trend Monitorは値・符号付き傾き・spread・texture、
+Window PanelはEnergy・Balance・Phase・Detail・textureを型付き出力する。さらに各UI sourceは
+主表示値（Meter／MonitorはValue、PanelはEnergy）が0.5以上の間Highとなる`trigger.out`を持ち、
+Sequencerの`trigger.in`へ接続できる。Monitor／Panelの入力が無効な場合はLowを出力する。これらは従来のSignal target
 役を維持し、Connectモードで同じ計器を再選択した場合だけAudio Patch sourceへ切り替わる。
+Lever／Rotary／Slider／Throttle／Switch／Buttonも従来のSignal sourceに加えてAudio Patch sourceとなり、
+正規化操作値を`control.out`、0.5以上を`gate.out`と`trigger.out`から出力する。Buttonの押下は
+0→1、解放は1→0となるため、Sequencerは押下立ち上がりごとに1ステップだけ進む。
 左stick左右で出力portを選択し、ControlはOscillator pitchまたはDelay time、Audioは
 Oscillator FM、Delay、Audio Outputへ接続する。既存Signal接続とは別に評価する。Control edgeはblock先頭値をsample-and-holdし、
-Audio／Clock edgeはsample単位で評価する。runtimeはOutputから上流を辿って
+Audio／Clock／Gate／Trigger edgeはsample単位で評価する。runtimeはOutputから上流を辿って
 LFO→Sequencer→Oscillator→Outputを
 含む型付きgraphを構築する。Delayは20〜750 msの事前確保ring buffer、feedback上限0.92、
 内部state/output clampを持つ。通常のtopological compileでcycleを検出した場合、Delay入力境界だけを
 1 sampleの因果境界として再compileし、Delayを含まないzero-delay cycleは拒否する。
-ConnectモードではAudioをcyan、Controlをamber、Clockをvioletのcableで描画し、選択中はmagentaへ変える。
+ConnectモードではAudioをcyan、Controlをamber、Clockをviolet、Gateをgreen、
+Triggerをorangeのcableで描画し、選択中はmagentaへ変える。
 音響moduleを選択してAで接続を巡回し、Bで選択中のpatchをtransactionalに削除する。
 schema v9はplacement recordにOscillator/LFO waveform、Noise color、Sequencerの16個の
 bipolar step値を追加する。Connectモードでmodule Sourceを選択後Yでparameter editorへ入り、
 左stickでwaveform/colorまたはstepを選択し、Sequencerは右stick上下で値を0.05刻みに変更する。
-Aまたは左stick押下で保存し、Bで編集前stateへ戻す。schema v1〜v8は読込時にv9へ移行して即時保存し、旧buildによる
+Aまたは左stick押下で保存し、Bで編集前stateへ戻す。schema v10は操作物と音響moduleの各数値parameterに
+value、minimum、maximum、step count、linear/log scaleを追加する。step count 0は連続、2〜128は両端を含む
+量子化とする。Lever、Toggle、Rotary、Push Button、Throttle、Power Sliderの出力rangeとdetent、およびOscillator、Noise、LFO、
+Sequencer、Delay、VCA、Mixer、Filter、Envelope、Audio Outputの数値parameterを同じeditorで調整する。VCAは`audio.in`と`level.in`を受け、
+Control未接続時は手動level、接続時は0〜1のControl値を5 msで平滑化してgainへ使う。Mixerは複数の`audio.in`を加算し、
+master gainとlimitを適用して`audio.out`へ出す。Filterは`audio.in`をresonant low-pass処理し、`cutoff.in`のControl値で
+基準cutoffを±4 octave変調する。cutoff係数は5 msで平滑化し、内部stateと出力をclampする。
+Envelopeはsample単位の`gate.in`／`trigger.in`からADSRを生成し、block-rateの`control.out`をVCAまたはFilterへ渡す。
+Gate未接続時は2-state manual Gateを使い、A/D/Rはlog range、Sustainはlinear rangeとして保存する。
+LFO／SequencerのGate Lengthもrangeとstep countを保存し、Connect中は左stick左右で
+各moduleの型付き出力portを選択する。Meter／Monitor／Panelおよび操作系sourceは再選択で
+Signal roleとAudio Patch roleを切り替える。
+schema v1〜v9は読込時にv10へ移行して即時保存し、旧buildによる
 25件目以降の切り捨てを防ぐ。近接する配置は約2.75 m以内でAnchorを共有し、
 複数recordが同じ`anchorId`を参照できる。
 実行中に`GetCurrentRoom()`が1秒間安定して別Roomを返した場合は旧Roomのruntime

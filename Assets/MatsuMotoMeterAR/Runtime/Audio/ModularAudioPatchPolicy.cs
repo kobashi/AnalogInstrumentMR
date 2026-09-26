@@ -14,7 +14,15 @@ namespace MatsuMotoMeterAR.Audio
         public const string FrequencyModulationInputPortId = "fm.in";
         public const string ClockOutputPortId = "clock.out";
         public const string ClockInputPortId = "clock.in";
+        public const string RateInputPortId = "rate.in";
         public const string TimeInputPortId = "time.in";
+        public const string LevelInputPortId = "level.in";
+        public const string CutoffInputPortId = "cutoff.in";
+        public const string GateInputPortId = "gate.in";
+        public const string TriggerInputPortId = "trigger.in";
+        public const string ResetInputPortId = "reset.in";
+        public const string GateOutputPortId = "gate.out";
+        public const string TriggerOutputPortId = "trigger.out";
         public const string ValueOutputPortId = "value.out";
         public const string SlopeOutputPortId = "slope.out";
         public const string SpreadOutputPortId = "spread.out";
@@ -22,10 +30,12 @@ namespace MatsuMotoMeterAR.Audio
         public const string BalanceOutputPortId = "balance.out";
         public const string PhaseOutputPortId = "phase.out";
         public const string DetailOutputPortId = "detail.out";
+        public const float ObservableTriggerThreshold = 0.5f;
 
         private static readonly string[] MeterOutputs =
         {
             ValueOutputPortId,
+            TriggerOutputPortId,
             AudioOutputPortId
         };
 
@@ -34,6 +44,7 @@ namespace MatsuMotoMeterAR.Audio
             ValueOutputPortId,
             SlopeOutputPortId,
             SpreadOutputPortId,
+            TriggerOutputPortId,
             AudioOutputPortId
         };
 
@@ -43,7 +54,31 @@ namespace MatsuMotoMeterAR.Audio
             BalanceOutputPortId,
             PhaseOutputPortId,
             DetailOutputPortId,
+            TriggerOutputPortId,
             AudioOutputPortId
+        };
+
+        private static readonly string[] LfoOutputs =
+        {
+            ControlOutputPortId,
+            ClockOutputPortId,
+            GateOutputPortId,
+            TriggerOutputPortId,
+            AudioOutputPortId
+        };
+
+        private static readonly string[] SequencerOutputs =
+        {
+            ControlOutputPortId,
+            GateOutputPortId,
+            TriggerOutputPortId
+        };
+
+        private static readonly string[] ControlSourceOutputs =
+        {
+            ControlOutputPortId,
+            GateOutputPortId,
+            TriggerOutputPortId
         };
 
         public static bool CanSource(MockInstrumentKind kind)
@@ -53,6 +88,11 @@ namespace MatsuMotoMeterAR.Audio
                    kind == MockInstrumentKind.AudioLfo ||
                    kind == MockInstrumentKind.AudioSequencer ||
                    kind == MockInstrumentKind.AudioDelay ||
+                   kind == MockInstrumentKind.AudioVca ||
+                   kind == MockInstrumentKind.AudioMixer ||
+                   kind == MockInstrumentKind.AudioFilter ||
+                   kind == MockInstrumentKind.AudioEnvelope ||
+                   IsInteractiveControlSource(kind) ||
                    IsObservableInstrument(kind);
         }
 
@@ -60,8 +100,14 @@ namespace MatsuMotoMeterAR.Audio
         {
             return kind == MockInstrumentKind.AudioOutput ||
                    kind == MockInstrumentKind.AudioOscillator ||
+                   kind == MockInstrumentKind.AudioNoise ||
+                   kind == MockInstrumentKind.AudioLfo ||
                    kind == MockInstrumentKind.AudioSequencer ||
-                   kind == MockInstrumentKind.AudioDelay;
+                   kind == MockInstrumentKind.AudioDelay ||
+                   kind == MockInstrumentKind.AudioVca ||
+                   kind == MockInstrumentKind.AudioMixer ||
+                   kind == MockInstrumentKind.AudioFilter ||
+                   kind == MockInstrumentKind.AudioEnvelope;
         }
 
         public static bool PrefersTargetWhenUnconnected(
@@ -96,10 +142,15 @@ namespace MatsuMotoMeterAR.Audio
         {
             if (IsObservableInstrument(source))
             {
-                var sourcePort = target == MockInstrumentKind.AudioOutput ||
-                                 target == MockInstrumentKind.AudioDelay
-                    ? AudioOutputPortId
-                    : GetSelectableOutputPortId(source, 0);
+                var sourcePort = IsInteractiveControlSource(source)
+                    ? PreferredControlSourcePort(source, target)
+                    : target == MockInstrumentKind.AudioSequencer
+                        ? TriggerOutputPortId
+                        : target == MockInstrumentKind.AudioOutput ||
+                          target == MockInstrumentKind.AudioDelay ||
+                          target == MockInstrumentKind.AudioMixer
+                            ? AudioOutputPortId
+                            : GetSelectableOutputPortId(source, 0);
                 sourcePortId = sourcePort;
                 return TryGetRouteFromPort(
                     source,
@@ -107,6 +158,78 @@ namespace MatsuMotoMeterAR.Audio
                     sourcePort,
                     out targetPortId,
                     out domain);
+            }
+            if (source == MockInstrumentKind.AudioEnvelope)
+            {
+                sourcePortId = ControlOutputPortId;
+                return TryGetRouteFromPort(
+                    source,
+                    target,
+                    sourcePortId,
+                    out targetPortId,
+                    out domain);
+            }
+            if (source == MockInstrumentKind.AudioLfo &&
+                (target == MockInstrumentKind.AudioEnvelope ||
+                 target == MockInstrumentKind.AudioNoise))
+            {
+                sourcePortId = GateOutputPortId;
+                return TryGetRouteFromPort(
+                    source,
+                    target,
+                    sourcePortId,
+                    out targetPortId,
+                    out domain);
+            }
+            if (source == MockInstrumentKind.AudioSequencer &&
+                (target == MockInstrumentKind.AudioEnvelope ||
+                 target == MockInstrumentKind.AudioNoise))
+            {
+                sourcePortId = GateOutputPortId;
+                return TryGetRouteFromPort(
+                    source,
+                    target,
+                    sourcePortId,
+                    out targetPortId,
+                    out domain);
+            }
+            if (source == MockInstrumentKind.AudioSequencer &&
+                target == MockInstrumentKind.AudioLfo)
+            {
+                sourcePortId = TriggerOutputPortId;
+                return TryGetRouteFromPort(
+                    source,
+                    target,
+                    sourcePortId,
+                    out targetPortId,
+                    out domain);
+            }
+            if (source == MockInstrumentKind.AudioSequencer &&
+                target == MockInstrumentKind.AudioSequencer)
+            {
+                sourcePortId = TriggerOutputPortId;
+                return TryGetRouteFromPort(
+                    source,
+                    target,
+                    sourcePortId,
+                    out targetPortId,
+                    out domain);
+            }
+            if (source == MockInstrumentKind.AudioLfo &&
+                target == MockInstrumentKind.AudioVca)
+            {
+                sourcePortId = ControlOutputPortId;
+                targetPortId = LevelInputPortId;
+                domain = ModularAudioPortDomain.Control;
+                return true;
+            }
+            if (source == MockInstrumentKind.AudioLfo &&
+                target == MockInstrumentKind.AudioFilter)
+            {
+                sourcePortId = ControlOutputPortId;
+                targetPortId = CutoffInputPortId;
+                domain = ModularAudioPortDomain.Control;
+                return true;
             }
             if (source == MockInstrumentKind.AudioLfo &&
                 target == MockInstrumentKind.AudioDelay)
@@ -203,6 +326,47 @@ namespace MatsuMotoMeterAR.Audio
             return (currentIndex + (direction < 0 ? count - 1 : 1)) % count;
         }
 
+        public static int GetDefaultPatchOutputIndex(
+            MockInstrumentKind kind)
+        {
+            var outputs = GetSelectableOutputs(kind);
+            if (outputs == null || outputs.Length == 0)
+                return 0;
+            if (!SupportsSignalRole(kind))
+                return 0;
+            for (var index = 0; index < outputs.Length; index++)
+            {
+                if (TryGetOutputDomain(
+                        kind,
+                        outputs[index],
+                        out var domain) &&
+                    domain == ModularAudioPortDomain.Audio)
+                {
+                    return index;
+                }
+            }
+            return 0;
+        }
+
+        public static int GetDefaultPatchOutputIndex(
+            MockInstrumentKind kind,
+            MockInstrumentKind target)
+        {
+            if (target == MockInstrumentKind.AudioSequencer)
+            {
+                var outputs = GetSelectableOutputs(kind);
+                if (outputs != null)
+                {
+                    for (var index = 0; index < outputs.Length; index++)
+                    {
+                        if (outputs[index] == TriggerOutputPortId)
+                            return index;
+                    }
+                }
+            }
+            return GetDefaultPatchOutputIndex(kind);
+        }
+
         public static bool TryGetOutputDomain(
             MockInstrumentKind kind,
             string portId,
@@ -247,6 +411,38 @@ namespace MatsuMotoMeterAR.Audio
                     _ => null
                 };
             }
+            else if (target == MockInstrumentKind.AudioVca)
+            {
+                targetPortId = domain switch
+                {
+                    ModularAudioPortDomain.Audio => AudioInputPortId,
+                    ModularAudioPortDomain.Control => LevelInputPortId,
+                    _ => null
+                };
+            }
+            else if (target == MockInstrumentKind.AudioMixer &&
+                     domain == ModularAudioPortDomain.Audio)
+            {
+                targetPortId = AudioInputPortId;
+            }
+            else if (target == MockInstrumentKind.AudioFilter)
+            {
+                targetPortId = domain switch
+                {
+                    ModularAudioPortDomain.Audio => AudioInputPortId,
+                    ModularAudioPortDomain.Control => CutoffInputPortId,
+                    _ => null
+                };
+            }
+            else if (target == MockInstrumentKind.AudioEnvelope)
+            {
+                targetPortId = domain switch
+                {
+                    ModularAudioPortDomain.Gate => GateInputPortId,
+                    ModularAudioPortDomain.Trigger => TriggerInputPortId,
+                    _ => null
+                };
+            }
             else if (target == MockInstrumentKind.AudioOscillator)
             {
                 targetPortId = domain switch
@@ -254,13 +450,30 @@ namespace MatsuMotoMeterAR.Audio
                     ModularAudioPortDomain.Audio =>
                         FrequencyModulationInputPortId,
                     ModularAudioPortDomain.Control => PitchInputPortId,
+                    ModularAudioPortDomain.Gate => GateInputPortId,
                     _ => null
                 };
             }
-            else if (target == MockInstrumentKind.AudioSequencer &&
-                     domain == ModularAudioPortDomain.Clock)
+            else if (target == MockInstrumentKind.AudioNoise &&
+                     domain == ModularAudioPortDomain.Gate)
             {
-                targetPortId = ClockInputPortId;
+                targetPortId = GateInputPortId;
+            }
+            else if (target == MockInstrumentKind.AudioLfo &&
+                     (domain == ModularAudioPortDomain.Control ||
+                      domain == ModularAudioPortDomain.Trigger))
+            {
+                targetPortId = domain == ModularAudioPortDomain.Trigger
+                    ? ResetInputPortId
+                    : RateInputPortId;
+            }
+            else if (target == MockInstrumentKind.AudioSequencer &&
+                     (domain == ModularAudioPortDomain.Clock ||
+                      domain == ModularAudioPortDomain.Trigger))
+            {
+                targetPortId = domain == ModularAudioPortDomain.Trigger
+                    ? TriggerInputPortId
+                    : ClockInputPortId;
             }
 
             return targetPortId != null && CanConnect(
@@ -337,6 +550,18 @@ namespace MatsuMotoMeterAR.Audio
                 case MockInstrumentKind.AudioDelay:
                     moduleKind = ModularAudioModuleKind.Delay;
                     return true;
+                case MockInstrumentKind.AudioVca:
+                    moduleKind = ModularAudioModuleKind.Vca;
+                    return true;
+                case MockInstrumentKind.AudioMixer:
+                    moduleKind = ModularAudioModuleKind.Mixer;
+                    return true;
+                case MockInstrumentKind.AudioFilter:
+                    moduleKind = ModularAudioModuleKind.Filter;
+                    return true;
+                case MockInstrumentKind.AudioEnvelope:
+                    moduleKind = ModularAudioModuleKind.Envelope;
+                    return true;
                 case MockInstrumentKind.RoundMeter:
                 case MockInstrumentKind.RoundMeterMedium:
                 case MockInstrumentKind.RoundMeterLarge:
@@ -349,6 +574,14 @@ namespace MatsuMotoMeterAR.Audio
                 case MockInstrumentKind.WindowPanel:
                     moduleKind = ModularAudioModuleKind.PanelSource;
                     return true;
+                case MockInstrumentKind.Lever:
+                case MockInstrumentKind.ToggleSwitch:
+                case MockInstrumentKind.RotaryKnob:
+                case MockInstrumentKind.PushButton:
+                case MockInstrumentKind.ThrottleLever:
+                case MockInstrumentKind.PowerSlider:
+                    moduleKind = ModularAudioModuleKind.ControlSource;
+                    return true;
                 default:
                     moduleKind = default;
                     return false;
@@ -357,7 +590,18 @@ namespace MatsuMotoMeterAR.Audio
 
         private static bool IsObservableInstrument(MockInstrumentKind kind)
         {
-            return GetSelectableOutputs(kind) != null;
+            return SupportsSignalRole(kind);
+        }
+
+        public static bool SupportsSignalRole(MockInstrumentKind kind)
+        {
+            return IsInteractiveControlSource(kind) ||
+                   kind == MockInstrumentKind.RoundMeter ||
+                   kind == MockInstrumentKind.RoundMeterMedium ||
+                   kind == MockInstrumentKind.RoundMeterLarge ||
+                   kind == MockInstrumentKind.WindowMeter ||
+                   kind == MockInstrumentKind.TrendMonitor ||
+                   kind == MockInstrumentKind.WindowPanel;
         }
 
         private static string[] GetSelectableOutputs(MockInstrumentKind kind)
@@ -370,8 +614,47 @@ namespace MatsuMotoMeterAR.Audio
                 MockInstrumentKind.WindowMeter => MeterOutputs,
                 MockInstrumentKind.TrendMonitor => TrendOutputs,
                 MockInstrumentKind.WindowPanel => PanelOutputs,
+                MockInstrumentKind.Lever or
+                MockInstrumentKind.ToggleSwitch or
+                MockInstrumentKind.RotaryKnob or
+                MockInstrumentKind.PushButton or
+                MockInstrumentKind.ThrottleLever or
+                MockInstrumentKind.PowerSlider => ControlSourceOutputs,
+                MockInstrumentKind.AudioLfo => LfoOutputs,
+                MockInstrumentKind.AudioSequencer => SequencerOutputs,
                 _ => null
             };
+        }
+
+        private static bool IsInteractiveControlSource(
+            MockInstrumentKind kind)
+        {
+            return kind == MockInstrumentKind.Lever ||
+                   kind == MockInstrumentKind.ToggleSwitch ||
+                   kind == MockInstrumentKind.RotaryKnob ||
+                   kind == MockInstrumentKind.PushButton ||
+                   kind == MockInstrumentKind.ThrottleLever ||
+                   kind == MockInstrumentKind.PowerSlider;
+        }
+
+        private static string PreferredControlSourcePort(
+            MockInstrumentKind source,
+            MockInstrumentKind target)
+        {
+            if (target == MockInstrumentKind.AudioSequencer)
+                return TriggerOutputPortId;
+            if (target == MockInstrumentKind.AudioEnvelope ||
+                target == MockInstrumentKind.AudioNoise)
+            {
+                return GateOutputPortId;
+            }
+            if (target == MockInstrumentKind.AudioLfo &&
+                (source == MockInstrumentKind.PushButton ||
+                 source == MockInstrumentKind.ToggleSwitch))
+            {
+                return TriggerOutputPortId;
+            }
+            return ControlOutputPortId;
         }
 
         public static bool TouchesPlacement(

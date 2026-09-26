@@ -88,7 +88,19 @@ namespace MatsuMotoMeterAR.Editor
                     $"actual={triangleCount}.");
             }
 
-            var rootUp = root.InverseTransformDirection(display.up).normalized;
+            var localSize = mesh.bounds.size;
+            if (localSize.x <= PlaneTolerance ||
+                localSize.y <= PlaneTolerance ||
+                localSize.z > PlaneTolerance)
+            {
+                problems.Add(
+                    "display_surface mesh data must lie in its local XY " +
+                    "plane with non-zero X/Y and zero Z extent; " +
+                    $"actual=({localSize.x:0.######}, " +
+                    $"{localSize.y:0.######}, {localSize.z:0.######}).");
+            }
+
+            var rootUp = DisplayUvUpDirection(root, display, mesh);
             if (Vector3.Dot(rootUp, Vector3.up) < AxisTolerance)
             {
                 problems.Add("display_surface up axis must be instrument local +Y.");
@@ -123,6 +135,40 @@ namespace MatsuMotoMeterAR.Editor
                     "local +Z.");
                 break;
             }
+        }
+
+        private static Vector3 DisplayUvUpDirection(
+            Transform root,
+            Transform display,
+            Mesh mesh)
+        {
+            var vertices = mesh.vertices;
+            var uv = mesh.uv;
+            var triangles = mesh.triangles;
+            for (var index = 0; index + 2 < triangles.Length; index += 3)
+            {
+                var first = triangles[index];
+                var second = triangles[index + 1];
+                var third = triangles[index + 2];
+                if (first >= uv.Length || second >= uv.Length || third >= uv.Length)
+                    continue;
+                var edge1 = vertices[second] - vertices[first];
+                var edge2 = vertices[third] - vertices[first];
+                var delta1 = uv[second] - uv[first];
+                var delta2 = uv[third] - uv[first];
+                var determinant =
+                    delta1.x * delta2.y - delta1.y * delta2.x;
+                if (Mathf.Abs(determinant) < 0.000001f)
+                    continue;
+                var localUp =
+                    (-delta2.x * edge1 + delta1.x * edge2) /
+                    determinant;
+                var worldUp = display.TransformDirection(localUp);
+                if (worldUp.sqrMagnitude < 0.000001f)
+                    continue;
+                return root.InverseTransformDirection(worldUp).normalized;
+            }
+            return root.InverseTransformDirection(display.up).normalized;
         }
     }
 }

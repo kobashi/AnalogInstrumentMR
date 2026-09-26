@@ -117,6 +117,26 @@ namespace MatsuMotoMeterAR.Tests
             Assert.That(sourcePort, Is.EqualTo("control.out"));
             Assert.That(targetPort, Is.EqualTo("pitch.in"));
             Assert.That(domain, Is.EqualTo(ModularAudioPortDomain.Control));
+            Assert.That(ModularAudioPatchPolicy.TryGetDefaultRoute(
+                    MockInstrumentKind.AudioLfo,
+                    MockInstrumentKind.AudioEnvelope,
+                    out sourcePort,
+                    out targetPort,
+                    out domain),
+                Is.True);
+            Assert.That(sourcePort, Is.EqualTo("gate.out"));
+            Assert.That(targetPort, Is.EqualTo("gate.in"));
+            Assert.That(domain, Is.EqualTo(ModularAudioPortDomain.Gate));
+            Assert.That(ModularAudioPatchPolicy.TryGetDefaultRoute(
+                    MockInstrumentKind.AudioSequencer,
+                    MockInstrumentKind.AudioLfo,
+                    out sourcePort,
+                    out targetPort,
+                    out domain),
+                Is.True);
+            Assert.That(sourcePort, Is.EqualTo("trigger.out"));
+            Assert.That(targetPort, Is.EqualTo("reset.in"));
+            Assert.That(domain, Is.EqualTo(ModularAudioPortDomain.Trigger));
             Assert.That(ModularAudioPatchPolicy.CanConnect(
                     MockInstrumentKind.AudioOscillator,
                     MockInstrumentKind.AudioOutput,
@@ -124,6 +144,377 @@ namespace MatsuMotoMeterAR.Tests
                     "audio.in",
                     ModularAudioPortDomain.Control),
                 Is.False);
+        }
+
+        [Test]
+        public void PatchPolicy_RoutesVcaMixerAndFilterDomains()
+        {
+            Assert.That(ModularAudioPatchPolicy.TryGetDefaultRoute(
+                    MockInstrumentKind.AudioOscillator,
+                    MockInstrumentKind.AudioVca,
+                    out var sourcePort,
+                    out var targetPort,
+                    out var domain),
+                Is.True);
+            Assert.That(sourcePort, Is.EqualTo("audio.out"));
+            Assert.That(targetPort, Is.EqualTo("audio.in"));
+            Assert.That(domain, Is.EqualTo(ModularAudioPortDomain.Audio));
+
+            Assert.That(ModularAudioPatchPolicy.TryGetDefaultRoute(
+                    MockInstrumentKind.AudioLfo,
+                    MockInstrumentKind.AudioVca,
+                    out sourcePort,
+                    out targetPort,
+                    out domain),
+                Is.True);
+            Assert.That(sourcePort, Is.EqualTo("control.out"));
+            Assert.That(targetPort, Is.EqualTo("level.in"));
+            Assert.That(domain, Is.EqualTo(ModularAudioPortDomain.Control));
+
+            Assert.That(ModularAudioPatchPolicy.TryGetDefaultRoute(
+                    MockInstrumentKind.AudioVca,
+                    MockInstrumentKind.AudioMixer,
+                    out sourcePort,
+                    out targetPort,
+                    out domain),
+                Is.True);
+            Assert.That(sourcePort, Is.EqualTo("audio.out"));
+            Assert.That(targetPort, Is.EqualTo("audio.in"));
+            Assert.That(domain, Is.EqualTo(ModularAudioPortDomain.Audio));
+
+            Assert.That(ModularAudioPatchPolicy.TryGetDefaultRoute(
+                    MockInstrumentKind.AudioMixer,
+                    MockInstrumentKind.AudioOutput,
+                    out sourcePort,
+                    out targetPort,
+                    out domain),
+                Is.True);
+
+            Assert.That(ModularAudioPatchPolicy.TryGetDefaultRoute(
+                    MockInstrumentKind.AudioOscillator,
+                    MockInstrumentKind.AudioFilter,
+                    out sourcePort,
+                    out targetPort,
+                    out domain),
+                Is.True);
+            Assert.That(sourcePort, Is.EqualTo("audio.out"));
+            Assert.That(targetPort, Is.EqualTo("audio.in"));
+            Assert.That(domain, Is.EqualTo(ModularAudioPortDomain.Audio));
+
+            Assert.That(ModularAudioPatchPolicy.TryGetDefaultRoute(
+                    MockInstrumentKind.AudioLfo,
+                    MockInstrumentKind.AudioFilter,
+                    out sourcePort,
+                    out targetPort,
+                    out domain),
+                Is.True);
+            Assert.That(sourcePort, Is.EqualTo("control.out"));
+            Assert.That(targetPort, Is.EqualTo("cutoff.in"));
+            Assert.That(domain, Is.EqualTo(ModularAudioPortDomain.Control));
+
+            Assert.That(ModularAudioPatchPolicy.TryGetDefaultRoute(
+                    MockInstrumentKind.AudioFilter,
+                    MockInstrumentKind.AudioOutput,
+                    out sourcePort,
+                    out targetPort,
+                    out domain),
+                Is.True);
+            Assert.That(sourcePort, Is.EqualTo("audio.out"));
+            Assert.That(targetPort, Is.EqualTo("audio.in"));
+            Assert.That(domain, Is.EqualTo(ModularAudioPortDomain.Audio));
+
+            Assert.That(ModularAudioPatchPolicy.TryGetDefaultRoute(
+                    MockInstrumentKind.AudioEnvelope,
+                    MockInstrumentKind.AudioVca,
+                    out sourcePort,
+                    out targetPort,
+                    out domain),
+                Is.True);
+            Assert.That(sourcePort, Is.EqualTo("control.out"));
+            Assert.That(targetPort, Is.EqualTo("level.in"));
+            Assert.That(domain, Is.EqualTo(ModularAudioPortDomain.Control));
+
+            Assert.That(ModularAudioPatchPolicy.TryGetDefaultRoute(
+                    MockInstrumentKind.AudioEnvelope,
+                    MockInstrumentKind.AudioFilter,
+                    out sourcePort,
+                    out targetPort,
+                    out domain),
+                Is.True);
+            Assert.That(targetPort, Is.EqualTo("cutoff.in"));
+            Assert.That(domain, Is.EqualTo(ModularAudioPortDomain.Control));
+        }
+
+        [Test]
+        public void Vca_UsesManualLevelWithoutCvAndControlLevelWithCv()
+        {
+            var manualGraph = new ModularAudioGraph();
+            var manualOscillator = manualGraph.AddNode(
+                new ModularOscillatorNode
+                {
+                    Frequency = 440f,
+                    Level = 0.2f
+                });
+            var manualVca = manualGraph.AddNode(new ModularVcaNode
+            {
+                ManualLevel = 0.4f,
+                Gain = 1.5f
+            });
+            var manualOutput = manualGraph.AddNode(
+                new ModularAudioOutputNode { Gain = 1f, Limit = 1f });
+            Assert.That(manualGraph.ConnectAudio(
+                manualOscillator, manualVca), Is.True);
+            Assert.That(manualGraph.ConnectAudio(
+                manualVca, manualOutput), Is.True);
+            Assert.That(manualGraph.SetOutputNode(manualOutput), Is.True);
+            Assert.That(manualGraph.Compile(), Is.True);
+            var manualSamples = new float[480];
+            Assert.That(manualGraph.Render(
+                manualSamples, manualSamples.Length, 48000), Is.True);
+
+            var sequencerNode = new ModularSequencerNode();
+            for (var index = 0;
+                 index < ModularAudioParameterPolicy.SequencerStepCapacity;
+                 index++)
+                sequencerNode.SetStepValue(index, 0.2f);
+            var cvGraph = new ModularAudioGraph();
+            var cvOscillator = cvGraph.AddNode(
+                new ModularOscillatorNode
+                {
+                    Frequency = 440f,
+                    Level = 0.2f
+                });
+            var sequencer = cvGraph.AddNode(sequencerNode);
+            var cvNode = new ModularVcaNode
+            {
+                ManualLevel = 0.9f,
+                Gain = 1.5f
+            };
+            var cvVca = cvGraph.AddNode(cvNode);
+            var cvOutput = cvGraph.AddNode(
+                new ModularAudioOutputNode { Gain = 1f, Limit = 1f });
+            Assert.That(cvGraph.ConnectAudio(cvOscillator, cvVca), Is.True);
+            Assert.That(cvGraph.Connect(
+                sequencer,
+                cvVca,
+                ModularAudioPortDomain.Control,
+                "control.out",
+                "level.in"), Is.True);
+            Assert.That(cvGraph.ConnectAudio(cvVca, cvOutput), Is.True);
+            Assert.That(cvGraph.SetOutputNode(cvOutput), Is.True);
+            Assert.That(cvGraph.Compile(), Is.True);
+            var cvSamples = new float[480];
+            Assert.That(cvGraph.Render(
+                cvSamples, cvSamples.Length, 48000), Is.True);
+
+            Assert.That(MaximumAbsolute(manualSamples),
+                Is.EqualTo(0.12f).Within(0.002f));
+            Assert.That(MaximumAbsolute(cvSamples),
+                Is.EqualTo(0.06f).Within(0.002f));
+            Assert.That(cvNode.IsControlDriven, Is.True);
+        }
+
+        [Test]
+        public void Mixer_AppliesGainAndBoundsSummedInput()
+        {
+            var graph = new ModularAudioGraph();
+            var first = graph.AddNode(new ModularOscillatorNode
+            {
+                Frequency = 440f,
+                Level = 0.6f
+            });
+            var second = graph.AddNode(new ModularOscillatorNode
+            {
+                Frequency = 440f,
+                Level = 0.6f
+            });
+            var mixer = graph.AddNode(new ModularMixerNode
+            {
+                Gain = 1f,
+                Limit = 0.5f
+            });
+            var output = graph.AddNode(
+                new ModularAudioOutputNode { Gain = 1f, Limit = 1f });
+            Assert.That(graph.ConnectAudio(first, mixer), Is.True);
+            Assert.That(graph.ConnectAudio(second, mixer), Is.True);
+            Assert.That(graph.ConnectAudio(mixer, output), Is.True);
+            Assert.That(graph.SetOutputNode(output), Is.True);
+            Assert.That(graph.Compile(), Is.True);
+            var samples = new float[480];
+            Assert.That(graph.Render(
+                samples, samples.Length, 48000), Is.True);
+
+            Assert.That(MaximumAbsolute(samples),
+                Is.EqualTo(0.5f).Within(0.0001f));
+        }
+
+        [Test]
+        public void Filter_AttenuatesHighToneAndTracksCutoffControl()
+        {
+            var closedRms = MeasureFilteredToneRms(300f, 0f);
+            var openRms = MeasureFilteredToneRms(10000f, 0f);
+            Assert.That(openRms, Is.GreaterThan(0.05f));
+            Assert.That(closedRms, Is.LessThan(openRms * 0.35f));
+
+            var graph = new ModularAudioGraph();
+            var oscillator = graph.AddNode(new ModularOscillatorNode
+            {
+                Frequency = 440f,
+                Level = 0.2f
+            });
+            var sequencerNode = new ModularSequencerNode();
+            for (var index = 0;
+                 index < ModularAudioParameterPolicy.SequencerStepCapacity;
+                 index++)
+                sequencerNode.SetStepValue(index, 0.5f);
+            var sequencer = graph.AddNode(sequencerNode);
+            var filterNode = new ModularFilterNode
+            {
+                Cutoff = 1000f,
+                Resonance = 0.35f
+            };
+            var filter = graph.AddNode(filterNode);
+            var output = graph.AddNode(new ModularAudioOutputNode());
+            Assert.That(graph.ConnectAudio(oscillator, filter), Is.True);
+            Assert.That(graph.Connect(
+                sequencer,
+                filter,
+                ModularAudioPortDomain.Control,
+                "control.out",
+                "cutoff.in"), Is.True);
+            Assert.That(graph.ConnectAudio(filter, output), Is.True);
+            Assert.That(graph.SetOutputNode(output), Is.True);
+            Assert.That(graph.Compile(), Is.True);
+            var samples = new float[512];
+            Assert.That(graph.Render(samples, samples.Length, 48000), Is.True);
+
+            Assert.That(filterNode.CurrentCutoff,
+                Is.EqualTo(4000f).Within(0.01f));
+            AssertFiniteBoundedAndNonSilent(samples, 0.851f);
+        }
+
+        [Test]
+        public void Envelope_GateAndTriggerUseSampleAccurateAdsrSemantics()
+        {
+            var gateGraph = new ModularAudioGraph();
+            var gateSource = gateGraph.AddNode(new ModularLfoNode
+            {
+                Waveform = ModularOscillatorWaveform.Square,
+                Frequency = 20f,
+                Depth = 1f
+            });
+            var gateEnvelopeNode = FastEnvelope();
+            var gateEnvelope = gateGraph.AddNode(gateEnvelopeNode);
+            var gateOutput = gateGraph.AddNode(new ModularAudioOutputNode());
+            Assert.That(gateGraph.Connect(
+                gateSource,
+                gateEnvelope,
+                ModularAudioPortDomain.Gate,
+                "gate.out",
+                "gate.in"), Is.True);
+            Assert.That(gateGraph.Connect(
+                gateEnvelope,
+                gateOutput,
+                ModularAudioPortDomain.Audio,
+                "control.out",
+                "audio.in"), Is.True);
+            Assert.That(gateGraph.SetOutputNode(gateOutput), Is.True);
+            Assert.That(gateGraph.Compile(), Is.True);
+            var samples = new float[1024];
+            Assert.That(gateGraph.Render(samples, samples.Length, 48000), Is.True);
+            Assert.That(gateEnvelopeNode.LastBlockPeak,
+                Is.GreaterThan(0.99f));
+            Assert.That(gateEnvelopeNode.CurrentLevel,
+                Is.EqualTo(0.6f).Within(0.001f));
+            Assert.That(gateEnvelopeNode.Stage,
+                Is.EqualTo(ModularEnvelopeStage.Sustain));
+
+            Assert.That(gateGraph.Render(samples, samples.Length, 48000), Is.True);
+            Assert.That(gateEnvelopeNode.CurrentLevel, Is.Zero);
+            Assert.That(gateEnvelopeNode.Stage,
+                Is.EqualTo(ModularEnvelopeStage.Idle));
+
+            var triggerGraph = new ModularAudioGraph();
+            var triggerSource = triggerGraph.AddNode(new ModularLfoNode
+            {
+                Waveform = ModularOscillatorWaveform.Square,
+                Frequency = 20f,
+                Depth = 1f
+            });
+            var triggerEnvelopeNode = FastEnvelope();
+            var triggerEnvelope = triggerGraph.AddNode(triggerEnvelopeNode);
+            var triggerOutput = triggerGraph.AddNode(
+                new ModularAudioOutputNode());
+            Assert.That(triggerGraph.Connect(
+                triggerSource,
+                triggerEnvelope,
+                ModularAudioPortDomain.Trigger,
+                "trigger.out",
+                "trigger.in"), Is.True);
+            Assert.That(triggerGraph.Connect(
+                triggerEnvelope,
+                triggerOutput,
+                ModularAudioPortDomain.Audio,
+                "control.out",
+                "audio.in"), Is.True);
+            Assert.That(triggerGraph.SetOutputNode(triggerOutput), Is.True);
+            Assert.That(triggerGraph.Compile(), Is.True);
+            Assert.That(triggerGraph.Render(
+                samples,
+                samples.Length,
+                48000), Is.True);
+            Assert.That(triggerEnvelopeNode.LastBlockPeak,
+                Is.GreaterThan(0.99f));
+            Assert.That(triggerEnvelopeNode.CurrentLevel, Is.Zero);
+            Assert.That(triggerEnvelopeNode.Stage,
+                Is.EqualTo(ModularEnvelopeStage.Idle));
+        }
+
+        [Test]
+        public void Sequencer_GateAndTriggerOutputsDriveDiscreteInputs()
+        {
+            var gateGraph = new ModularAudioGraph();
+            var sequencer = gateGraph.AddNode(new ModularSequencerNode
+            {
+                TempoBpm = 300f,
+                GateLength = 0.25f
+            });
+            var envelopeNode = FastEnvelope();
+            var envelope = gateGraph.AddNode(envelopeNode);
+            var output = gateGraph.AddNode(new ModularAudioOutputNode());
+            Assert.That(gateGraph.Connect(
+                sequencer,
+                envelope,
+                ModularAudioPortDomain.Gate,
+                ModularAudioPatchPolicy.GateOutputPortId,
+                ModularAudioPatchPolicy.GateInputPortId), Is.True);
+            Assert.That(gateGraph.Connect(
+                envelope,
+                output,
+                ModularAudioPortDomain.Audio,
+                ModularAudioPatchPolicy.ControlOutputPortId,
+                ModularAudioPatchPolicy.AudioInputPortId), Is.True);
+            Assert.That(gateGraph.SetOutputNode(output), Is.True);
+            Assert.That(gateGraph.Compile(), Is.True);
+
+            var samples = new float[1024];
+            Assert.That(gateGraph.Render(samples, samples.Length, 48000),
+                Is.True);
+            Assert.That(envelopeNode.LastBlockPeak, Is.GreaterThan(0.99f));
+            Assert.That(envelopeNode.CurrentLevel, Is.Zero);
+            Assert.That(envelopeNode.Stage,
+                Is.EqualTo(ModularEnvelopeStage.Idle));
+
+            Assert.That(ModularAudioPatchPolicy.TryGetRouteFromPort(
+                    MockInstrumentKind.AudioSequencer,
+                    MockInstrumentKind.AudioEnvelope,
+                    ModularAudioPatchPolicy.TriggerOutputPortId,
+                    out var targetPort,
+                    out var domain),
+                Is.True);
+            Assert.That(targetPort,
+                Is.EqualTo(ModularAudioPatchPolicy.TriggerInputPortId));
+            Assert.That(domain, Is.EqualTo(ModularAudioPortDomain.Trigger));
         }
 
         [Test]
@@ -169,16 +560,55 @@ namespace MatsuMotoMeterAR.Tests
         }
 
         [Test]
+        public void PatchPolicy_DefaultsObservableSourceToAudioOutput()
+        {
+            var kinds = new[]
+            {
+                MockInstrumentKind.RoundMeter,
+                MockInstrumentKind.TrendMonitor,
+                MockInstrumentKind.WindowPanel
+            };
+
+            foreach (var kind in kinds)
+            {
+                var index = ModularAudioPatchPolicy
+                    .GetDefaultPatchOutputIndex(kind);
+                Assert.That(
+                    ModularAudioPatchPolicy.GetSelectableOutputPortId(
+                        kind,
+                        index),
+                    Is.EqualTo(ModularAudioPatchPolicy.AudioOutputPortId));
+            }
+        }
+
+        [Test]
         public void PatchPolicy_ExposesAndRoutesObservableInstrumentOutputs()
         {
             Assert.That(ModularAudioPatchPolicy.GetSelectableOutputCount(
-                MockInstrumentKind.RoundMeter), Is.EqualTo(2));
+                MockInstrumentKind.RoundMeter), Is.EqualTo(3));
             Assert.That(ModularAudioPatchPolicy.GetSelectableOutputCount(
-                MockInstrumentKind.TrendMonitor), Is.EqualTo(4));
+                MockInstrumentKind.TrendMonitor), Is.EqualTo(5));
             Assert.That(ModularAudioPatchPolicy.GetSelectableOutputCount(
-                MockInstrumentKind.WindowPanel), Is.EqualTo(5));
+                MockInstrumentKind.WindowPanel), Is.EqualTo(6));
             Assert.That(ModularAudioPatchPolicy.CycleSelectableOutput(
-                MockInstrumentKind.TrendMonitor, 3, 1), Is.Zero);
+                MockInstrumentKind.TrendMonitor, 4, 1), Is.Zero);
+            Assert.That(ModularAudioPatchPolicy.GetSelectableOutputCount(
+                MockInstrumentKind.AudioLfo), Is.EqualTo(5));
+            Assert.That(ModularAudioPatchPolicy.GetSelectableOutputCount(
+                MockInstrumentKind.AudioSequencer), Is.EqualTo(3));
+            Assert.That(ModularAudioPatchPolicy.GetSelectableOutputCount(
+                MockInstrumentKind.PushButton), Is.EqualTo(3));
+            Assert.That(ModularAudioPatchPolicy.GetSelectableOutputPortId(
+                    MockInstrumentKind.AudioLfo,
+                    ModularAudioPatchPolicy.CycleSelectableOutput(
+                        MockInstrumentKind.AudioLfo, 1, 1)),
+                Is.EqualTo(ModularAudioPatchPolicy.GateOutputPortId));
+            Assert.That(ModularAudioPatchPolicy.SupportsSignalRole(
+                MockInstrumentKind.AudioLfo), Is.False);
+            Assert.That(ModularAudioPatchPolicy.SupportsSignalRole(
+                MockInstrumentKind.TrendMonitor), Is.True);
+            Assert.That(ModularAudioPatchPolicy.SupportsSignalRole(
+                MockInstrumentKind.PushButton), Is.True);
 
             Assert.That(ModularAudioPatchPolicy.TryGetRouteFromPort(
                     MockInstrumentKind.TrendMonitor,
@@ -206,6 +636,94 @@ namespace MatsuMotoMeterAR.Tests
                     out _,
                     out _),
                 Is.False);
+
+            Assert.That(ModularAudioPatchPolicy.TryGetRouteFromPort(
+                    MockInstrumentKind.AudioLfo,
+                    MockInstrumentKind.AudioSequencer,
+                    "trigger.out",
+                    out targetPort,
+                    out domain),
+                Is.True);
+            Assert.That(targetPort, Is.EqualTo("trigger.in"));
+            Assert.That(domain,
+                Is.EqualTo(ModularAudioPortDomain.Trigger));
+            Assert.That(ModularAudioPatchPolicy.TryGetDefaultRoute(
+                    MockInstrumentKind.PushButton,
+                    MockInstrumentKind.AudioSequencer,
+                    out var buttonSourcePort,
+                    out targetPort,
+                    out domain),
+                Is.True);
+            Assert.That(buttonSourcePort, Is.EqualTo("trigger.out"));
+            Assert.That(targetPort, Is.EqualTo("trigger.in"));
+            Assert.That(domain,
+                Is.EqualTo(ModularAudioPortDomain.Trigger));
+            Assert.That(ModularAudioPatchPolicy.TryGetDefaultRoute(
+                    MockInstrumentKind.Lever,
+                    MockInstrumentKind.AudioOscillator,
+                    out var leverSourcePort,
+                    out targetPort,
+                    out domain),
+                Is.True);
+            Assert.That(leverSourcePort, Is.EqualTo("control.out"));
+            Assert.That(targetPort, Is.EqualTo("pitch.in"));
+            Assert.That(domain,
+                Is.EqualTo(ModularAudioPortDomain.Control));
+            Assert.That(ModularAudioPatchPolicy.TryGetRouteFromPort(
+                    MockInstrumentKind.RotaryKnob,
+                    MockInstrumentKind.AudioLfo,
+                    "control.out",
+                    out targetPort,
+                    out domain),
+                Is.True);
+            Assert.That(targetPort, Is.EqualTo("rate.in"));
+            Assert.That(domain,
+                Is.EqualTo(ModularAudioPortDomain.Control));
+            Assert.That(ModularAudioPatchPolicy.TryGetDefaultRoute(
+                    MockInstrumentKind.WindowPanel,
+                    MockInstrumentKind.AudioSequencer,
+                    out var panelSourcePort,
+                    out targetPort,
+                    out domain),
+                Is.True);
+            Assert.That(panelSourcePort, Is.EqualTo("trigger.out"));
+            Assert.That(targetPort, Is.EqualTo("trigger.in"));
+            Assert.That(domain,
+                Is.EqualTo(ModularAudioPortDomain.Trigger));
+            Assert.That(ModularAudioPatchPolicy.GetDefaultPatchOutputIndex(
+                    MockInstrumentKind.WindowPanel,
+                    MockInstrumentKind.AudioSequencer),
+                Is.EqualTo(4));
+            foreach (var uiKind in new[]
+                     {
+                         MockInstrumentKind.RoundMeter,
+                         MockInstrumentKind.TrendMonitor,
+                         MockInstrumentKind.WindowPanel
+                     })
+            {
+                Assert.That(ModularAudioPatchPolicy.TryGetDefaultRoute(
+                        uiKind,
+                        MockInstrumentKind.AudioSequencer,
+                        out var uiSourcePort,
+                        out var uiTargetPort,
+                        out var uiDomain),
+                    Is.True);
+                Assert.That(uiSourcePort, Is.EqualTo("trigger.out"));
+                Assert.That(uiTargetPort, Is.EqualTo("trigger.in"));
+                Assert.That(uiDomain,
+                    Is.EqualTo(ModularAudioPortDomain.Trigger));
+            }
+            Assert.That(ModularAudioPatchPolicy.TryGetDefaultRoute(
+                    MockInstrumentKind.AudioSequencer,
+                    MockInstrumentKind.AudioSequencer,
+                    out var sequencerSourcePort,
+                    out targetPort,
+                    out domain),
+                Is.True);
+            Assert.That(sequencerSourcePort, Is.EqualTo("trigger.out"));
+            Assert.That(targetPort, Is.EqualTo("trigger.in"));
+            Assert.That(domain,
+                Is.EqualTo(ModularAudioPortDomain.Trigger));
         }
 
         [Test]
@@ -216,7 +734,9 @@ namespace MatsuMotoMeterAR.Tests
             Assert.That(ModularAudioParameterPolicy.SupportsEditing(
                 MockInstrumentKind.AudioSequencer), Is.True);
             Assert.That(ModularAudioParameterPolicy.SupportsEditing(
-                MockInstrumentKind.AudioDelay), Is.False);
+                MockInstrumentKind.AudioDelay), Is.True);
+            Assert.That(ModularAudioParameterPolicy.SupportsEditing(
+                MockInstrumentKind.AudioOutput), Is.True);
             Assert.That(ModularAudioParameterPolicy.CycleWaveform(
                     (int)ModularOscillatorWaveform.Square,
                     1),
@@ -478,13 +998,23 @@ namespace MatsuMotoMeterAR.Tests
                 MockInstrumentKind.AudioLfo,
                 MockInstrumentKind.AudioSequencer,
                 MockInstrumentKind.AudioDelay,
+                MockInstrumentKind.AudioVca,
+                MockInstrumentKind.AudioMixer,
+                MockInstrumentKind.AudioFilter,
+                MockInstrumentKind.AudioEnvelope,
                 MockInstrumentKind.AudioOutput,
                 MockInstrumentKind.RoundMeter,
                 MockInstrumentKind.RoundMeterMedium,
                 MockInstrumentKind.RoundMeterLarge,
                 MockInstrumentKind.WindowMeter,
                 MockInstrumentKind.TrendMonitor,
-                MockInstrumentKind.WindowPanel
+                MockInstrumentKind.WindowPanel,
+                MockInstrumentKind.Lever,
+                MockInstrumentKind.ToggleSwitch,
+                MockInstrumentKind.RotaryKnob,
+                MockInstrumentKind.PushButton,
+                MockInstrumentKind.ThrottleLever,
+                MockInstrumentKind.PowerSlider
             };
             foreach (var kind in kinds)
             {
@@ -580,6 +1110,43 @@ namespace MatsuMotoMeterAR.Tests
         }
 
         [Test]
+        public void GlobalAudioOff_SkipsGraphAndClearsOutputBuffer()
+        {
+            var previous = GlobalAudioSettings.ModularAudioEnabled;
+            var root = MockInstrumentFactory.Create(
+                MockInstrumentKind.AudioOutput,
+                Pose.identity);
+            try
+            {
+                var player = root.GetComponent<InstrumentGreyboxContract>()
+                    .AudioSocket.GetComponent<ModularAudioGraphPlayer>();
+                var oscillator = player.Graph.AddNode(
+                    new ModularOscillatorNode
+                    {
+                        Frequency = 440f,
+                        Level = 0.25f
+                    });
+                Assert.That(player.Graph.ConnectAudio(oscillator, 0), Is.True);
+                Assert.That(player.Graph.Compile(), Is.True);
+
+                GlobalAudioSettings.ModularAudioEnabled = false;
+                var samples = new float[256];
+                for (var index = 0; index < samples.Length; index++)
+                    samples[index] = 1f;
+
+                Assert.That(
+                    player.RenderForValidation(samples, samples.Length),
+                    Is.False);
+                Assert.That(samples, Is.All.EqualTo(0f));
+            }
+            finally
+            {
+                GlobalAudioSettings.ModularAudioEnabled = previous;
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
         public void ModuleParameterSurvivesThemeRebinding()
         {
             var root = MockInstrumentFactory.Create(
@@ -659,24 +1226,39 @@ namespace MatsuMotoMeterAR.Tests
 
             var lfo = ModularAudioPortCatalog.GetPorts(
                 ModularAudioModuleKind.Lfo);
-            Assert.That(lfo.Count, Is.EqualTo(5));
+            Assert.That(lfo.Count, Is.EqualTo(7));
             Assert.That(lfo[2].Id, Is.EqualTo("control.out"));
             Assert.That(lfo[2].Domain,
                 Is.EqualTo(ModularAudioPortDomain.Control));
             Assert.That(lfo[3].Id, Is.EqualTo("clock.out"));
             Assert.That(lfo[3].Domain,
                 Is.EqualTo(ModularAudioPortDomain.Clock));
-            Assert.That(lfo[4].Id, Is.EqualTo("audio.out"));
+            Assert.That(lfo[4].Id, Is.EqualTo("gate.out"));
             Assert.That(lfo[4].Domain,
+                Is.EqualTo(ModularAudioPortDomain.Gate));
+            Assert.That(lfo[5].Id, Is.EqualTo("trigger.out"));
+            Assert.That(lfo[5].Domain,
+                Is.EqualTo(ModularAudioPortDomain.Trigger));
+            Assert.That(lfo[6].Id, Is.EqualTo("audio.out"));
+            Assert.That(lfo[6].Domain,
                 Is.EqualTo(ModularAudioPortDomain.Audio));
 
             var sequencer = ModularAudioPortCatalog.GetPorts(
                 ModularAudioModuleKind.Sequencer);
-            Assert.That(sequencer.Count, Is.EqualTo(2));
+            Assert.That(sequencer.Count, Is.EqualTo(5));
             Assert.That(sequencer[0].Id, Is.EqualTo("clock.in"));
             Assert.That(sequencer[0].Domain,
                 Is.EqualTo(ModularAudioPortDomain.Clock));
-            Assert.That(sequencer[1].Id, Is.EqualTo("control.out"));
+            Assert.That(sequencer[1].Id, Is.EqualTo("trigger.in"));
+            Assert.That(sequencer[1].Domain,
+                Is.EqualTo(ModularAudioPortDomain.Trigger));
+            Assert.That(sequencer[2].Id, Is.EqualTo("control.out"));
+            Assert.That(sequencer[3].Id, Is.EqualTo("gate.out"));
+            Assert.That(sequencer[3].Domain,
+                Is.EqualTo(ModularAudioPortDomain.Gate));
+            Assert.That(sequencer[4].Id, Is.EqualTo("trigger.out"));
+            Assert.That(sequencer[4].Domain,
+                Is.EqualTo(ModularAudioPortDomain.Trigger));
 
             var delay = ModularAudioPortCatalog.GetPorts(
                 ModularAudioModuleKind.Delay);
@@ -685,27 +1267,65 @@ namespace MatsuMotoMeterAR.Tests
             Assert.That(delay[1].Id, Is.EqualTo("time.in"));
             Assert.That(delay[2].Id, Is.EqualTo("audio.out"));
 
+            var filter = ModularAudioPortCatalog.GetPorts(
+                ModularAudioModuleKind.Filter);
+            Assert.That(filter.Count, Is.EqualTo(3));
+            Assert.That(filter[0].Id, Is.EqualTo("audio.in"));
+            Assert.That(filter[1].Id, Is.EqualTo("cutoff.in"));
+            Assert.That(filter[1].Domain,
+                Is.EqualTo(ModularAudioPortDomain.Control));
+            Assert.That(filter[2].Id, Is.EqualTo("audio.out"));
+
+            var envelope = ModularAudioPortCatalog.GetPorts(
+                ModularAudioModuleKind.Envelope);
+            Assert.That(envelope.Count, Is.EqualTo(3));
+            Assert.That(envelope[0].Id, Is.EqualTo("gate.in"));
+            Assert.That(envelope[0].Domain,
+                Is.EqualTo(ModularAudioPortDomain.Gate));
+            Assert.That(envelope[1].Id, Is.EqualTo("trigger.in"));
+            Assert.That(envelope[1].Domain,
+                Is.EqualTo(ModularAudioPortDomain.Trigger));
+            Assert.That(envelope[2].Id, Is.EqualTo("control.out"));
+
             var meter = ModularAudioPortCatalog.GetPorts(
                 ModularAudioModuleKind.MeterSource);
-            Assert.That(meter.Count, Is.EqualTo(2));
+            Assert.That(meter.Count, Is.EqualTo(3));
             Assert.That(meter[0].Id, Is.EqualTo("value.out"));
             Assert.That(meter[0].Domain,
                 Is.EqualTo(ModularAudioPortDomain.Control));
+            Assert.That(meter[1].Id, Is.EqualTo("trigger.out"));
             Assert.That(meter[1].Domain,
+                Is.EqualTo(ModularAudioPortDomain.Trigger));
+            Assert.That(meter[2].Domain,
                 Is.EqualTo(ModularAudioPortDomain.Audio));
 
             var trend = ModularAudioPortCatalog.GetPorts(
                 ModularAudioModuleKind.TrendSource);
-            Assert.That(trend.Count, Is.EqualTo(4));
+            Assert.That(trend.Count, Is.EqualTo(5));
             Assert.That(trend[1].Id, Is.EqualTo("slope.out"));
             Assert.That(trend[2].Id, Is.EqualTo("spread.out"));
+            Assert.That(trend[3].Id, Is.EqualTo("trigger.out"));
 
             var panel = ModularAudioPortCatalog.GetPorts(
                 ModularAudioModuleKind.PanelSource);
-            Assert.That(panel.Count, Is.EqualTo(5));
+            Assert.That(panel.Count, Is.EqualTo(6));
             Assert.That(panel[0].Id, Is.EqualTo("energy.out"));
             Assert.That(panel[3].Id, Is.EqualTo("detail.out"));
-            Assert.That(panel[4].Id, Is.EqualTo("audio.out"));
+            Assert.That(panel[4].Id, Is.EqualTo("trigger.out"));
+            Assert.That(panel[5].Id, Is.EqualTo("audio.out"));
+
+            var controlSource = ModularAudioPortCatalog.GetPorts(
+                ModularAudioModuleKind.ControlSource);
+            Assert.That(controlSource.Count, Is.EqualTo(3));
+            Assert.That(controlSource[0].Id, Is.EqualTo("control.out"));
+            Assert.That(controlSource[0].Domain,
+                Is.EqualTo(ModularAudioPortDomain.Control));
+            Assert.That(controlSource[1].Id, Is.EqualTo("gate.out"));
+            Assert.That(controlSource[1].Domain,
+                Is.EqualTo(ModularAudioPortDomain.Gate));
+            Assert.That(controlSource[2].Id, Is.EqualTo("trigger.out"));
+            Assert.That(controlSource[2].Domain,
+                Is.EqualTo(ModularAudioPortDomain.Trigger));
         }
 
         [Test]
@@ -957,6 +1577,222 @@ namespace MatsuMotoMeterAR.Tests
         }
 
         [Test]
+        public void Sequencer_StepTriggerAdvancesOncePerRisingEdge()
+        {
+            var graph = new ModularAudioGraph();
+            var lfo = graph.AddNode(new ModularLfoNode
+            {
+                Frequency = 10f,
+                GateLength = 0.5f
+            });
+            var sequencerNode = new ModularSequencerNode
+            {
+                PlaybackMode =
+                    ModularSequencerPlaybackMode.StepTrigger,
+                StepCount = 8
+            };
+            var sequencer = graph.AddNode(sequencerNode);
+            var oscillator = graph.AddNode(new ModularOscillatorNode());
+            var outputNode = graph.AddNode(new ModularAudioOutputNode());
+            Assert.That(graph.Connect(
+                lfo,
+                sequencer,
+                ModularAudioPortDomain.Trigger,
+                "trigger.out",
+                "trigger.in"), Is.True);
+            Assert.That(graph.Connect(
+                sequencer,
+                oscillator,
+                ModularAudioPortDomain.Control,
+                "control.out",
+                "pitch.in"), Is.True);
+            Assert.That(graph.ConnectAudio(oscillator, outputNode), Is.True);
+            Assert.That(graph.SetOutputNode(outputNode), Is.True);
+            Assert.That(graph.Compile(), Is.True);
+
+            var output = new float[256];
+            Assert.That(graph.Render(output, output.Length, 8000), Is.True);
+            Assert.That(sequencerNode.CurrentStep, Is.EqualTo(1));
+            Assert.That(sequencerNode.UsesTriggerStep, Is.True);
+            Assert.That(sequencerNode.UsesExternalClock, Is.False);
+
+            Assert.That(graph.Render(output, output.Length, 8000), Is.True);
+            Assert.That(graph.Render(output, output.Length, 8000), Is.True);
+            Assert.That(sequencerNode.CurrentStep, Is.EqualTo(1),
+                "Without a new rising edge, the sequencer must not advance.");
+
+            Assert.That(graph.Render(output, output.Length, 8000), Is.True);
+            Assert.That(sequencerNode.CurrentStep, Is.EqualTo(2));
+            AssertFiniteBoundedAndNonSilent(output, 0.851f);
+        }
+
+        [Test]
+        public void ObservableTrigger_AdvancesSequencerOnThresholdCrossing()
+        {
+            var graph = new ModularAudioGraph();
+            var meterNode = new ModularMeterSourceNode { Value = 0.4f };
+            var meter = graph.AddNode(meterNode);
+            var sequencerNode = new ModularSequencerNode
+            {
+                PlaybackMode =
+                    ModularSequencerPlaybackMode.StepTrigger,
+                StepCount = 8
+            };
+            var sequencer = graph.AddNode(sequencerNode);
+            var outputNode = graph.AddNode(new ModularAudioOutputNode());
+            Assert.That(graph.Connect(
+                meter,
+                sequencer,
+                ModularAudioPortDomain.Trigger,
+                "trigger.out",
+                "trigger.in"), Is.True);
+            Assert.That(graph.SetOutputNode(outputNode), Is.True);
+            Assert.That(graph.Compile(), Is.True);
+
+            var output = new float[64];
+            Assert.That(graph.Render(output, output.Length, 8000), Is.True);
+            Assert.That(sequencerNode.CurrentStep, Is.Zero);
+
+            meterNode.Value = 0.5f;
+            Assert.That(graph.Render(output, output.Length, 8000), Is.True);
+            Assert.That(sequencerNode.CurrentStep, Is.EqualTo(1));
+
+            meterNode.Value = 0.8f;
+            Assert.That(graph.Render(output, output.Length, 8000), Is.True);
+            Assert.That(sequencerNode.CurrentStep, Is.EqualTo(1),
+                "Remaining above the threshold must not retrigger.");
+
+            meterNode.Value = 0.4f;
+            Assert.That(graph.Render(output, output.Length, 8000), Is.True);
+            meterNode.Value = 0.6f;
+            Assert.That(graph.Render(output, output.Length, 8000), Is.True);
+            Assert.That(sequencerNode.CurrentStep, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void PushButtonTrigger_AdvancesSequencerOnPressOnly()
+        {
+            var graph = new ModularAudioGraph();
+            var buttonNode = new ModularControlSourceNode();
+            var button = graph.AddNode(buttonNode);
+            var sequencerNode = new ModularSequencerNode
+            {
+                PlaybackMode =
+                    ModularSequencerPlaybackMode.StepTrigger,
+                StepCount = 8
+            };
+            var sequencer = graph.AddNode(sequencerNode);
+            var outputNode = graph.AddNode(new ModularAudioOutputNode());
+            Assert.That(graph.Connect(
+                button,
+                sequencer,
+                ModularAudioPortDomain.Trigger,
+                "trigger.out",
+                "trigger.in"), Is.True);
+            Assert.That(graph.SetOutputNode(outputNode), Is.True);
+            Assert.That(graph.Compile(), Is.True);
+
+            var output = new float[64];
+            Assert.That(graph.Render(output, output.Length, 8000), Is.True);
+            Assert.That(sequencerNode.CurrentStep, Is.Zero);
+
+            buttonNode.Value = 1f;
+            Assert.That(graph.Render(output, output.Length, 8000), Is.True);
+            Assert.That(sequencerNode.CurrentStep, Is.EqualTo(1));
+            Assert.That(graph.Render(output, output.Length, 8000), Is.True);
+            Assert.That(sequencerNode.CurrentStep, Is.EqualTo(1),
+                "Holding the button must not retrigger.");
+
+            buttonNode.Value = 0f;
+            Assert.That(graph.Render(output, output.Length, 8000), Is.True);
+            buttonNode.Value = 1f;
+            Assert.That(graph.Render(output, output.Length, 8000), Is.True);
+            Assert.That(sequencerNode.CurrentStep, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void PushButtonRuntime_TracksInteractionAsControlSource()
+        {
+            var root = MockInstrumentFactory.Create(
+                MockInstrumentKind.PushButton,
+                Pose.identity);
+            try
+            {
+                var contract = root.GetComponent<InstrumentGreyboxContract>();
+                var runtime = contract.Logic.GetComponent<
+                    ModularAudioModuleRuntime>();
+                Assert.That(runtime.ModuleKind,
+                    Is.EqualTo(ModularAudioModuleKind.ControlSource));
+                var source = (ModularControlSourceNode)runtime.Node;
+                Assert.That(source.Value, Is.Zero);
+                runtime.ApplyPersistentParameters(0, 0, null);
+
+                contract.InstrumentInteraction.SetPressed(true);
+                Assert.That(source.Value, Is.EqualTo(1f));
+                contract.InstrumentInteraction.SetPressed(false);
+                Assert.That(source.Value, Is.Zero);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        [Test]
+        public void InvalidMonitorAndPanelTrigger_RemainsLowUntilInputValid()
+        {
+            var trend = new ModularTrendSourceNode
+            {
+                Value = 0.8f,
+                ValidInputCount = 1,
+                HasValidInput = false
+            };
+            var panel = new ModularPanelSourceNode
+            {
+                Energy = 0.8f,
+                ConnectedCount = 1,
+                HasValidInput = false
+            };
+            var cases = new (ModularAudioNode Node, Action Enable)[]
+            {
+                (trend, () => trend.HasValidInput = true),
+                (panel, () => panel.HasValidInput = true)
+            };
+
+            foreach (var sourceCase in cases)
+            {
+                var graph = new ModularAudioGraph();
+                var source = graph.AddNode(sourceCase.Node);
+                var sequencerNode = new ModularSequencerNode
+                {
+                    PlaybackMode =
+                        ModularSequencerPlaybackMode.StepTrigger,
+                    StepCount = 8
+                };
+                var sequencer = graph.AddNode(sequencerNode);
+                var outputNode = graph.AddNode(new ModularAudioOutputNode());
+                Assert.That(graph.Connect(
+                    source,
+                    sequencer,
+                    ModularAudioPortDomain.Trigger,
+                    "trigger.out",
+                    "trigger.in"), Is.True);
+                Assert.That(graph.SetOutputNode(outputNode), Is.True);
+                Assert.That(graph.Compile(), Is.True);
+
+                var output = new float[64];
+                Assert.That(graph.Render(
+                    output, output.Length, 8000), Is.True);
+                Assert.That(sequencerNode.CurrentStep, Is.Zero);
+
+                sourceCase.Enable();
+                Assert.That(graph.Render(
+                    output, output.Length, 8000), Is.True);
+                Assert.That(sequencerNode.CurrentStep, Is.EqualTo(1));
+            }
+        }
+
+        [Test]
         public void SequencerPlacementValue_SelectsLengthAndTempo()
         {
             var root = MockInstrumentFactory.Create(
@@ -1171,9 +2007,49 @@ namespace MatsuMotoMeterAR.Tests
             var first = RenderNoise(ModularNoiseColor.White, 123u);
             var second = RenderNoise(ModularNoiseColor.White, 123u);
             var pink = RenderNoise(ModularNoiseColor.Pink, 123u);
+            var brown = RenderNoise(ModularNoiseColor.Brown, 123u);
             CollectionAssert.AreEqual(first, second);
             Assert.That(SampleDifference(first, pink), Is.GreaterThan(1f));
+            Assert.That(SampleDifference(first, brown), Is.GreaterThan(1f));
             AssertFiniteBoundedAndNonSilent(pink, 0.851f);
+            AssertFiniteBoundedAndNonSilent(brown, 0.851f);
+        }
+
+        [Test]
+        public void BrownNoise_NormalizationKeepsPowerNearWhiteNoise()
+        {
+            var whiteRms = MeasureNoiseRms(
+                ModularNoiseColor.White,
+                123u);
+            var brownRms = MeasureNoiseRms(
+                ModularNoiseColor.Brown,
+                123u);
+
+            Assert.That(brownRms / whiteRms,
+                Is.InRange(0.75f, 1.05f));
+        }
+
+        [Test]
+        public void Lfo_ExposesPhaseAdvancedByAudioRendering()
+        {
+            var graph = new ModularAudioGraph();
+            var lfoNode = new ModularLfoNode
+            {
+                Frequency = 1f,
+                Depth = 0.8f
+            };
+            var lfo = graph.AddNode(lfoNode);
+            var outputNode = graph.AddNode(new ModularAudioOutputNode());
+            Assert.That(graph.ConnectAudio(lfo, outputNode), Is.True);
+            Assert.That(graph.SetOutputNode(outputNode), Is.True);
+            Assert.That(graph.Compile(), Is.True);
+
+            var output = new float[800];
+            Assert.That(graph.Render(output, output.Length, 8000), Is.True);
+            Assert.That(lfoNode.Phase01, Is.EqualTo(0.1f).Within(0.001f));
+
+            Assert.That(graph.Render(output, output.Length, 8000), Is.True);
+            Assert.That(lfoNode.Phase01, Is.EqualTo(0.2f).Within(0.001f));
         }
 
         [Test]
@@ -1274,6 +2150,92 @@ namespace MatsuMotoMeterAR.Tests
             var output = new float[512];
             Assert.That(graph.Render(output, output.Length, 48000), Is.True);
             return output;
+        }
+
+        private static float MeasureNoiseRms(
+            ModularNoiseColor color,
+            uint seed)
+        {
+            var graph = new ModularAudioGraph();
+            var noise = graph.AddNode(new ModularNoiseNode(seed)
+            {
+                Color = color,
+                Level = 0.35f
+            });
+            var outputNode = graph.AddNode(new ModularAudioOutputNode());
+            graph.ConnectAudio(noise, outputNode);
+            graph.SetOutputNode(outputNode);
+            Assert.That(graph.Compile(), Is.True);
+
+            var output = new float[ModularAudioGraph.MaximumBlockFrames];
+            double sumSquares = 0.0;
+            var sampleCount = 0;
+            for (var block = 0; block < 48; block++)
+            {
+                Assert.That(
+                    graph.Render(output, output.Length, 48000),
+                    Is.True);
+                if (block < 16)
+                    continue;
+                for (var sample = 0; sample < output.Length; sample++)
+                {
+                    sumSquares += output[sample] * output[sample];
+                    sampleCount++;
+                }
+            }
+            return Mathf.Sqrt((float)(sumSquares / sampleCount));
+        }
+
+        private static float MeasureFilteredToneRms(
+            float cutoff,
+            float resonance)
+        {
+            var graph = new ModularAudioGraph();
+            var oscillator = graph.AddNode(new ModularOscillatorNode
+            {
+                Frequency = 4000f,
+                Level = 0.2f
+            });
+            var filter = graph.AddNode(new ModularFilterNode
+            {
+                Cutoff = cutoff,
+                Resonance = resonance
+            });
+            var outputNode = graph.AddNode(new ModularAudioOutputNode());
+            graph.ConnectAudio(oscillator, filter);
+            graph.ConnectAudio(filter, outputNode);
+            graph.SetOutputNode(outputNode);
+            Assert.That(graph.Compile(), Is.True);
+
+            var output = new float[ModularAudioGraph.MaximumBlockFrames];
+            double sumSquares = 0.0;
+            var sampleCount = 0;
+            for (var block = 0; block < 24; block++)
+            {
+                Assert.That(
+                    graph.Render(output, output.Length, 48000),
+                    Is.True);
+                if (block < 8)
+                    continue;
+                for (var sample = 0; sample < output.Length; sample++)
+                {
+                    sumSquares += output[sample] * output[sample];
+                    sampleCount++;
+                }
+            }
+            return Mathf.Sqrt((float)(sumSquares / sampleCount));
+        }
+
+        private static ModularEnvelopeNode FastEnvelope()
+        {
+            return new ModularEnvelopeNode
+            {
+                AttackSeconds = 0.005f,
+                DecaySeconds = 0.005f,
+                SustainLevel = 0.6f,
+                ReleaseSeconds = 0.005f,
+                ManualGate = false
+            };
         }
 
         private static AudioPatchConnectionRecord AudioPatch(

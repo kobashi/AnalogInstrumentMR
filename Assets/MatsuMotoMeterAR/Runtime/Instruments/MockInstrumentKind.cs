@@ -21,6 +21,10 @@ namespace MatsuMotoMeterAR.Instruments
         AudioOutput = 16,
         AudioLfo = 17,
         AudioSequencer = 18,
-        AudioDelay = 19
+        AudioDelay = 19,
+        AudioVca = 20,
+        AudioMixer = 21,
+        AudioFilter = 22,
+        AudioEnvelope = 23
     }
 }
