@@ -81,33 +81,61 @@ SRP Batcherを有効としている。
 ### Mock instrument placement controls
 
 - 起動時は`OPERATION MODE`。左コントローラーの`X`で
-  `OPERATION → EDIT → CONNECT → OPERATION`を循環する。モード切替時には
+  `OPERATION ↔ EDIT`を切り替える。モード切替時には
   短いhapticsが入る。
-- `EDIT MODE`だけでpreview、種類・テーマ選択、配置、削除が有効になる。
-- `OPERATION MODE`だけで配置済み計器へのray/direct Trigger操作が有効になる。
+- `EDIT MODE`では左コントローラーでオブジェクトを選ぶと配置編集、右コントローラーで
+  選ぶと接続編集になる。独立した`CONNECT MODE`へのX切替は廃止する。
+  配置編集でpreview、種類・テーマ選択、配置、削除が有効になる。
+- `OPERATION MODE`だけで配置済み計器へのray/direct操作が有効になる。
 - `OPERATION MODE`で左スティックを2秒間押し込み続けると、`X`による
   モード切替をロックする。同じ操作をもう一度行うとロックを解除する。
+- `OPERATION MODE`でモード切替をロックしている間、右コントローラーの`A`で
+  接続線（信号接続と音響パッチ）の表示をON/OFFできる。初期状態はOFF。
+  ロックを解除しても表示状態はそのまま保持し、配置編集では非表示、
+  接続編集では常時表示とする。
 - `OPERATION MODE`では左右コントローラーのOpenXR `aim pose`
-  (`pointerPosition` / `pointerRotation`)からビームを描画し、Triggerを独立して
-  使える。Quest HOMEと同じ照準姿勢を使い、左右の手で別々の操作対象を同時に扱える。
-- レバー、スロットル、パワースライダーは、操作部へ接触してGripを握って
-  多段階値を変更する。レバーはlocal Y方向0.24 m、スライダーはlocal Y方向
-  0.18 mを全可動域として換算する。スロットルはpivot中心の70°アークに沿って
-  操作する。detent通過時に操作側コントローラーへhapticsを返し、
-  Grip解放時に保存する。
-- 押しボタンは左右いずれかのコントローラー先端がColliderへ接触すると押下し、
-  両方が離れたときに復帰する。ビーム＋Triggerでも同じ押下／復帰を行える。
-- 円形メーター、窓枠メーター、窓枠パネルは操作不能とし、操作モード中は
+  (`pointerPosition` / `pointerRotation`)からビームを描画する。Quest HOMEと同じ
+  照準姿勢を使い、左右の手で別々の操作対象を同時に扱える。各手ともTrigger単独で
+  正方向に1ステップ、Grip単独で逆方向に1ステップ動かし、端では停止する。
+  0.12秒以内に両方を押した場合は単独ステップを発生させない。
+- 音響モジュール以外ではTrigger＋Gripを同時に押し、操作部へ接触すると
+  直接ドラッグできる。レバー／スロットル／ロータリー系は回転弧、
+  スライダーやその他の可変装置は上下移動を値へ換算する。離したときに値を保存し、
+  detent通過時にはhapticsを返す。
+- 音響モジュールはTrigger／Grip単独で主ノブを正逆に動かす。同時押しでは
+  主ノブを初期値へ戻す（Noiseは0.35、Sequencerは0.25、その他は0.5）。
+  設定済みの範囲と副パラメータは維持する。接触ドラッグはしない。
+- Sequencerの`PLAY MODE`は`CLOCK`と`STEP TRIGGER`を選べる。`STEP TRIGGER`では
+  `trigger.in`の0→1立ち上がりごとに1ステップだけ進み、High保持では連続進行しない。
+  LFO、別Sequencer、Meter／Trend Monitor／Window Panel、および操作系UIの`trigger.out`を接続でき、
+  UI系sourceは主表示値の0.5しきい値を使用する。既存配置の既定値は`CLOCK`とする。
+- Lever／Rotary／Power Slider／Throttle／Toggle／Push Buttonは、通常Signal接続を維持したまま
+  Audio Patch roleへ切り替えられる。`control.out`は正規化操作値、`gate.out`と`trigger.out`は
+  0.5以上でHighとなる。Push Buttonは押すたびに0→1となるため、Sequencerを直接トリガーできる。
+- 押しボタンとトグルは左右いずれかのコントローラー先端がColliderへ接触するだけで
+  反応する。押しボタンは両方が離れたときに復帰し、トグルは接触開始時に一度だけ
+  切り替わる。ビーム操作やTrigger／Grip単独では反応しない。
+- 円形メーター、窓枠メーター、窓枠パネル、トレンドモニターは操作不能とし、操作モード中は
   保存値を中心に小さな非同期needle/vane微動を続ける。編集モードでは停止する。
 - `EDIT MODE`で配置位置が既存計器と重なる場合は、同じ認識面上の近傍を探索して
   previewを空き位置へ自動的にずらす。近傍に空きがない場合は配置を確定しない。
-- 配置済み計器を照準して右Triggerを押すと個別に選択・選択解除する。選択中は
+- 配置済み計器を左コントローラーで照準して左Triggerを押すと個別に選択・選択解除する。
+  右コントローラーで照準して右Triggerを押すと接続編集に移り、接続端点を選ぶ。選択中は
   第1選択を太いシアン枠、以降をオレンジ枠で表示し、異なる種類の計器も
   複数選択できる。選択中は新規追加・削除・配置種別変更を無効にする。
 - 配置済み計器を照準している間は、新規配置previewと`A`による追加を停止する。
   未選択の照準対象は`B`で削除できる。右スティック押込みは照準対象を削除し、
   その種類へ追加対象を切り替える再配置操作とする。
-- 選択中は移動先targetを表示し、`A`で移動を確定する。2個以上の選択中は
+- 選択後、左Trigger＋左Gripを保持すると移動先targetを表示し、離すと移動を確定する。
+  左Grip単独では選択中の移動を取り消し、確定後は直近の移動をUndoする。
+  右Grip単独は配置・移動編集と接続編集に共通する非破壊キャンセルとし、移動中は
+  確定せず選択を解除し、接続編集中は接続元・接続先・パラメータ編集の選択を解除する。
+  既存オブジェクトや接続は削除しない。
+  左Trigger＋左Gripを保持中、左スティック上で近傍オブジェクトへの自動位置合わせ、
+  下で10 cmグリッドスナップを選ぶ。選択中なら移動プレビュー、未選択なら新規配置
+  プレビューに適用する。補正は移動確定または新規配置まで保持され、次の操作では解除される。
+  単独押しの誤判定を避けるため0.12秒の同時押し猶予を設ける。
+  2個以上の選択中は
   右スティックを倒した方向へ、第1選択を起点に選択集合を回転する。
   選択中の`B`は選択集合全体を解除する。`Y`は将来の編集機能用に予約し、
   現在は何も実行しない。
@@ -121,7 +149,7 @@ SRP Batcherを有効としている。
   場合は親子関係、Anchor ID、surface、poseを編集前へ戻して新規Anchorをeraseする。
 - Anchor範囲内の編集は`localOffset`として保存し、再起動後に復元する。
 - EditモードではMRUKが認識したPlaneとVolumeをwireframe表示する。
-  右コントローラーのrayから最も近い有効面を安定化して選択し、任意面へ
+  左コントローラーのrayから最も近い有効面を安定化して選択し、任意面へ
   previewを表示する。Mesh raycastは配置対象にしない。
 - 追加オブジェクトは機能別に `METERS → INDICATORS → SWITCHES → MOTION`
   の順へ整理する。右スティック左右でカテゴリ内外をこの順に移動し、右スティック
@@ -149,7 +177,8 @@ SRP Batcherを有効としている。
   変更を保存する。保存後は接続線だけを非選択にし、オブジェクト選択は維持する。
   `B`で選択中の接続だけを削除する。第1オブジェクトだけを選択した段階では
   `B`で選択をキャンセルする。Connectモードでは右スティックを使用しない。
-  接続線はConnect時のみ表示し、一つのSourceから複数Targetへ分岐できる。
+  接続線はConnect時に常時表示し、Operation時は前述の設定に従う。
+  一つのSourceから複数Targetへ分岐できる。
   複数Sourceから同じTargetへの入力はコンセプト確認版では平均合成する。
 - 編集モードでTrigger選択すると移動状態へ入り、通常の配置previewと新規追加を
   停止する。照準中のPlane／Volume面へ移動後の外形をtarget markerで表示し、
@@ -160,29 +189,31 @@ SRP Batcherを有効としている。
 - アプリを終了して再起動すると、保存済みMockを同じ種類・同じテーマ・同じ
   実空間位置へ復元する。古い配置データにtheme IDがない場合も、global設定または
   Orbital Analog fallbackを使用する。
-- 各Mockは右Triggerのray/direct interactionに対応し、種類別の論理状態と
-  hapticsを持つ。
-- レバーは5ノッチ`-2 / -1 / 0 / +1 / +2`を持つ。右Triggerを押すたびに隣の
-  ノッチへ移動し、端では進行方向を反転する。HUDにはdetent番号とpositionを表示し、
+- 各可変Mockは左右Triggerの正方向ステップ、左右Gripの逆方向ステップに
+  対応する。同時押しは一般装置では接触ドラッグ、音響モジュールでは
+  主ノブの初期値リセットとする。種類別の論理状態とhapticsを持つ。
+- レバーは5ノッチ`-2 / -1 / 0 / +1 / +2`を持つ。単独入力で隣の
+  ノッチへ移動し、端では停止する。HUDにはdetent番号とpositionを表示し、
   保存済みの0〜1値は復元時に最寄りノッチへ正規化する。可動軸はmount面内の
   local X、可動面はmount面に対して垂直とする。初期角offsetを持つ片側sweepにより
   handleが基部へめり込まないようにする。
-- `indicator.lamp`は従来どおりON/OFFを維持する。`indicator.status`は右Triggerで
-  `OFF → SAFE → WARN → DANGER → OFF`と循環し、それぞれ消灯・緑・橙・赤で表示する。
+- `indicator.lamp`はON/OFFを維持する。`indicator.status`はTriggerで
+  `OFF → SAFE → WARN → DANGER`、Gripで逆順に進み、端では停止する。
+  それぞれ消灯・緑・橙・赤で表示する。
   HUDと保存値には状態名と`0 / 0.333 / 0.667 / 1`を使用する。
 - `control.throttle`は6ノッチ`CUTOFF / IDLE / LOW / CRUISE / HIGH / FULL`を持ち、
-  保存値`0 / 0.2 / 0.4 / 0.6 / 0.8 / 1`へ対応する。Triggerで隣接ノッチへ移動し、
-  両端で方向反転する。3テーマのPrefabは`throttle_pivot`をmotion targetとして使い、
-  local X軸回転と初期角offsetでmount面に垂直な片側sweepを行う。接触Grip時は
+  保存値`0 / 0.2 / 0.4 / 0.6 / 0.8 / 1`へ対応する。Trigger／Gripで正逆の隣接ノッチへ移動し、
+  両端で停止する。3テーマのPrefabは`throttle_pivot`をmotion targetとして使い、
+  local X軸回転と初期角offsetでmount面に垂直な片側sweepを行う。両押し接触時は
   controller位置をpivot中心の回転面へ投影し、開始方向からの実アーク角を70°の
-  全可動域へ換算する。Grip開始判定は計器全体のColliderではなく、
+  全可動域へ換算する。両押し接触の開始判定は計器全体のColliderではなく、
   pivotからlocal `(0, 0.225, 0.002)`にある幅160 × 高さ75 × 奥行85 mmの
   palm grip専用boxへ限定し、可動中もpivot回転へ追従する。
 - 大型パネル、大型メーター、多段階警告LEDの配置previewは一律緑色へ
   material propertyを上書きせず、選択中テーマのhousing、face、warning色を保持する。
 - `control.power_slider`は11ノッチ`OFF / 10% / ... / 90% / MAX`を持ち、
-  保存値`0 / 0.1 / ... / 0.9 / 1`へ対応する。Triggerで10%ずつ移動し、両端で
-  方向反転する。3テーマの可動ノードは`slider_travel`、travelはY方向0.18 mとする。
+  保存値`0 / 0.1 / ... / 0.9 / 1`へ対応する。Trigger／Gripで正逆に10%ずつ移動し、
+  両端で停止する。3テーマの可動ノードは`slider_travel`、travelはY方向0.18 mとする。
 - `ROOM ERROR: NoRoomsFound` の場合は Quest の Space Setup で部屋をスキャンして再起動する。
 - `ROOM TRACKING LOST / RUN SPACE SETUP` の場合は、保存済みの部屋は見つかっているが現在の実空間へ位置合わせできていない。Metaボタンでアプリを閉じ、Questの「設定 → 物理空間 → スペース設定」で現在の部屋を再スキャンしてからアプリを再起動する。
 - performance gateの`matsu_perf_count`は既存の12 / 24 / 40に加えて、
