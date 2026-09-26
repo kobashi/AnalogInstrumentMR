@@ -22,7 +22,7 @@ case "$COUNT" in
 esac
 
 case "$THEME" in
-  OrbitalAnalog|ForgeBrass|KineticSafety|MachinedErgonomics|machined-ergonomics) ;;
+  OrbitalAnalog|ForgeBrass|KineticSafety|MachinedErgonomics|machined-ergonomics|Superfine|superfine) ;;
   *) echo "theme must be a registered production theme" >&2; exit 64 ;;
 esac
 
@@ -46,6 +46,8 @@ case "$INSTRUMENT_KIND" in
   ""|RoundMeter|Lever|ToggleSwitch|RotaryKnob|PushButton|IndicatorLamp|\
 WindowMeter|WindowPanel|StatusIndicator|ThrottleLever|PowerSlider|\
 RoundMeterMedium|RoundMeterLarge|TrendMonitor) ;;
+AudioOscillator|AudioNoise|AudioOutput|AudioLfo|AudioSequencer|AudioDelay|\
+AudioVca|AudioMixer|AudioFilter|AudioEnvelope) ;;
   *) echo "INSTRUMENT_KIND is not a supported MockInstrumentKind" >&2; exit 64 ;;
 esac
 

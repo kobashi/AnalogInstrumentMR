@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "Superfine_NonAudio_N2_F2",
+  "integrationStage": "GateC",
+  "entries": [
+    {
+      "theme": "Superfine",
+      "model": "WindowPanel",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2_F2/fbx/SM_WindowPanel_Superfine_SFN2F2.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2_F2/report/SM_WindowPanel_Superfine_SFN2F2_inspection.json",
+      "revision": "SFN2F2",
+      "includedRevisions": ["SFN2", "SFN2F1", "SFN2F2"],
+      "requiredRevisions": ["SFN2", "SFN2F1", "SFN2F2"],
+      "replacesCandidateId": "Superfine_NonAudio_C4",
+      "replacesRevision": "SFN2F1"
+    }
+  ],
+  "gateCEvidence": {
+    "semanticUvAudit": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2_F2/report/SM_WindowPanel_Superfine_SFN2F2_inspection.json",
+    "fixedCameraVisualReview": "Builds/Reports/candidate-Superfine_NonAudio_N2_F2-kinetic-vs-superfine-comparison.png",
+    "motionAudit": "Builds/Reports/candidate-Superfine_NonAudio_N2_F2-motion-audit.md",
+    "unityStagingValidation": "Builds/Reports/candidate-Superfine_NonAudio_N2_F2-staging-validation.md",
+    "editModeTests": "Builds/Reports/superfine-n2-f2-editmode-results.xml",
+    "questValidationDeferral": "Builds/Reports/superfine-n2-f2-quest-deferral.md",
+    "rollbackPlan": "Builds/Reports/superfine-n2-f2-rollback-plan.md"
+  }
+}

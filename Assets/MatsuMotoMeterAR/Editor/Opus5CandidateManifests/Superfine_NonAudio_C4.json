@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "Superfine_NonAudio_C4",
+  "integrationStage": "GateB",
+  "entries": [
+    {
+      "theme": "Superfine",
+      "model": "MeterRound",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/fbx/SM_MeterRound_Superfine_SFN2.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/report/SM_MeterRound_Superfine_SFN2_inspection.json",
+      "revision": "SFN2",
+      "includedRevisions": ["SFN2"],
+      "requiredRevisions": ["SFN2"]
+    },
+    {
+      "theme": "Superfine",
+      "model": "MeterMedium",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/fbx/SM_MeterMedium_Superfine_SFN2.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/report/SM_MeterMedium_Superfine_SFN2_inspection.json",
+      "revision": "SFN2",
+      "includedRevisions": ["SFN2"],
+      "requiredRevisions": ["SFN2"]
+    },
+    {
+      "theme": "Superfine",
+      "model": "MeterLarge",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/fbx/SM_MeterLarge_Superfine_SFN2.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/report/SM_MeterLarge_Superfine_SFN2_inspection.json",
+      "revision": "SFN2",
+      "includedRevisions": ["SFN2"],
+      "requiredRevisions": ["SFN2"]
+    },
+    {
+      "theme": "Superfine",
+      "model": "WindowMeter",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/fbx/SM_WindowMeter_Superfine_SFN2.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/report/SM_WindowMeter_Superfine_SFN2_inspection.json",
+      "revision": "SFN2",
+      "includedRevisions": ["SFN2"],
+      "requiredRevisions": ["SFN2"]
+    },
+    {
+      "theme": "Superfine",
+      "model": "WindowPanel",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2_F1/fbx/SM_WindowPanel_Superfine_SFN2F1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2_F1/report/SM_WindowPanel_Superfine_SFN2F1_inspection.json",
+      "revision": "SFN2F1",
+      "includedRevisions": ["SFN2", "SFN2F1"],
+      "requiredRevisions": ["SFN2", "SFN2F1"]
+    },
+    {
+      "theme": "Superfine",
+      "model": "TrendMonitor",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/fbx/SM_TrendMonitor_Superfine_SFN2.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/report/SM_TrendMonitor_Superfine_SFN2_inspection.json",
+      "revision": "SFN2",
+      "includedRevisions": ["SFN2"],
+      "requiredRevisions": ["SFN2"]
+    },
+    {
+      "theme": "Superfine",
+      "model": "Lever",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/fbx/SM_Lever_Superfine_SFN2.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/report/SM_Lever_Superfine_SFN2_inspection.json",
+      "revision": "SFN2",
+      "includedRevisions": ["SFN2"],
+      "requiredRevisions": ["SFN2"]
+    },
+    {
+      "theme": "Superfine",
+      "model": "Toggle",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/fbx/SM_Toggle_Superfine_SFN2.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/report/SM_Toggle_Superfine_SFN2_inspection.json",
+      "revision": "SFN2",
+      "includedRevisions": ["SFN2"],
+      "requiredRevisions": ["SFN2"]
+    },
+    {
+      "theme": "Superfine",
+      "model": "Rotary",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2_F1/fbx/SM_Rotary_Superfine_SFN2F1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2_F1/report/SM_Rotary_Superfine_SFN2F1_inspection.json",
+      "revision": "SFN2F1",
+      "includedRevisions": ["SFN2", "SFN2F1"],
+      "requiredRevisions": ["SFN2", "SFN2F1"]
+    },
+    {
+      "theme": "Superfine",
+      "model": "Button",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/fbx/SM_Button_Superfine_SFN2.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/report/SM_Button_Superfine_SFN2_inspection.json",
+      "revision": "SFN2",
+      "includedRevisions": ["SFN2"],
+      "requiredRevisions": ["SFN2"]
+    },
+    {
+      "theme": "Superfine",
+      "model": "Throttle",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/fbx/SM_Throttle_Superfine_SFN2.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/report/SM_Throttle_Superfine_SFN2_inspection.json",
+      "revision": "SFN2",
+      "includedRevisions": ["SFN2"],
+      "requiredRevisions": ["SFN2"]
+    },
+    {
+      "theme": "Superfine",
+      "model": "PowerSlider",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/fbx/SM_PowerSlider_Superfine_SFN2.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/report/SM_PowerSlider_Superfine_SFN2_inspection.json",
+      "revision": "SFN2",
+      "includedRevisions": ["SFN2"],
+      "requiredRevisions": ["SFN2"]
+    },
+    {
+      "theme": "Superfine",
+      "model": "Lamp",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/fbx/SM_Lamp_Superfine_SFN2.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/report/SM_Lamp_Superfine_SFN2_inspection.json",
+      "revision": "SFN2",
+      "includedRevisions": ["SFN2"],
+      "requiredRevisions": ["SFN2"]
+    },
+    {
+      "theme": "Superfine",
+      "model": "StatusIndicator",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/fbx/SM_StatusIndicator_Superfine_SFN2.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/Superfine_NonAudio_N2/report/SM_StatusIndicator_Superfine_SFN2_inspection.json",
+      "revision": "SFN2",
+      "includedRevisions": ["SFN2"],
+      "requiredRevisions": ["SFN2"]
+    }
+  ]
+}

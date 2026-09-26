@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "AudioModules_Superfine_S1",
+  "integrationStage": "GateB",
+  "entries": [
+    {
+      "theme": "Superfine",
+      "model": "AudioVca",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_S1/fbx/SM_AudioVca_Superfine_SFS1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_S1/report/SM_AudioVca_Superfine_SFS1_inspection.json",
+      "revision": "SFS1",
+      "includedRevisions": ["SFS1"],
+      "requiredRevisions": ["SFS1"]
+    },
+    {
+      "theme": "Superfine",
+      "model": "AudioMixer",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_S1/fbx/SM_AudioMixer_Superfine_SFS1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_S1/report/SM_AudioMixer_Superfine_SFS1_inspection.json",
+      "revision": "SFS1",
+      "includedRevisions": ["SFS1"],
+      "requiredRevisions": ["SFS1"]
+    },
+    {
+      "theme": "Superfine",
+      "model": "AudioFilter",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_S1/fbx/SM_AudioFilter_Superfine_SFS1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_S1/report/SM_AudioFilter_Superfine_SFS1_inspection.json",
+      "revision": "SFS1",
+      "includedRevisions": ["SFS1"],
+      "requiredRevisions": ["SFS1"]
+    },
+    {
+      "theme": "Superfine",
+      "model": "AudioEnvelope",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_S1/fbx/SM_AudioEnvelope_Superfine_SFS1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_S1/report/SM_AudioEnvelope_Superfine_SFS1_inspection.json",
+      "revision": "SFS1",
+      "includedRevisions": ["SFS1"],
+      "requiredRevisions": ["SFS1"]
+    },
+    {
+      "theme": "Superfine",
+      "model": "AudioLFO",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_S1/fbx/SM_AudioLFO_Superfine_SFS1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_S1/report/SM_AudioLFO_Superfine_SFS1_inspection.json",
+      "revision": "SFS1",
+      "includedRevisions": ["SFS1"],
+      "requiredRevisions": ["SFS1"]
+    },
+    {
+      "theme": "Superfine",
+      "model": "AudioSequencer",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_S1/fbx/SM_AudioSequencer_Superfine_SFS1.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_S1/report/SM_AudioSequencer_Superfine_SFS1_inspection.json",
+      "revision": "SFS1",
+      "includedRevisions": ["SFS1"],
+      "requiredRevisions": ["SFS1"]
+    }
+  ]
+}

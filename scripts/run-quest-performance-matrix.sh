@@ -10,9 +10,10 @@ COOLDOWN_STABLE_SAMPLES="${COOLDOWN_STABLE_SAMPLES:-3}"
 ADB="${ADB:-/Applications/Unity/Hub/Editor/6000.3.19f1/PlaybackEngines/AndroidPlayer/SDK/platform-tools/adb}"
 APK="${APK:-Builds/Performance/AnalogInstrumentMR-v0.2.0-perfgate-quest3.apk}"
 INSTALL_APK="${INSTALL_APK:-1}"
+INSTRUMENT_KIND="${INSTRUMENT_KIND:-}"
 
 case "$THEME" in
-  OrbitalAnalog|ForgeBrass|KineticSafety|MachinedErgonomics|machined-ergonomics) ;;
+  OrbitalAnalog|ForgeBrass|KineticSafety|MachinedErgonomics|machined-ergonomics|Superfine|superfine) ;;
   *) echo "theme must be a registered production theme" >&2; exit 64 ;;
 esac
 
@@ -39,7 +40,7 @@ fi
 REPORT_DIR="Builds/Reports"
 mkdir -p "$REPORT_DIR"
 STAMP="$(date +%Y%m%d-%H%M%S)"
-MATRIX_REPORT="$REPORT_DIR/perfgate-matrix-48-64-${THEME}-${STAMP}.log"
+MATRIX_REPORT="$REPORT_DIR/perfgate-matrix-48-64-${THEME}-${INSTRUMENT_KIND:-Baseline}-${STAMP}.log"
 exec > >(tee -a "$MATRIX_REPORT") 2>&1
 
 temperature_deci_c() {
@@ -78,7 +79,7 @@ cool_down() {
 run_gate() {
   local count="$1"
   local install="$2"
-  echo "[matrix] begin count=$count theme=$THEME install=$install"
+  echo "[matrix] begin count=$count theme=$THEME kind=${INSTRUMENT_KIND:-Baseline} install=$install"
   env \
     ADB="$ADB" \
     APK="$APK" \
@@ -86,12 +87,14 @@ run_gate() {
     INTERVAL_SECONDS="$INTERVAL_SECONDS" \
     MEASUREMENT_SECONDS="$MEASUREMENT_SECONDS" \
     DURATION_SECONDS="$((MEASUREMENT_SECONDS + 30))" \
+    INSTRUMENT_KIND="$INSTRUMENT_KIND" \
     scripts/run-quest-performance-gate.sh "$count" "$THEME"
   echo "[matrix] completed count=$count"
 }
 
 echo "[matrix] report=$MATRIX_REPORT"
 echo "[matrix] policy=48-object acceptance gate, 64-object characterization stress"
+echo "[matrix] kind=${INSTRUMENT_KIND:-Baseline}"
 cool_down
 run_gate 48 "$INSTALL_APK"
 cool_down

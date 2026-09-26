@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 2,
+  "candidateId": "AudioModules_Superfine_C3",
+  "integrationStage": "GateB",
+  "entries": [
+    {
+      "theme": "Superfine",
+      "model": "AudioOscillator",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_S2/fbx/SM_AudioOscillator_Superfine_SFS2.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_S2/report/SM_AudioOscillator_Superfine_SFS2_inspection.json",
+      "revision": "SFS2",
+      "includedRevisions": ["SFS2"],
+      "requiredRevisions": ["SFS2"]
+    },
+    {
+      "theme": "Superfine",
+      "model": "AudioNoise",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_S2/fbx/SM_AudioNoise_Superfine_SFS2.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_S2/report/SM_AudioNoise_Superfine_SFS2_inspection.json",
+      "revision": "SFS2",
+      "includedRevisions": ["SFS2"],
+      "requiredRevisions": ["SFS2"]
+    },
+    {
+      "theme": "Superfine",
+      "model": "AudioDelay",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_S2/fbx/SM_AudioDelay_Superfine_SFS2.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_S2/report/SM_AudioDelay_Superfine_SFS2_inspection.json",
+      "revision": "SFS2",
+      "includedRevisions": ["SFS2"],
+      "requiredRevisions": ["SFS2"]
+    },
+    {
+      "theme": "Superfine",
+      "model": "AudioOutput",
+      "sourceFbx": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_S2/fbx/SM_AudioOutput_Superfine_SFS2.fbx",
+      "sourceReport": "ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_S2/report/SM_AudioOutput_Superfine_SFS2_inspection.json",
+      "revision": "SFS2",
+      "includedRevisions": ["SFS2"],
+      "requiredRevisions": ["SFS2"]
+    }
+  ]
+}

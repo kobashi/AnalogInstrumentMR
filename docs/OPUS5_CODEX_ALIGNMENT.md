@@ -21182,3 +21182,422 @@ Evidence:
   `a19e405ed39284dda64625214e06e2e11c911d5e838bbb4765a7932f466d92c3`
 
 **Opus5の作業範囲に変更はない。**
+
+## 367. Codex: Superfine S1を独立テーマ候補として受領し、C1隔離検証する (2026-09-19)
+
+Kinetic Safetyの現行assetを修正する従来案を取り下げ、同themeのlayoutを基にした独立theme
+`Superfine`を新規作成する方針へ変更した。Opus 5はR0 manufacturing spec、Filter P1 prototype、
+audio 6機種S1を完了し、Codexはgitignore内の下書きを
+`docs/OPUS5_SUPERFINE_HANDOFF.md`へ受領した。元checkoutで`SHA256SUMS.txt`を検証し、
+**223 / 223 OK**、6 FBX SHA-256はhandoff表と完全一致した。
+
+C1ではcandidate-only theme解決を追加し、manifest `AudioModules_Superfine_S1`から
+`Content/RefinedCandidates/CandidateStaging/AudioModules_Superfine_S1`へ隔離生成した。
+production theme配列、Resources、theme picker、既存4テーマasset/GUID、共通triangle cap 5,000は変更していない。
+VCA 4,808、Mixer 4,940、Filter 4,838 trisはPASS。Envelope 5,496、LFO 7,122、
+Sequencer 5,474は指定どおり**REVIEW**であり、PASSへ読み替えていない。
+
+契約、3 material role、renderer 7、envelope、display/signal surface、runtime renderer assignment、
+55 mm knob pivot、存在する54 mm port、固定interaction collider包含、6機種×5状態motionはPASS。
+一方、step-trigger機能追加後の現行Sequencer契約が要求する`port_trigger_in`をS1が持たないため
+**FAIL**。Opus 5 F1候補はこのjack/node/legend追加である。logical port connectionは成立するが、
+connection line表示端点はselected portでなくinstrument root固定のため、Unity runtime側にも別FAILを記録した。
+
+Kinetic Safety / SuperfineのOFF形状とruntime display/signalを4列で比較するsheetを生成した。
+EditModeは**390 / 390 PASS、failure 0**。Quest Q1、機種別cap B1、production Pは未着手。
+LFOはQ1前の削減を必須とせず、Q1で必要になった場合のみ6,500 tris以下をF1目標候補とする。
+
+**C1は条件付き完了。Sequencer contract FAILとcable endpoint FAILを維持したまま本番登録せず停止する。**
+
+## 368. Codex: Superfine F1をOpus 5へ正式発注する (2026-09-20)
+
+§367で候補として記録したSequencer `port_trigger_in`不足について、
+`docs/OPUS5_SUPERFINE_HANDOFF.md` §9へ正式なF1作業指示を追加した。Opus 5はS1を上書きせず、
+`ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_F1/`へSequencerだけの新revisionを作る。
+node、jack hardware、legendを追加し、port Z=54 mm、knob pivot Z=55 mm、display/signal surface、
+material role、envelope、5-state motion契約を維持する。
+
+LFO削減、他5機種、既存theme/package、Unity、docs、git、production、APK、Quest、cable endpointは
+明示的に対象外とした。成果物とhandoff draftを報告して停止し、次はCodexのC2再取り込みとする。
+
+## 369. Codex: Superfine F1を受領し、C2隔離再検証を完了する (2026-09-21)
+
+Opus 5が`AudioModules_Superfine_F1`へ出力したSequencer F1を受領した。元checkoutで
+`SHA256SUMS.txt`を検証し**40 / 40 OK**。FBX SHA-256
+`e41fd5234bcb0b007ff1746ef01be6d13693f30038a822f5dbd70072380041f5`はhandoffと一致した。
+F1はS1 Sequencerへ`port_trigger_in`、jack hardware、`TRIGGER IN` legendだけを追加し、端子位置を
+`(-88, -24, 54) mm`とした。既存端子列、signal route、pivot、display/signal surfaceを維持している。
+S1/F1比較とfront/raking close-upを確認し、入力側上段へ分離した配置を受領した。
+
+C2では新規candidate `AudioModules_Superfine_C2`を作り、他5機種はS1、SequencerだけをF1へ差し替えた。
+S1 candidateを上書きせず、production path、既存4テーマ、theme picker、共通triangle cap 5,000は変更していない。
+現行catalogueが要求するSequencer `port_trigger_in`を含め、6機種のnode / port / material / renderer /
+envelope / display / signal契約、Z=55 mm pivot、Z=54 mm port、固定interaction collider包含、runtime表示面割当、
+5-state motionはすべてPASS。cross-candidate dependencyも0件である。
+
+triangleはVCA 4,808、Mixer 4,940、Filter 4,838がPASS。Envelope 5,496、LFO 7,122、
+F1 Sequencer 6,498は引き続き**REVIEW**で、PASSへ読み替えていない。F1 Sequencerの暫定機種別cap候補は
+現行規則なら7,000だが、Q1/B1前には採用しない。EditModeは**391 / 391 PASS、failure 0**。
+
+C1のSequencer contract FAILは解消した。logical typed-port connectionはPASSだが、connection lineの
+physical endpointがselected `port_*`でなくinstrument rootを参照するUnity runtime側のFAILは継続する。
+これはOpus 5形状修正ではないため、**Opus 5側の追加F1候補なしとして停止を維持する。**
+Q1、B1、production登録、Unity cable endpoint修正はいずれも別指示で開始する。
+
+## 370. Codex: typed-port cable endpointをUnity runtimeで解消する (2026-09-21)
+
+ユーザーの次工程指示により、§369で継続したUnity runtime側FAILを修正した。
+`AudioPatchConnectionRecord`が既に保持していた`sourcePortId` / `targetPortId`を接続線描画まで渡し、
+`InstrumentGreyboxContract`が`audio.out → port_audio_out`の規則でVisualSocket配下のauthored nodeを解決する。
+解決済みanchorとmissing結果をcacheし、theme visualの差し替え時に無効化する。nodeを持たないlegacy visualと
+UI sourceはinstrument rootへfallbackするため、既存4テーマや古い保存データを破壊しない。
+
+C2 auditへ実際のresolverを通す検査を追加し、VCA / Mixer / Filter / Envelope / LFO / Sequencerの
+全catalogue portでexpected `port_*` transformとresolved anchorが一致した。Cable endpointsは6機種すべてPASS。
+AudioSocketは3D音響出力位置としてrootに残し、visual cable endpointとは分離する。port IDを持たない通常の
+Control接続線も従来どおりroot基準である。
+
+resolverのID変換、missing node fallback、visual差し替え後のcache更新testを追加し、Unity 6000.3.19f1の
+EditModeは**393 / 393 PASS、failure 0**。これによりC2の機能FAILは0件になった。triangleはEnvelope、LFO、
+Sequencerの3件を引き続きREVIEWとし、共通5,000 cap、本番登録、既存テーマasset、Quest成果物は変更していない。
+
+**Opus 5の追加作業は不要で停止を維持する。次はQ1またはB1を別指示で開始する。**
+
+## 371. Codex → Opus 5: Superfine S2のaudio残り4機種を正式発注する (2026-09-21)
+
+ユーザー指示により、`docs/OPUS5_SUPERFINE_HANDOFF.md` §12をOpus 5の次工程として正式発行した。
+対象はSuperfine未作成のAudioOscillator、AudioNoise、AudioDelay、AudioOutputだけで、revisionは`SFS2`、
+出力先は`ArtSource/Blender/BrushUp/Opus5/AudioModules_Superfine_S2/`とする。
+
+Superfine S1/F1の製造形状を継承し、機能配置はKinetic Safety B1を参照する。required portは現行Unity
+catalogueと一致させ、pivot Z=55 mm、port Z=54 mm、display/signal surface、3 material role、renderer、
+envelope、deterministic FBX、Tier A、5/181-state motionを必須契約とした。共通triangle cap 5,000は変更せず、
+超過時はREVIEWとして報告する。
+
+S1/F1、既存4theme、production、Unity、docs、git、`AudioModules_R2_A4_OA1`、APK、Questは変更禁止。
+4機種package、比較素材、checksum、handoff draftを完成させたら停止し、C3はCodexの受領後に別途開始する。
+
+## 372. Codex → Opus 5: Superfine S2を無条件受領する (2026-09-21)
+
+Opus 5の`AudioModules_Superfine_S2`成果物を元checkoutで独立照合した。`SHA256SUMS.txt`は
+**121 / 121 OK**で、Oscillator、Noise、Delay、Outputの4 FBX SHA-256はhandoff / REPORT / 実ファイルで一致した。
+triangleは順に4,842 / 4,862 / 4,902 / 3,026で、全機種が共通5,000内。renderer 7、material role 3、
+envelope、mount plane、pivot Z=55 mm、port Z=54 mm、required node、display/signal surface、FBX round-tripはPASS。
+
+Tier Aは**PASS 36 / FAIL 0 / REVIEW 0 / N/A 0**、5-stateと181-state motionは全機種で干渉0、minimum
+clearance 0.6 mm。比較sheetを確認し、曲面hullに合わせたreadout trimmingと、trunk rail干渉を避ける
+input上／output下のlegend配置を受領した。Oscillator / Noise / Delayのjack 12分割化も、shape signatureと
+可読性を維持して5,000内へ収める局所最適化として受領する。
+
+これによりSuperfineのaudio 10機種はBlender成果物が揃った。meter/control系は未決のまま。
+**S2は無条件受領し、Opus 5側のfix-backなし。Opus 5は停止を維持する。次はCodex C3を別指示で開始する。**
+
+## 373. Codex: Superfine S2のC3隔離Unity取り込みを完了する (2026-09-21)
+
+ユーザーの次工程指示により、S2のAudioOscillator、AudioNoise、AudioDelay、AudioOutputを新規candidate
+`AudioModules_Superfine_C3`へ隔離取り込みした。C2を上書きせず、production Resources、既存4テーマ、
+theme picker、共通triangle cap 5,000には触れていない。C2 6機種とC3 4機種を合わせ、Superfine audio
+10機種のUnity candidateが揃った。本番theme登録は未実施である。
+
+Unity実測triangleはOscillator 4,842、Noise 4,862、Delay 4,902、Output 3,026で全てPASS、
+REVIEW / FAILは0件。4機種ともrequired node / port、renderer 7、material role 3、envelope、mount plane、
+pivot Z=55 mm、port Z=54 mm、固定interaction collider包含、display / signal renderer runtime割当、
+typed-port cable endpoint、5-state motionがPASSした。cross-candidate dependencyは0件。`AudioSocket`は
+visual nodeではなく3D音響用runtime root原点を使う設計のためN/Aを維持する。
+
+Kinetic Safety / SuperfineのOFF・ON比較シートで形状と実行時表示を確認し、Opus 5側の追加形状修正候補は
+なし。Unity 6000.3.19f1のEditModeは**394 / 394 PASS、failure 0**。
+
+**C3を完了し、candidate-onlyで停止する。Q1、B1、production登録、APK、Quest実機作業は別指示を要する。**
+
+## 374. Codex → Opus 5: Superfineを非audio全14機種へ拡張する (2026-09-21)
+
+ユーザー決定により、Superfineを現行カタログの非audio全14機種へ拡張する。対象はMeterRound / Medium /
+Large、WindowMeter、WindowPanel、TrendMonitor、Lever、Toggle、Rotary、Button、Throttle、PowerSlider、Lamp、
+StatusIndicatorである。既存Kinetic Safetyの修正や単純な色替えではなく、機能配置とruntime contractだけを
+read-only基準とする独立theme assetを新規作成する。
+
+`docs/OPUS5_SUPERFINE_HANDOFF.md` §15へN0 scopeとN1正式作業指示を追加した。N1はMeterRound、Lever、
+Lamp、TrendMonitorの4代表機種を対象とするshape pilotで、meter、操作部、段階発光、runtime displayの4系統を
+先に比較する。出力先は`Superfine_NonAudio_N1_Pilot`、revisionは`SFN1P`とし、clean cage Blend、状態別render、
+寸法／node／triangle report、Kinetic Safety比較、checksum、handoffを要求する。形状承認前のFBX出力は禁止した。
+
+承認後のN2はcontrols / indicators 8機種とmeters / displays 6機種の2群で全14機種へ展開し、CodexがC4で
+隔離Unity candidateへ取り込む。各機種の既存node名、軸、pivot、envelope、motion range、display / emitter surfaceを
+固定し、共通triangle cap、既存4theme、audio candidate、production、Unity、APK、Questは変更しない。
+
+**Opus 5はN1の4 prototypeだけを作って停止する。N2、C4、本番登録は別指示を要する。**
+
+## 375. Codex → Opus 5: 非audio N1を受領し、N2全14機種を発注する (2026-09-21)
+
+Opus 5の`Superfine_NonAudio_N1_Pilot`を独立検証した。`SHA256SUMS.txt`は**72 / 72 OK**で、packageは
+MANIFESTとchecksum自身を含め74 files。handoff冒頭の70 filesは誤記であり、REPORTの除外後72 filesが正しい。
+MeterRound 2,760、Lever 1,096、Lamp 1,376、TrendMonitor 1,434 trianglesで、全て各envelope / budget内。
+required node / pivot、Meter ±115°、Lever runtime −48°..0°、mount plane、motion interferenceは契約に一致した。
+
+4機種のshapeを受領する。Tier AはPASS 32 / FAIL 0 / REVIEW 1 / N/A 7を維持し、MeterRound glassによる
+sealed-geometry REVIEWをPASSにしない。glassは削除せず、N2で独立transparent rendererとしてdeliveryする。
+Lever 3 renderer、Lamp 2 rendererは提案を受領。Lamp lensはneutral emissive surfaceとし、runtimeがwarning色と
+強度を変更できる構造を維持する。Kinetic Safety TrendMonitor 190 trisは現行productionの意図された最小reference
+だが、Superfineはfull case / bezel案を維持してよい。
+
+Codex画像確認ではTrendMonitorのOFF / numeric / graphがほぼ白一色で表示差を読めなかったため、shapeとは別に
+runtime-display visual REVIEWを追加した。N1再buildは不要とし、N2で高contrastな内容とpixel差証跡を作る。
+
+`docs/OPUS5_SUPERFINE_HANDOFF.md` §16へ、N2-A controls / indicators 8機種とN2-B meters / displays 6機種、
+合計14機種の正式作業指示を発行した。新規packageは`Superfine_NonAudio_N2`、revision `SFN2`。
+triangulated Blend、deterministic FBX、UV0、inspection、state/motion、comparison、checksumを要求し、N1、既存theme、
+audio candidate、production、Unity、common budgetを変更禁止とした。
+
+**Opus 5はN2を完了したら停止する。Codexは回答後にC4隔離取り込みを別工程で行う。**
+
+## 376. Codex → Opus 5: 非audio N2を条件付き受領し、2機種をN2-F1へ返す (2026-09-21)
+
+Opus 5の`Superfine_NonAudio_N2`を元checkoutで独立検証し、checksum **256 / 256 OK**、package 258 files、
+14 FBX / cage / triangulated / inspection一式を確認した。14機種ともtriangle budget、envelope、mount plane、
+FBX round-tripを満たす。TrendMonitorのOFF / numeric / graphは明瞭になり、N1 visual REVIEWは解消した。
+Tier AのPASS 116 / FAIL 0 / REVIEW 20 / N/A 18はそのまま保持する。
+
+現行Unity contractとの追加照合で、WindowPanelがWP3-r2以降の固定graphic contractに反することを検出した。
+現行`WindowPanelCandidateContractValidator`は`vane` / `vane_pivot`をlegacy analog nodeとして禁止し、唯一の
+`display_surface`を固定motion targetとする。N2 WindowPanelのauthored vane pivot `(460, -20, 190) mm`は受領しない。
+またRotaryはruntime可変stepに対して11本の固定目盛が意味衝突するためvisual semantics REVIEWとした。
+
+N2の他12機種をshape受領し、WindowPanel / Rotaryだけを新規package `Superfine_NonAudio_N2_F1`、revision
+`SFN2F1`へ返す。WindowPanelはlegacy nodeとglass overlayを除去し、2-triangle `display_surface`だけを表示基準にする。
+Rotaryは単一indexとfull 360°を維持し、11固定tickをcontinuous / step-independent scaleへ変更する。
+
+C4ではcommon material budgetを変更せず、Superfine固有の3〜4 materialをREVIEWとして隔離評価する。
+StatusIndicatorのempty `indicator` parent + 3 lens rendererは受領する。N2-F1完了までC4を開始しない。
+
+**Opus 5は2機種のF1だけを完了して停止する。C4、production、APK、Questは別工程とする。**
+
+## 377. Codex → Opus 5: 非audio N2-F1を受領する (2026-09-22)
+
+`Superfine_NonAudio_N2_F1`を元checkoutのrepository rootから独立検証した。`SHA256SUMS.txt`は
+**53 / 53 OK**、packageはchecksum対象53 filesに`MANIFEST.md`とchecksum自身を加えた**55 files**。
+Opus 5 handoff draft記載の51 / 51と53 filesは件数誤記であり、実測値へ訂正する。成果物の欠落やchecksum
+不一致ではないため再生成は不要と判断した。
+
+WindowPanel FBXはSHA-256
+`d5f13bbdf59e0503761e6dd78eab4e60c61c3447b68ea34494db38d4de0015e4`、1,434 triangles、3 renderer / 3 role。
+legacy analog node、scale、ticks、glass overlayがなく、唯一の2-triangle `display_surface`を固定表示基準とする。
+OFF / numeric / graphも画像上で明瞭に異なるため、§376のcontract FAILは解消した。
+
+Rotary FBXはSHA-256
+`a847a887e497620e66852ee33d40c454d4eea49ae3fca6f4709b5a89568c02e2`、2,664 triangles、3 renderer / 3 role。
+11固定tick列は段数非依存のcontinuous collarへ置換され、単一index、full 360°、8-state motionを維持する。
+collar現案を受領し、ringなしへの再修正は求めない。
+
+Tier AのPASS 18 / FAIL 0 / REVIEW 3 / N/A 3を維持する。material 2件とWindowPanel seam 1件のREVIEWは
+PASSへ読み替えない。C4はcommon material budgetを変更せず、Superfine暫定値をexpected REVIEWとして扱う。
+combined 14-kind candidate manifestはCodexがC4で作成し、Opus 5の再buildは不要である。
+
+これで非audio 14機種のBlender成果物をすべて受領した。次はCodex所有のC4隔離Unity candidate importである。
+production登録、theme picker、APK、Questは別工程として未実施のまま維持する。
+
+## 378. Codex: 非audio Superfine C4隔離Unity取り込みを完了する (2026-09-22)
+
+ユーザー指示により、N2の12機種とN2-F1のWindowPanel / Rotaryをcombined candidate
+`Superfine_NonAudio_C4`へ隔離取り込みした。production Resources、既存4テーマ、theme picker、共通triangle cap、
+`AudioModules_R2_A4_OA1`は変更していない。14 prefabsのsource triangle / Renderer / submesh / bounds、
+semantic material role、runtime display / state surface、motion、signal roleを検証し、cross-candidate dependencyは0件。
+
+staging contractは**PASS 7 / REVIEW 7 / FAIL 0**。7 REVIEWはmeter 4機種、WindowPanel、TrendMonitor、Rotaryの
+3〜4 material roleがcommon budget 2を超える予定済みの差分で、TrendMonitorだけは加えてdisplay width
+0.348 mが旧minimum 0.36 mを下回る。いずれもREVIEWをPASSへ読み替えていない。triangleは14機種すべて
+現行上限内。TrendMonitorの表示内容、WindowPanelの固定表示、Lamp点灯、StatusIndicator 3色stateを
+Kinetic Safety比較画像で確認した。
+
+meter 4機種、WindowPanel、Lever、Toggle、Rotary、Button、Throttle、PowerSliderのmotion auditは全PASS。
+Lamp / StatusIndicator / TrendMonitorはgeneric motion N/Aで、専用C4 auditのruntime surface bindingがPASS。
+非audio objectはauthored typed portを持たず、logical cable endpointはinstrument rootであるためtyped visual portは
+N/A。interaction colliderはruntime所有でvisual prefabに含めない。Unity 6000.3.19f1 EditModeは
+**395 / 395 PASS、failure 0、skipped 0**。
+
+比較sheetは`Builds/Reports/candidate-Superfine_NonAudio_C4-kinetic-vs-superfine-comparison.png`
+（SHA-256 `0b16c611e170e57d20842a4c4159f8bc905014eb43971d07fc64959cd26e43a8`）。
+必須のOpus 5 fix-backはなし。TrendMonitor幅は旧minimumを将来厳格維持する場合だけの条件付きF1候補とする。
+
+**C4をcandidate-onlyで完了し停止する。Q1、B1、production登録、APK、Questは別指示を要する。**
+
+## 379. Codex: Q1を後回しにし、Superfine P0昇格準備を完了する (2026-09-22)
+
+ユーザー指示によりQuest負荷試験Q1を後回しとした。Q1実測を必要とするB1 capは確定せず、現candidate
+triangle + 7.5%を100単位で切り上げた値だけを未採用の暫定値として記録する。共通5,000 cap、既存validator、
+本番assetは変更していない。
+
+読み取り専用`SuperfineProductionReadiness`監査を追加し、C2 6、C3 4、C4 14の合計24機種について、
+candidate FBX / prefab存在、24 unique identity、GUID uniqueness、cross-candidate dependency 0、
+production target collision 0、runtime four-theme baselineをPASSした。レポートは
+`Builds/Reports/superfine-production-readiness.md`、判定は**READY WITH DEFERRED GATES**。P0追加後の
+Unity EditModeは**395 / 395 PASS、failure 0、skipped 0**。
+
+P実装では既存enum値0..3を保持して`Superfine = 4`を加え、ID `superfine`、表示名、palette、theme cycle /
+parse / persistence、visual factory routing、24 production prefabを一括登録する。Kinetic Safetyやcandidateの
+`.meta`はコピーせずfresh GUIDを発行し、audio / non-audio canonical materialへ再結線する。atomic backup /
+rollbackとcandidate dependency 0を昇格条件とする。
+
+**P0は完了、本番登録Pは未適用。Q1/B1のdeferredと既存REVIEWを維持する。**
+
+## 380. Codex: Superfineを第5テーマとして本番登録する (2026-09-22)
+
+ユーザー指示によりPを実行した。既存enum値0..3を保持して`Superfine = 4`、theme ID `superfine`、表示名
+`SUPERFINE`、catalogue count 5を登録し、palette、theme cycle / parse / persistence、visual factory、display / signal色、
+操作音差を5テーマ対応へ拡張した。
+
+C2 6 + C3 4 + C4 14の計24機種を、fresh GUIDの24 FBX / 24 prefab、canonical material 7種として
+`Content/Themes/Superfine`と`Resources/Superfine`へ一括登録した。candidate dependencyは0。既存4テーマのasset、
+GUID、共通triangle cap 5,000は変更していない。昇格レポートは
+`Builds/Reports/superfine-production-promotion.md`、rollback recordは
+`Builds/ModelReplacementBackups/Superfine_P_20260922_111623`である。
+
+Superfine専用active prefab validation、motion audit、signal visual auditはPASS。Unity EditModeは
+**397 / 397 PASS、failure 0、skipped 0**。一方、Envelope / LFO / Sequencerのtriangle、非audio 7機種のmaterial、
+TrendMonitor幅0.348 m、24-object renderer 116対accepted 103はREVIEWのまま保持する。Q1 Quest負荷試験は
+ユーザー指示によりdeferredでありPASSではなく、B1 capも未採用である。APK / Quest実機作業は行っていない。
+
+**Pは完了。次はQ1と、その実測に基づくB1を別工程で行う。**
+
+## 381. Codex: Superfine B1 preflightを完了する (2026-09-23)
+
+Q1後回しを維持したまま、本番audio 10機種のtriangle実数と未採用capを
+`Builds/Reports/superfine-b1-preflight.md`へ固定した。Quest scriptのtheme whitelistへ`Superfine` / `superfine`、
+kind whitelistへaudio 10機種を追加し、48/64 matrixが`INSTRUMENT_KIND`を転送するようにした。
+
+主Q1は48 × AudioLFOをacceptance、64 × AudioLFOをcharacterizationとし、AudioSequencer 48台を
+runtime/display cross-checkにする。`bash -n`とargument-path preflightはPASS。APK / install / Quest計測は未実施。
+これはSuperfine geometry capのvisual gateで、接続済みgraphのaudio/DSP profilingとは別である。
+
+**B1 capはNOT ADOPTED。Q1実測後にのみ確定する。**
+
+## 382. Codex: Superfine Quest review APKの自動smokeを完了する (2026-09-24)
+
+Unity 6000.3.19f1でInstrument Audio Review APKをbuildし、Quest 3 `2G0YC1ZG2J02HL`へ上書きした。
+APKは84,169,119 bytes、SHA-256
+`99844afee7045a3149635464066b40c41ad003c09ffc6d5bb29dd88080382b29`、version 0.3.0 / code 3。
+COLD launchはStatus ok、PIDは15秒後も5570、Fatal / ANR / Unity errorは0件で自動smoke PASS。
+
+human操作・表示・音響acceptanceとQ1 48/64は未実施。B1 capはNOT ADOPTEDのまま維持する。
+
+## 383. Codex: Superfine表示不具合をモデル契約と実行経路へ分離する (2026-09-24)
+
+QuestでSuperfine Window Panelと音響モジュールの表示不具合が報告された。Superfine専用runtime overlay / material /
+UV差し替えはad hoc対応として不採用とし撤回した。ForgeBrassをSuperfineと誤認した先の実機判定も撤回する。
+
+production prefabとUnity実レンダリングを比較した結果、Window Panelはモデル原因を確定した。Superfineの
+`display_surface` mesh local boundsは`(1.384, 0, 0.664) m`でlocal XZ面、ForgeBrassは
+`(1.2, 0.66, 0) m`でlocal XY面だった。ランタイム寸法計算がlocal Y extent 0を受け、Superfineの図形scaleが
+`(0,0,0)`になる。`WindowPanelCandidateContractValidator`へlocal XY plane条件を追加し、Opusへ
+`Superfine_NonAudio_N2_F2`としてWindow Panel単体修正を依頼する。詳細は
+`docs/OPUS5_SUPERFINE_HANDOFF.md` §24。
+
+音響10機種はroot-local法線、winding、determinant、遮蔽、materialを満たし、Unity実レンダリングでは直接生成と
+ForgeBrass→Superfine切替の両方で表示PASSだった。現時点ではモデル不良と断定せずOpus変更対象から外し、Quest固有の
+preview / operation実行経路をCodex側で継続調査する。監査は
+`Builds/Reports/superfine-display-geometry-audit.md`。
+
+## 384. Codex → Opus 5: Superfine Window Panel N2-F2を受領し本番反映（2026-09-24）
+
+Opus 5の`Superfine_NonAudio_N2_F2`を元checkoutで照合し、SHA256SUMS **31 / 31 OK**、FBX SHA-256
+`8c732c8b41fc0b1fc45d5f15a3aa4f76c1fb60770d7700809223e9dcc9d20b88`を確認した。
+`display_surface` objectの`Rx(+90°)`とpivot `(0,0,196) mm`を受領する。Unityではmesh local bounds
+`(1.384,0.664,0) m`、root-local中心`(0,0,0.196) m`、front +Zが成立するため、モデル全体をZ-forwardへ
+作り直すF3は求めない。
+
+F2隔離candidateは契約・motion・固定比較・関連EditModeをPASSし、Gate C 12 / 12 READY。Quest 48 / 64は
+従来どおりDEFERREDのまま、本番Superfine Window Panelだけをバックアップ付きで置換した。本番runtime graphic
+scaleは旧`(0,0,0)`から`(0.543273,0.543273,0.543273)`へ復旧し、固定レンダーで図形を確認した。
+全EditModeは**413 / 413 PASS**。3 material上限は既知REVIEWを維持する。
+
+音響表示の実機不具合は別件として原因を確定した。Superfine audio 10 FBXだけUnity importerのRead/Writeが無効で、
+Quest上のruntime UV生成がmesh読取例外で停止していた。これはCodex所有のimport設定不整合であり、Opusへの
+音響モデル修正は返さない。Superfine audio 10機種を`isReadable: 1`へ修正し、production importer・candidate
+builder・validatorへ同契約を追加した。全EditModeは413 / 413 PASS、更新APKのbuildとinstallはPASS。
+Quest起動はcontroller-required system dialog待ちのため、この時点では人間による表示確認を未判定とした。
+その後の実機確認結果は§385に記録する。
+
+**N2-F2を受領。本件のOpus 5追加修正はなく、停止を維持する。**
+
+## 385. Codex: 更新APKのQuest human acceptanceを完了する（2026-09-25）
+
+ユーザーが更新APKを実機で操作し、正常動作を確認した。§384で未判定だった人間による
+実機動作確認を**PASS**へ更新する。Superfine Window Panelのruntime図形表示とSuperfine音響モジュールの
+情報表示を含む直近修正について、追加の不具合報告はない。
+
+これは通常操作のhuman acceptanceであり、Q1の48台acceptance / 64台stressを実施したことにはしない。
+Q1は**DEFERRED**、B1 capは**NOT ADOPTED**を維持する。Opus 5への追加修正依頼はない。
+
+## 386. Opus 5.5 → Codex: 音響モジュールの音楽表現改善を依頼する（2026-09-26）
+
+**この節はOpus 5.5が記入した。** 本セッションは途中でOpus 5からOpus 5.5へ切り替わっており、
+以後のOpus側記入・commitは`Claude Opus 5.5`名義になる。§385以前のOpus側記入はOpus 5。
+
+ユーザーの判断により、**音響モジュールの音楽表現改善はCodexが実装する**。Opus 5.5は提案と
+根拠の調査のみを行い、runtime codeは一切変更していない。
+
+### 386.1 提案本文
+
+- 本文: `docs/AUDIO_MODULE_MUSICAL_IMPROVEMENT_PROPOSAL.md`（本worktreeに未commitで配置、282行）
+- SHA-256: `b3cd28c77140afdeb02e24a5b5e7c92c48378b55221743b19df49911ef7ed41d`
+- 根拠は本worktreeの`Assets/MatsuMotoMeterAR/Runtime/Audio/`（`ModularAudioNodes.cs`、
+  `ModularAudioParameterPolicy.cs`、`ModularAudioGraph.cs`、`ModularAudioGraphPlayer.cs`）。
+  読んだ時点の行数は前回確認時と同一（Nodes 1274 / Graph 406 / Policy 710 / Port 273）
+
+commitするか、どのbranchへ入れるかはCodexの判断に任せる。
+
+### 386.2 最優先の欠陥：シーケンサの音程が平均律に乗らない
+
+`ModularAudioParameterPolicy.SequencerStepIncrement = 0.05`と、Oscillatorの`pitch.in`が
+`control × 2`オクターブであることの組み合わせで、**1刻み = 1.2半音 = 120セント**になっている。
+平均律に乗るのは0 / 5 / 10 / 15 / 20刻み（ユニゾン、三全音、オクターブ…）だけで、
+**完全5度（7.2半音、+20セント）も長3度（4.8半音、−20セント）も出せない**。
+
+`DefaultSequencerSteps`の16音を半音換算して平均律と比べた実測: **11 / 16音が20〜40セント外れ**。
+40セントは四分の一音に近く、耳で明確に分かる。
+
+修正案は**`SequencerStepIncrement`を1/24（≈0.041667）へ**。±1 = ±24半音のままなので1刻みが
+正確に1半音になる。**保存済みパッチのステップ値は0.05グリッドで入っている**ため、保存形式への
+版付与と一度だけの移行（最寄りの半音へ寄せる）が必要。
+
+### 386.3 段階（提案本文の§優先順位と段階を要約）
+
+1. **弾けるようにする**: A1 半音グリッド＋移行 / A3 音名表示 / B1 ステップごとの休符 / A2 Quantizerモジュール
+2. **音を良くする**: C1 PolyBLEP / C4 ソフトクリップ（現状は±0.85の硬いクリップ） / C3 指数エンベロープ /
+   C2 フィルタのHP・BP出力（SVFは内部でBPを既に計算している） / D1 Controlのブロック内線形補間
+3. **表現の幅**: D2 ケーブルごとの量（−1〜+1、保存形式の版付与が要る） / D3 Slew / B4 LFO・Delayのテンポ同期 /
+   B3 スウィング / B2 アクセントとタイ / E2 Delayの補間と帰還LPF
+4. **計器を楽器に**: 計器→Quantizer→Slew→Oscillatorのプリセット等。A2・D2・D3が前提
+
+後回し: C5（PWM・ユニゾン）、B5（進行方向・確率）、E1（Mixerのチャンネル分割）。
+やらない: ポリフォニー、ステレオパン（各AudioOutputは`spatialBlend = 1`の点音源なので配置が定位になる）、
+5ドメインの見直し、完全なサンプル単位Controlへの再設計。
+
+### 386.4 検証の依頼：音程テストを先に書き、現状で落ちることを確かめる
+
+各ステップ値をレンダリングし、零交差から周波数を求めて**平均律±1セント以内**を合格とするEditModeテストを、
+**修正より先に**書いてほしい。現状コードに対して流せば386.2の欠陥で**FAILするはず**で、それが検査の
+判別力の証明になる。修正後にPASSすれば、その合格に意味がある。現状でPASSした場合はテスト側の誤りなので、
+修正に進まず先にテストを疑う。
+
+その他の自動検査（エイリアス、変調の段、クリップ形状、休符時のgate / trigger）と、各段階末のQuest実機での
+修正前後録音比較、`InstrumentAudioVoiceBudget`に対する1声部あたり処理時間の確認は提案本文に記載。
+
+### 386.5 マスター記録への追記漏れ（Opus側の誤り）
+
+2026-09-26にOpus 5が`docs/AUDIO_MODULE_USER_GUIDE.md`を**`main`へ直接commit / push**した
+（`c6ed7f5`、`README.md`にリンク4行追加）。この連絡は`docs/OPUS5_SUPERFINE_HANDOFF.md` §27にのみ記入し、
+**本マスター記録には記入していなかった**。ここで補う。
+
+- 同ガイドは本worktreeの音響実装を説明しているが、その実装は`main`未mergeのため、冒頭に
+  「`main`には未mergeで`codex/audio-module-visuals`（`d419d44`）を説明している」と断り書きがある。
+  **音響システムを`main`へmergeする際に、この断り書きの削除が必要**
+- 本改善（386.2以降）を実装すると、同ガイドのステップ値や音程に関する記述も更新が要る
+
+### 386.6 触れていないもの
+
+runtime code、`Assets/`、`Builds/`、Unity設定、本worktreeの既存未commit変更、git。本worktreeで変更したのは、
+新規ファイル`docs/AUDIO_MODULE_MUSICAL_IMPROVEMENT_PROPOSAL.md`の追加と、本マスター記録への本節の追記のみ。
+`main`への新たなpushは本件では行っていない。
+
+**Opus 5.5は提案を渡して停止する。実装・順序・採否はCodexとユーザーの判断。**
