@@ -1,10 +1,10 @@
 # Next development session handoff
 
-Status: **Superfine registered as the fifth production theme; latest Quest build accepted in human device testing; operation stick direction/smoothing and beam-trigger controls revised; EditMode 415/415 PASS; quantitative Q1 remains deferred; implementation checkpoint committed**
+Status: **Superfine registered as the fifth production theme; latest Quest build accepted in human device testing; explicit panel-only safe exit validated on Quest; EditMode 419/419 PASS; quantitative Q1 remains deferred**
 
 Prepared: 2026-09-05
 
-Updated: 2026-09-26
+Updated: 2026-09-27
 
 Released baseline: `v0.3.0-concept.1` at
 `368676403e21ca0295d4f20fda335adae272f688`
@@ -472,6 +472,38 @@ has not yet been built, installed, or physically checked on Quest. Evidence:
 `Builds/Reports/operation-stick-beam-editmode-results.xml` (SHA-256
 `785d90cc7efb0c5225e091583efaf36c8acf047b23faad560decdda94e0c29ad`).
 
+### Explicit safe-exit revision — 2026-09-27
+
+Questの保存済みprocess-exit履歴を確認したところ、直近の終了はJava/native
+crash、ANR、low-memory killではなく、すべて`EXIT_SELF`だった。編集モードで
+左スティックを2秒長押しすると終了する旧操作が、Operationモードのロック操作と
+紛らわしく、偶発終了の原因候補になっていた。
+
+編集モードの左スティック長押し終了を廃止した。安全終了は、ロック済みOperation
+モードで`Y`を1秒長押ししてGlobal Audioパネルを開き、そのパネル内で`B`を
+2秒長押しした場合だけ実行する。パネルとHUDに進捗を表示し、途中で離すと
+キャンセルする。Editモードやパネル非表示時の`B`では終了できない。対象の
+`AppInteractionModeTests`は**18 / 18 PASS**、全EditModeは
+**419 / 419 PASS**（failure 0、skipped 0）。結果は
+`Builds/Reports/explicit-safe-exit-editmode-results.xml`、SHA-256
+`1bc1e87f17b2fe53fa9d21ade400f188ef29c5cb1717512e6eb79d92a7101098`。
+
+同日、最新変更を含むQuest review APKを
+`Builds/QuestReview/AnalogInstrumentMR-InstrumentAudio-review-quest3.apk`
+へbuildした。Build ResultはSuccess、実サイズ84,359,851 bytes、SHA-256
+`e80f16b7f0479925e4c7b0c19823a57e80b3a1899c0d814f304d84c5d52e61e7`。
+packageは`com.DefaultCompany.MatsuMotoMeterAR`、version `0.3.0`、
+versionCode `3`、targetSdk `34`。
+
+同日、このAPKをQuest 3 `2G0YC1ZG2J02HL`へ`adb install -r`で上書きし、
+起動を確認した。編集モードで左スティックを2秒以上長押ししても終了しないこと、
+ロック済みOperationモードのGlobal Audioパネル内で`B`長押しを途中解除すると
+終了がキャンセルされること、`B`を2秒保持した場合だけ正常終了すること、再起動後に
+パネル外の`B`でテーマ変更が維持されることを実機操作で確認し、**PASS**とした。
+終了時刻2026-09-27 13:56:22のAndroid process-exit記録は`EXIT_SELF`、
+status `0`であり、テスト中のFatal exception、native fatal signal、ANR、OOMは
+検出されなかった。
+
 ## 8. Remaining closeout work
 
 The VCA/Mixer/Filter/Envelope and Gate/Trigger source slice is complete on desktop and its
@@ -487,7 +519,7 @@ production changes are committed on this branch. Possible next actions are:
    Push Button / Toggle Switch beam-trigger operation, locked-mode A connection
    visibility, left/right edit selection, move/undo, direct-contact feel, and
    Sequencer step-trigger playback on Quest when physical-device testing
-   resumes; desktop EditMode is 415/415 PASS.
+   resumes; desktop EditMode is 419/419 PASS.
 3. Recheck the corrected Brown Noise level and LFO display alignment only if
    broader headset acceptance is reopened.
 4. Choose version/changelog treatment only if the user opens a release task.
@@ -575,6 +607,8 @@ test totals, and open-task lists. Do not treat them as the current audio status.
 > default. Push Button and Toggle Switch support both direct contact and beam +
 > Trigger. Lever/Throttle stick Y is inverted (Up decreases, Down increases),
 > with continuous damped visual motion between logical detents. Current full
-> EditMode is 415/415 PASS. Locked Operation mode uses A to toggle signal/audio
-> connection lines; this input revision has not been deployed to Quest.
+> EditMode is 419/419 PASS. This input revision is installed on Quest. The
+> panel-only safe-exit path is physically validated; the broader controller
+> mapping still awaits a consolidated headset regression pass. Locked Operation
+> mode uses A to toggle signal/audio connection lines.
 > Do not push, open a PR, change versioning, or tag unless explicitly instructed.

@@ -34,6 +34,14 @@ namespace MatsuMotoMeterAR.InteractionModes
             return mode == AppInteractionMode.Operation && modeSwitchLocked;
         }
 
+        public static bool CanRequestApplicationExit(
+            AppInteractionMode mode,
+            bool globalSettingsVisible)
+        {
+            return mode == AppInteractionMode.Operation &&
+                   globalSettingsVisible;
+        }
+
         public static bool ShowsConnectionVisuals(
             AppInteractionMode mode,
             bool operationConnectionVisualsVisible,

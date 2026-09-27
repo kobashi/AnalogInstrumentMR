@@ -76,6 +76,22 @@ namespace MatsuMotoMeterAR.Tests
                 Is.EqualTo(expected));
         }
 
+        [TestCase(AppInteractionMode.Operation, true, true)]
+        [TestCase(AppInteractionMode.Operation, false, false)]
+        [TestCase(AppInteractionMode.Edit, true, false)]
+        [TestCase(AppInteractionMode.Edit, false, false)]
+        public void ApplicationExit_RequiresVisibleOperationSettings(
+            AppInteractionMode mode,
+            bool globalSettingsVisible,
+            bool expected)
+        {
+            Assert.That(
+                AppInteractionModePolicy.CanRequestApplicationExit(
+                    mode,
+                    globalSettingsVisible),
+                Is.EqualTo(expected));
+        }
+
         [TestCase(AppInteractionMode.Operation, true, false)]
         [TestCase(AppInteractionMode.Edit, false, false)]
         [TestCase(AppInteractionMode.Edit, true, true)]

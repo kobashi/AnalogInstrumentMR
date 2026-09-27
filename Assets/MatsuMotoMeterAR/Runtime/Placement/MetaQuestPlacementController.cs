@@ -47,7 +47,7 @@ namespace MatsuMotoMeterAR.Placement
         private const int MaximumEditHistory = 32;
         private const float ControllerBeamStartOffset = 0.035f;
         private const float ControllerBeamWidth = 0.004f;
-        private const float ExitHoldSeconds = 2f;
+        private const float GlobalPanelExitHoldSeconds = 2f;
         private const float ModeLockHoldSeconds = 2f;
         private const float OperationFaceButtonHoldSeconds = 1f;
         private const float OperationStickDeadZone = 0.18f;
@@ -948,6 +948,7 @@ namespace MatsuMotoMeterAR.Placement
                 GlobalAudioSettings.Persist();
                 audioMenuTriggerEngaged = false;
                 audioMenuGripEngaged = false;
+                exitHoldTime = 0f;
                 SetModeStatus();
                 return;
             }
@@ -959,6 +960,10 @@ namespace MatsuMotoMeterAR.Placement
         {
             if (globalAudioPanelLabel == null)
                 return;
+            var exitInstruction = exitHoldTime > 0f
+                ? $"B HOLD: EXIT " +
+                  $"{Mathf.Clamp01(exitHoldTime / GlobalPanelExitHoldSeconds):P0}"
+                : "B HOLD 2s: EXIT APP";
             globalAudioPanelLabel.text =
                 "GLOBAL AUDIO\n\n" +
                 $"INSTRUMENT SE  {(GlobalAudioSettings.EffectsEnabled ? "ON" : "OFF")}\n" +
@@ -967,7 +972,7 @@ namespace MatsuMotoMeterAR.Placement
                 "TRIGGER +5%  |  GRIP -5%\n" +
                 "STICK Y: FINE  |  CLICK: DEFAULT 50%\n" +
                 "X: SE ON/OFF  |  Y: MODULE ON/OFF\n" +
-                "A: CLOSE";
+                $"A: CLOSE  |  {exitInstruction}";
         }
 
         private void AdjustGlobalEffectsVolume(float delta)
@@ -1559,14 +1564,13 @@ namespace MatsuMotoMeterAR.Placement
             var modeToggled = false;
             var editing =
                 AppInteractionModePolicy.AllowsEditing(interactionMode);
-            var exitInputConsumed =
+            var leftStickHoldConsumed =
                 UpdateLeftStickHold(
                     leftThumbstickButton,
-                    editing && !connectionEditing,
                     AppInteractionModePolicy.AllowsInstrumentOperation(
                         interactionMode) && !globalAudioPanelVisible);
 
-            if (!exitInputConsumed &&
+            if (!leftStickHoldConsumed &&
                 !operationInProgress &&
                 editing &&
                 xButton &&
@@ -1587,7 +1591,7 @@ namespace MatsuMotoMeterAR.Placement
                 modeToggled = true;
             }
 
-            if (!editing && !exitInputConsumed && !operationInProgress)
+            if (!editing && !leftStickHoldConsumed && !operationInProgress)
             {
                 modeToggled = UpdateOperationGlobalInput(
                     aButton,
@@ -1604,7 +1608,7 @@ namespace MatsuMotoMeterAR.Placement
                     leftGrip) || modeToggled;
             }
 
-            if (!exitInputConsumed && !modeToggled && editing)
+            if (!leftStickHoldConsumed && !modeToggled && editing)
             {
                 if (!operationInProgress)
                     UpdateEditHandInput(
@@ -1713,7 +1717,7 @@ namespace MatsuMotoMeterAR.Placement
                     Vector2.zero,
                     Vector2.zero);
                 if (!globalAudioPanelVisible &&
-                    !exitInputConsumed && !modeToggled &&
+                    !leftStickHoldConsumed && !modeToggled &&
                     !operationInProgress &&
                     AppInteractionModePolicy.CanToggleConnectionVisuals(
                         interactionMode,
@@ -1848,6 +1852,9 @@ namespace MatsuMotoMeterAR.Placement
 
             if (!globalAudioPanelVisible)
                 return false;
+
+            if (UpdateGlobalPanelExit(bButton))
+                return true;
 
             if (aButton && !previousAButton)
             {
@@ -2092,19 +2099,8 @@ namespace MatsuMotoMeterAR.Placement
             UndoLastEdit();
         }
 
-        private bool UpdateLeftStickHold(
-            bool isPressed,
-            bool editing,
-            bool operating)
+        private bool UpdateLeftStickHold(bool isPressed, bool operating)
         {
-            if (editing)
-            {
-                modeLockHoldTime = 0f;
-                modeLockHoldLatched = false;
-                return UpdateSafeExit(isPressed, editing: true);
-            }
-
-            exitHoldTime = 0f;
             if (!operating)
             {
                 modeLockHoldTime = 0f;
@@ -2148,43 +2144,47 @@ namespace MatsuMotoMeterAR.Placement
             return true;
         }
 
-        private bool UpdateSafeExit(bool isPressed, bool editing)
+        private bool UpdateGlobalPanelExit(bool isPressed)
         {
-            if (isExiting)
-                return true;
-
-            if (!editing)
+            if (!AppInteractionModePolicy.CanRequestApplicationExit(
+                    interactionMode,
+                    globalAudioPanelVisible))
             {
                 exitHoldTime = 0f;
                 return false;
             }
 
-            if (operationInProgress)
-            {
-                exitHoldTime = 0f;
-                if (isPressed)
-                    SetStatus("WAIT FOR SAVE BEFORE EXIT", Color.yellow);
-                return isPressed;
-            }
+            if (isExiting)
+                return true;
 
             if (!isPressed)
             {
                 if (exitHoldTime > 0f)
                 {
                     exitHoldTime = 0f;
-                    SetModeStatus();
-                    return true;
+                    RefreshGlobalAudioPanel();
+                    SetStatus("EXIT CANCELLED", Color.white);
                 }
                 return false;
             }
 
             exitHoldTime += Time.unscaledDeltaTime;
+            RefreshGlobalAudioPanel();
             SetStatus(
-                $"SAFE EXIT: HOLD L-STICK " +
-                $"{Mathf.Clamp01(exitHoldTime / ExitHoldSeconds):P0}",
+                $"EXIT APP: HOLD B " +
+                $"{Mathf.Clamp01(exitHoldTime / GlobalPanelExitHoldSeconds):P0}",
                 new Color(1f, 0.35f, 0.1f));
-            if (exitHoldTime < ExitHoldSeconds)
+            if (exitHoldTime < GlobalPanelExitHoldSeconds)
                 return true;
+
+            QuitApplication("global audio settings panel");
+            return true;
+        }
+
+        private void QuitApplication(string source)
+        {
+            if (isExiting)
+                return;
 
             isExiting = true;
             SetPreviewVisible(false);
@@ -2195,7 +2195,7 @@ namespace MatsuMotoMeterAR.Placement
                 leftControllerBeam.enabled = false;
             SetStatus("EXITING SAFELY", Color.green);
             Debug.Log(
-                "[Application] Safe exit requested by left stick hold in Edit mode.");
+                $"[Application] Safe exit requested by {source}.");
 
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
@@ -2217,7 +2217,6 @@ namespace MatsuMotoMeterAR.Placement
 #else
             Application.Quit();
 #endif
-            return true;
         }
 
         private static bool IsPressed(InputAction action)

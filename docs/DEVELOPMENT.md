@@ -43,9 +43,11 @@
 
 ### Safe exit control
 
-Editモードで左スティックを2秒間押し込み続けると、保存処理完了後にAndroid
-Activityを終了する。HUDに長押し進捗を表示し、Anchorや配置データの保存中は
-終了を保留する。ADBから停止する場合は`./scripts/stop-quest-app.sh`を使用する。
+Editモードの左スティック長押しによる終了は、モードロック操作との混同を防ぐため
+廃止した。Operationモードをロックし、`Y`を1秒長押ししてGlobal Audioパネルを
+開いた後、そのパネル内で`B`を2秒長押しするとAndroid Activityを終了する。
+パネルとHUDに長押し進捗を表示し、途中で`B`を離すと終了をキャンセルする。
+ADBから停止する場合は`./scripts/stop-quest-app.sh`を使用する。
 
 ## Current readiness
 
@@ -65,7 +67,8 @@ Activityを終了する。HUDに長押し進捗を表示し、Anchorや配置デ
 - [x] Project Validation error 0
 - [x] Quest 3 の Developer Mode、USB debugging、`adb devices`
 - [x] Passthrough APK の Build And Run smoke test（Quest 3へインストール・起動、OpenXR/Meta XR/Passthrough API初期化ログを確認）
-- [x] Meta controller の B / Trigger 入力、controller beam、アプリ内安全終了の実機確認
+- [x] Meta controller の B / Trigger 入力、controller beam
+- [x] Global Audioパネル内の`B`長押し安全終了をQuest実機確認
 
 ### Rendering pipeline status
 
