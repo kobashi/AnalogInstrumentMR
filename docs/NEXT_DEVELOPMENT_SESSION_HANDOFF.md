@@ -14,8 +14,10 @@ Prepared release candidate: `v0.3.0-concept.2` (not tagged or published).
 `Builds/Release/AnalogInstrumentMR-v0.3.0-concept.2-quest3.apk`, size
 84,359,851 bytes, SHA-256
 `b1f7667a271c16539debe0c19cb3613c48580a8a223d3895d5b65907b2f7cf07`.
-Quest overwrite install passed; exact-artifact launch remains pending because
-the headset entered sleep. See `docs/releases/v0.3.0-concept.2.md`.
+Quest overwrite install and exact-artifact launch passed after waking the
+headset. PID `15709` remained active with the Unity activity top-resumed, and
+the sampled post-install log contained no fatal, ANR, OOM, or low-memory-killer
+line. See `docs/releases/v0.3.0-concept.2.md`.
 
 Implementation parent commit: `6e4c1967080dc72bd873b6f46beaf95c3256b327`
 (`Prepare next development session handoff`)
