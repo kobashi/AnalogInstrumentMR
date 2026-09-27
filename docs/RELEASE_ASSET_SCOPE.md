@@ -6,11 +6,15 @@ model iteration.
 
 ## Included
 
-- Runtime Unity assets under `Assets/MatsuMotoMeterAR/Content/Themes/`
-- Active visual prefabs under `Assets/MatsuMotoMeterAR/Resources/`
+- Runtime Unity assets for all five production themes under
+  `Assets/MatsuMotoMeterAR/Content/Themes/`
+- Active visual prefabs, including all 24 Superfine types, under
+  `Assets/MatsuMotoMeterAR/Resources/`
 - The 39 final V6 Blender sources matching
   `ArtSource/Blender/ThemeHardSurfaceV6/*/*_ProductionReady.blend`
 - Final V6 model validation reports
+- Accepted production audio-module and Superfine Blender/FBX sources and their
+  manifest/checksum records
 - Source texture atlases under `ArtSource/Textures/`
 - Blender, texture, validation, and documentation generator scripts
 - Curated V6 contact sheets under `docs/images/`

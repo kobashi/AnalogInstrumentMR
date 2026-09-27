@@ -6,6 +6,49 @@
 
 ## [Unreleased]
 
+## [0.3.0-concept.2] - 2026-09-27
+
+### Added
+
+- Oscillator、Noise、LFO、Sequencer、Delay、Audio Output、VCA、Mixer、Filter、
+  Envelopeからなるモジュラー音響系。Audio／Control／Gate／Trigger信号、16ステップ
+  Sequencer、ADSR、信号接続、パラメータ保存・復元を追加
+- 装置種別・テーマ・状態に応じた操作SE、段階別Lamp／Indicator音、Meterの値連動
+  motor tone、Trend Monitor／Window Panelの表示連動音響を追加
+- Kinetic Safety由来の独立第5テーマ`Superfine`。音響10機種と非音響14機種の専用
+  FBX／Prefab、実行時表示面、専用形状・material・GUIDをproduction登録
+- Global Audioパネル。装置SE音量、SE有効状態、音響処理全体の有効状態を再生モード
+  ロック中に調整可能
+
+### Changed
+
+- 再生モードの左右Triggerを正方向、Gripを逆方向の操作へ統一。音響モジュールでは
+  Trigger＋Gripで既定値へ戻し、レバー／スロットルはスティックY反転と滑らかな
+  detent追従、スティックXで最小／最大、押し込みで既定値へ戻す操作を追加
+- 編集操作を左右の役割へ分離。左選択を配置編集、右選択を接続編集とし、
+  Trigger＋Grip移動、Grip取消、スティック上の自動配置、下のgrid snapへ変更
+- ロック済み再生モードでAを接続表示、Bをテーマ巡回、Xを装置SE、Yを音響処理と
+  Global Audioパネルの操作へ割り当て
+
+### Fixed
+
+- Superfine Window Panelの表示面寸法と、音響モジュールFBXのRead/Write設定を修正し、
+  Quest Player上で図形・文字・信号表示が欠落する問題を解消
+- Push Button／Toggle Switchを直接接触に加えてビーム＋Triggerでも操作可能に修正
+- 編集モードの左スティック長押し終了を廃止。アプリ終了をロック済み再生モードの
+  Global Audioパネル内B長押し2秒に限定し、途中解除を明示的にキャンセル
+
+### Validated
+
+- Unity EditMode **419 / 419 PASS**、failed 0、skipped 0
+- 音響モジュールproduction staging／motion **24 / 24 PASS**、Gate C readiness
+  **58 / 58 PASS**、production candidate dependency 0
+- Quest 3でSuperfine Window Panel／音響表示、操作・音、改訂controller mapping、
+  panel限定安全終了をユーザー受領。安全終了時は`EXIT_SELF`／status 0で、Fatal、
+  ANR、OOMなし
+- 音響負荷の定量Q1はユーザー判断で延期。代表モジュラーgraphや48／64台測定を
+  実測PASSとは扱わない
+
 ## [0.3.0-concept.1] - 2026-09-02
 
 ### Added

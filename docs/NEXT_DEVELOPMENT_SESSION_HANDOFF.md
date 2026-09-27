@@ -9,6 +9,14 @@ Updated: 2026-09-27
 Released baseline: `v0.3.0-concept.1` at
 `368676403e21ca0295d4f20fda335adae272f688`
 
+Prepared release candidate: `v0.3.0-concept.2` (not tagged or published).
+`ConceptReleaseBuilder` produced
+`Builds/Release/AnalogInstrumentMR-v0.3.0-concept.2-quest3.apk`, size
+84,359,851 bytes, SHA-256
+`b1f7667a271c16539debe0c19cb3613c48580a8a223d3895d5b65907b2f7cf07`.
+Quest overwrite install passed; exact-artifact launch remains pending because
+the headset entered sleep. See `docs/releases/v0.3.0-concept.2.md`.
+
 Implementation parent commit: `6e4c1967080dc72bd873b6f46beaf95c3256b327`
 (`Prepare next development session handoff`)
 
