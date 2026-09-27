@@ -6,10 +6,11 @@ Prepared: 2026-09-05
 
 Updated: 2026-09-27
 
-Released baseline: `v0.3.0-concept.1` at
-`368676403e21ca0295d4f20fda335adae272f688`
+Released baseline: `v0.3.0-concept.2` at
+`abdd96e4cf5370d80c5d48743774f781450a5310`.
 
-Prepared release candidate: `v0.3.0-concept.2` (not tagged or published).
+The GitHub source pre-release is published at
+`https://github.com/kobashi/AnalogInstrumentMR/releases/tag/v0.3.0-concept.2`.
 `ConceptReleaseBuilder` produced
 `Builds/Release/AnalogInstrumentMR-v0.3.0-concept.2-quest3.apk`, size
 84,359,851 bytes, SHA-256
@@ -18,6 +19,10 @@ Quest overwrite install and exact-artifact launch passed after waking the
 headset. PID `15709` remained active with the Unity activity top-resumed, and
 the sampled post-install log contained no fatal, ANR, OOM, or low-memory-killer
 line. See `docs/releases/v0.3.0-concept.2.md`.
+The public release includes an LFS-expanded 93,768,729-byte full-source archive
+with SHA-256
+`1dd2a2eec06e1468494a71efb8f96f7535cd60cc5e7696ea417f20c0ac51010c`;
+the locally signed Quest APK was not attached.
 
 Implementation parent commit: `6e4c1967080dc72bd873b6f46beaf95c3256b327`
 (`Prepare next development session handoff`)
@@ -77,9 +82,9 @@ Do not copy, modify, or register files under
 ignored source directory is intentionally absent here, and no files beneath it
 were changed while implementing the Unity corrections below.
 
-Do not select a new version, update the changelog, create a PR, push, or tag a
-release without an explicit instruction. The immutable released baseline remains
-`v0.3.0-concept.1`.
+Do not select another version, alter the published release assets, create a PR,
+push additional changes, or create another tag without an explicit instruction.
+The immutable released baseline is `v0.3.0-concept.2`.
 
 `Assets/Resources/DevAgentSettings.asset` is an ignored local credential/settings
 asset. Never inspect, print, stage, or publish its contents. After the latest
@@ -432,17 +437,18 @@ axis auto-alignment and Down applies 10 cm grid snap. With a selection this
 modifies the move target; without a selection it modifies the new-placement
 preview. The chosen modifier stays active until move confirmation or new
 placement; the next operation starts unmodified. This replaces the
-old Grip-only auto-align / Trigger+Grip grid-snap input mapping. This
-interaction revision has not been installed or checked on Quest yet. The full
-Unity EditMode suite passed **384/384** after the modifier remapping and the
-Right Grip cancel addition.
+old Grip-only auto-align / Trigger+Grip grid-snap input mapping. The full Unity
+EditMode suite passed **384/384** after the modifier remapping and the Right
+Grip cancel addition. The later consolidated Quest controller regression was
+accepted by the product owner on 2026-09-27 using the earlier physical checks.
 
 Right Grip alone is now a shared non-destructive Edit-mode cancel. In placement
 editing it clears selection and cancels an active move without saving; in
 connection editing it clears endpoints, selected routes, and parameter-edit
 drafts without deleting the stored object or connection. The same 0.12-second
 chord window prevents Right Trigger + Grip from being mistaken for a standalone
-cancel. Quest validation remains pending.
+cancel. This behavior is included in the consolidated Quest controller
+regression accepted on 2026-09-27.
 
 ### Sequencer step-trigger playback — 2026-09-19
 
@@ -555,7 +561,7 @@ When older notes disagree, use this order:
    behavior, interaction, validation, and deferral decisions.
 4. Current runtime/editor code and tests.
 5. [`ARCHITECTURE.md`](ARCHITECTURE.md) for system structure.
-6. [`releases/v0.3.0-concept.1.md`](releases/v0.3.0-concept.1.md) for the last
+6. [`releases/v0.3.0-concept.2.md`](releases/v0.3.0-concept.2.md) for the last
    released baseline.
 
 Historical roadmap/alignment documents may contain superseded schema versions,
