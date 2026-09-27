@@ -1,6 +1,6 @@
 # Next development session handoff
 
-Status: **Superfine registered as the fifth production theme; latest Quest build accepted in human device testing; explicit panel-only safe exit validated on Quest; EditMode 419/419 PASS; quantitative Q1 remains deferred**
+Status: **Superfine registered as the fifth production theme; Quest operation/controller regression accepted; explicit panel-only safe exit validated on Quest; EditMode 419/419 PASS; quantitative Q1 remains deferred**
 
 Prepared: 2026-09-05
 
@@ -504,6 +504,12 @@ versionCode `3`、targetSdk `34`。
 status `0`であり、テスト中のFatal exception、native fatal signal、ANR、OOMは
 検出されなかった。
 
+同日、プロダクトオーナーは、改訂済み操作マッピング、レバーの反転・平滑化、
+Push Button / Toggle Switchのビーム操作、接続表示、左右の編集選択、移動・Undo、
+直接接触操作、Sequencerのステップトリガーについて、前回までの実機確認結果を
+総合回帰の確認済み結果として採用し、**PASS**とした。この判断時に同じ操作を
+重複実施して新たに測定したものではない。
+
 ## 8. Remaining closeout work
 
 The VCA/Mixer/Filter/Envelope and Gate/Trigger source slice is complete on desktop and its
@@ -515,15 +521,10 @@ production changes are committed on this branch. Possible next actions are:
    validated: 24/24 staging, 24/24 motion, 58/58 Gate C readiness, active
    prefab validation PASS, candidate dependencies 0, and post-promotion full
    EditMode 351/351 PASS.
-2. Check the revised operation-mode mapping, inverted/smoothed stick control,
-   Push Button / Toggle Switch beam-trigger operation, locked-mode A connection
-   visibility, left/right edit selection, move/undo, direct-contact feel, and
-   Sequencer step-trigger playback on Quest when physical-device testing
-   resumes; desktop EditMode is 419/419 PASS.
-3. Recheck the corrected Brown Noise level and LFO display alignment only if
+2. Recheck the corrected Brown Noise level and LFO display alignment only if
    broader headset acceptance is reopened.
-4. Choose version/changelog treatment only if the user opens a release task.
-5. Push or open a PR only if requested.
+3. Choose version/changelog treatment only if the user opens a release task.
+4. Push or open a PR only if requested.
 
 Deferred work, not blockers for this slice:
 
@@ -557,7 +558,8 @@ test totals, and open-task lists. Do not treat them as the current audio status.
   - `5c8111a` (`Expand modular audio and operation controls`)
   - `e93554c` (`Add audio visuals for established themes`)
   - `41b7796` (`Add independent Superfine visual theme`)
-  - current HEAD (`Update development handoff and validation status`)
+  - `9262881` (`Update development handoff and validation status`)
+  - `83deafe` (`Require explicit panel hold to exit`)
 - No staged changes remain. The previous 255 false-positive `.blend`, `.fbx`, and
   `.png` modifications are cleared. One LFS-managed planning `.docx` is absent from
   the worktree and remains as a real unstaged modification; it was not restored,
@@ -608,7 +610,8 @@ test totals, and open-task lists. Do not treat them as the current audio status.
 > Trigger. Lever/Throttle stick Y is inverted (Up decreases, Down increases),
 > with continuous damped visual motion between logical detents. Current full
 > EditMode is 419/419 PASS. This input revision is installed on Quest. The
-> panel-only safe-exit path is physically validated; the broader controller
-> mapping still awaits a consolidated headset regression pass. Locked Operation
-> mode uses A to toggle signal/audio connection lines.
+> panel-only safe-exit path is physically validated. The product owner accepted
+> the earlier physical checks for the broader controller mapping as the
+> consolidated regression result on 2026-09-27; no duplicate measurement was
+> performed. Locked Operation mode uses A to toggle signal/audio connection lines.
 > Do not push, open a PR, change versioning, or tag unless explicitly instructed.
